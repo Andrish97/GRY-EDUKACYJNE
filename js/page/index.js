@@ -1,13 +1,17 @@
 // js/pages/index.js
 document.addEventListener("DOMContentLoaded", () => {
-  const emailInput = document.getElementById("email");
-  const passInput = document.getElementById("pass");
-  const pass2Input = document.getElementById("pass2");
-  const btnLogin = document.getElementById("btn-login");
-  const btnRegister = document.getElementById("btn-register");
-  const btnGuest = document.getElementById("btn-guest");
-  const btnForgot = document.getElementById("btn-forgot");
-  const errorBox = document.getElementById("error");
+  const emailInput   = document.getElementById("email");
+  const passInput    = document.getElementById("pass");
+  const pass2Input   = document.getElementById("pass2");
+  const labelPass2   = document.getElementById("label-pass2");
+  const btnLogin     = document.getElementById("btn-login");
+  const btnRegister  = document.getElementById("btn-register");
+  const btnGuest     = document.getElementById("btn-guest");
+  const btnForgot    = document.getElementById("btn-forgot");
+  const errorBox     = document.getElementById("error");
+  const subtitleEl   = document.getElementById("subtitle");
+
+  let registerMode = false; // false = logowanie, true = rejestracja
 
   function showError(msg) {
     errorBox.textContent = msg || "";
@@ -17,16 +21,43 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "arcade.html";
   }
 
+  function updateModeUI() {
+    if (registerMode) {
+      // TRYB REJESTRACJI
+      labelPass2.style.display = "block";
+      pass2Input.style.display = "block";
+      btnLogin.style.display = "none";
+      btnRegister.textContent = "Utwórz konto";
+      subtitleEl.textContent = "Wpisz dane i powtórz hasło, aby założyć konto.";
+      showError("");
+    } else {
+      // TRYB LOGOWANIA
+      labelPass2.style.display = "none";
+      pass2Input.style.display = "none";
+      btnLogin.style.display = "inline-block";
+      btnRegister.textContent = "Załóż konto";
+      subtitleEl.textContent = "Zaloguj się albo wejdź jako gość.";
+      showError("");
+    }
+  }
+
+  // Gość
   btnGuest.onclick = () => {
     ArcadeAuth.setGuest();
     showError("");
     goToArcade();
   };
 
+  // Logowanie (tylko w trybie logowania)
   btnLogin.onclick = async () => {
+    if (registerMode) {
+      // w trybie rejestracji przycisk logowania jest ukryty, ale na wszelki wypadek:
+      return;
+    }
+
     showError("");
     const email = emailInput.value.trim();
-    const pass = passInput.value;
+    const pass  = passInput.value;
 
     if (!email || !pass) {
       showError("Podaj email i hasło.");
@@ -42,10 +73,19 @@ document.addEventListener("DOMContentLoaded", () => {
     goToArcade();
   };
 
+  // Rejestracja:
+  // 1. pierwsze kliknięcie -> wejście w tryb rejestracji
+  // 2. drugie kliknięcie w tym trybie -> faktyczna rejestracja
   btnRegister.onclick = async () => {
+    if (!registerMode) {
+      registerMode = true;
+      updateModeUI();
+      return;
+    }
+
     showError("");
     const email = emailInput.value.trim();
-    const pass = passInput.value;
+    const pass  = passInput.value;
     const pass2 = pass2Input.value;
 
     if (!email || !pass || !pass2) {
@@ -76,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     goToArcade();
   };
 
+  // Przypomnienie hasła
   btnForgot.onclick = async () => {
     showError("");
     const email = emailInput.value.trim();
@@ -93,4 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     alert("Jeśli konto istnieje, wyślemy mail z linkiem do ustawienia nowego hasła.");
   };
+
+  // Na start ustawiamy tryb logowania
+  updateModeUI();
 });
