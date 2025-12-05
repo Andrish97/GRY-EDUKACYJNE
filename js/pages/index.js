@@ -1,27 +1,23 @@
 // js/pages/index.js
 document.addEventListener("DOMContentLoaded", () => {
-  // Używamy wspólnej logiki z auth.js
   ArcadeAuthUI.initLoginPanel({
     email:      "#email",
     pass:       "#pass",
     pass2:      "#pass2",
-    status:     "#subtitle",   // napis nad formularzem
+    status:     "#subtitle",
     error:      "#error",
     btnLogin:   "#btn-login",
     btnRegister:"#btn-register",
     btnGuest:   "#btn-guest",
-    btnLogout:  null,          // na ekranie startowym nie ma "Wyloguj"
+    btnLogout:  null,
     btnForgot:  "#btn-forgot",
 
-    // tu mówimy: sprawdź hash z Supabase (type=signup)
-    checkSignupHash: true,
+    checkSignupHash: true, // tu łapiemy #type=signup po kliknięciu linka z maila
 
-    // co zrobić po poprawnym logowaniu:
     onLoginSuccess() {
       window.location.href = "arcade.html";
     },
 
-    // co zrobić po wejściu jako gość:
     onGuest() {
       window.location.href = "arcade.html";
     }
