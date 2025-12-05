@@ -1,108 +1,49 @@
 // js/core/ui.js
-window.ArcadeUI = (() => {
-  function renderTopBar() {
-    const bar = document.createElement("div");
-    bar.className = "arcade-topbar";
-    bar.innerHTML = `
-      <span class="arcade-user"></span>
-      <div class="arcade-auth">
-        <input type="email" class="arcade-input email" placeholder="email">
-        <input type="password" class="arcade-input pass" placeholder="hasło">
-        <button class="arcade-btn login">Zaloguj</button>
-        <button class="arcade-btn register">Rejestracja</button>
-        <button class="arcade-btn logout" style="display:none;">Wyloguj</button>
-        <button class="arcade-btn guest">Gość</button>
-      </div>
-    `;
-    document.body.prepend(bar);
+// Wspólne helpery UI dla gier.
 
-    const email = bar.querySelector(".email");
-    const pass = bar.querySelector(".pass");
-    const login = bar.querySelector(".login");
-    const register = bar.querySelector(".register");
-    const logout = bar.querySelector(".logout");
-    const guest = bar.querySelector(".guest");
-    const userLabel = bar.querySelector(".arcade-user");
+(function () {
+  function addBackToArcadeButton(options = {}) {
+    const params = new URLSearchParams(window.location.search);
+    const isFullscreen = params.get("fullscreen") === "1";
+    if (!isFullscreen) return;
 
-    async function refresh() {
-      const mode = ArcadeAuth.getMode();
-      const user = await ArcadeAuth.getCurrentUser();
+    const backUrl = options.backUrl || "../arcade.html";
 
-      if (mode === "guest") {
-        userLabel.textContent = "Tryb gościa (zapis lokalny)";
-        email.style.display = "inline-block";
-        pass.style.display = "inline-block";
-        login.style.display = "inline-block";
-        register.style.display = "inline-block";
-        logout.style.display = "none";
-        return;
-      }
-
-      if (user) {
-        userLabel.textContent = "Zalogowany: " + (user.email || user.id);
-        email.style.display = "none";
-        pass.style.display = "none";
-        login.style.display = "none";
-        register.style.display = "none";
-        logout.style.display = "inline-block";
-      } else {
-        userLabel.textContent = "Nie zalogowany (zapis lokalny)";
-        email.style.display = "inline-block";
-        pass.style.display = "inline-block";
-        login.style.display = "inline-block";
-        register.style.display = "inline-block";
-        logout.style.display = "none";
-      }
-    }
-
-    login.onclick = async () => {
-      const e = email.value.trim();
-      const p = pass.value;
-      if (!e || !p) {
-        alert("Podaj email i hasło.");
-        return;
-      }
-      const { error } = await ArcadeAuth.login(e, p);
-      if (error) alert("Błąd logowania: " + error.message);
-      refresh();
-    };
-
-    register.onclick = async () => {
-      const e = email.value.trim();
-      const p = pass.value;
-      if (!e || !p) {
-        alert("Podaj email i hasło.");
-        return;
-      }
-      const { error } = await ArcadeAuth.register(e, p);
-      if (error) alert("Błąd rejestracji: " + error.message);
-      else alert("Sprawdź maila, żeby aktywować konto.");
-      refresh();
-    };
-
-    logout.onclick = async () => {
-      await ArcadeAuth.logout();
-      refresh();
-    };
-
-    guest.onclick = () => {
-      ArcadeAuth.setGuest();
-      refresh();
-    };
-
-    refresh();
-  }
-
-  function injectBackButton(backUrl) {
     const btn = document.createElement("button");
-    btn.className = "arcade-backbtn";
     btn.textContent = "Powrót do Arcade";
-    btn.onclick = () => (window.location.href = backUrl);
+    btn.type = "button";
+    btn.style.position = "fixed";
+    btn.style.top = "20px";
+    btn.style.left = "20px";
+    btn.style.padding = "8px 16px";
+    btn.style.border = "none";
+    btn.style.borderRadius = "999px";
+    btn.style.cursor = "pointer";
+    btn.style.zIndex = "9999";
+    btn.style.fontSize = "14px";
+    btn.style.fontWeight = "600";
+    btn.style.background = "linear-gradient(135deg,#22c55e,#16a34a)";
+    btn.style.color = "#052e16";
+    btn.style.boxShadow = "0 8px 18px rgba(22,163,74,0.45)";
+    btn.style.transition = "transform 0.06s ease, box-shadow 0.06s ease";
+
+    btn.onmouseover = () => {
+      btn.style.transform = "translateY(-1px)";
+      btn.style.boxShadow = "0 12px 26px rgba(22,163,74,0.6)";
+    };
+    btn.onmouseout = () => {
+      btn.style.transform = "translateY(0)";
+      btn.style.boxShadow = "0 8px 18px rgba(22,163,74,0.45)";
+    };
+
+    btn.onclick = () => {
+      window.location.href = backUrl;
+    };
+
     document.body.appendChild(btn);
   }
 
-  return {
-    renderTopBar,
-    injectBackButton
+  window.ArcadeUI = {
+    addBackToArcadeButton
   };
 })();
