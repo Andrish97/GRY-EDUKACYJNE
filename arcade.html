@@ -2,52 +2,30 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <title>Neon Arcade – gry</title>
+  <title>Neon Arcade</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/theme.css" />
 
-  <!-- Główny motyw + styl strony arcade -->
-  <link rel="stylesheet" href="css/theme.css">
-  <link rel="stylesheet" href="css/arcade.css">
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-
-  <!-- Wspólna logika autoryzacji (ArcadeAuth + ArcadeAuthUI) -->
+  <!-- Core auth + UI -->
   <script src="js/core/auth.js" defer></script>
-
-  <!-- Pasek logowania oparty na ArcadeAuthUI -->
   <script src="js/core/auth-bar.js" defer></script>
 
-  <!-- Logika strony arcade: wczytywanie gier, kategorii itd. -->
-  <script src="js/pages/arcade.js" defer></script>
+  <!-- API gier + logika arcade -->
+  <script src="js/game-api.js" defer></script>
+  <script src="js/arcade.js" defer></script>
 </head>
-<body class="arcade-body">
-  <div class="shell">
-    <div class="card arcade-card">
+<body>
+  <!-- pasek logowania; rysuje się sam dzięki auth-bar.js -->
+  <div data-arcade-auth-bar></div>
 
-      <!-- UNIWERSALNY PASEK – automatycznie tworzony przez auth-bar.js -->
-      <div
-        data-arcade-auth-bar
-        <!-- tu w arcade NIE przekierowujemy po logowaniu, więc bez data-after-login -->
-      ></div>
+  <main class="arcade-root">
+    <header class="arcade-header">
+      <h1>Neon Arcade</h1>
+      <p>Wybierz grę i wskakuj do zabawy.</p>
+    </header>
 
-      <div class="header">
-        <div>
-          <div class="title">Neon Arcade</div>
-          <div class="subtitle">
-            Wybierz kategorię i zagraj. Twoje wyniki mogą zapisywać się lokalnie lub w chmurze (po zalogowaniu).
-          </div>
-        </div>
-      </div>
-
-      <!-- Pasek kategorii -->
-      <div class="categories-row" id="categories"></div>
-
-      <!-- Kontener na gry w wybranej kategorii -->
-      <div id="games"></div>
-
-    </div>
-  </div>
+    <!-- TO jest krytyczne: JS będzie tu renderował listę gier -->
+    <div id="games"></div>
+  </main>
 </body>
 </html>
