@@ -13,14 +13,15 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
-  <!-- Wspólna logika autoryzacji (ArcadeAuth + ArcadeAuthUI) -->
   <script src="js/core/auth.js" defer></script>
-
-  <!-- Pasek logowania oparty na ArcadeAuthUI -->
   <script src="js/core/auth-bar.js" defer></script>
-
-  <!-- Logika strony arcade: wczytywanie gier, kategorii itd. -->
+  
+  <!-- NOWY SKRYPT: -->
+  <script src="js/core/game-api.js" defer></script>
+  
+  <!-- Dopiero po nim: -->
   <script src="js/pages/arcade.js" defer></script>
+
 </head>
 <body class="arcade-body">
   <div class="shell">
@@ -51,3 +52,4 @@
   </div>
 </body>
 </html>
+
