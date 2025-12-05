@@ -4,58 +4,88 @@
   <meta charset="UTF-8" />
   <title>Neon 2048</title>
 
-  <!-- Neon Arcade -->
-  <link rel="stylesheet" href="../../../css/theme.css">
-  <link rel="stylesheet" href="game.css">
-  
+  <!-- KONIECZNIE poprawna ścieżka do motywu -->
+  <link rel="stylesheet" href="../../../css/theme.css" />
+  <link rel="stylesheet" href="game.css" />
+
+  <!-- Supabase klient (dla auth.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+
+  <!-- Core Arcade -->
   <script src="../../../js/core/auth.js" defer></script>
   <script src="../../../js/core/auth-bar.js" defer></script>
   <script src="../../../js/core/progress.js" defer></script>
   <script src="../../../js/core/ui.js" defer></script>
 
+  <!-- Logika gry -->
   <script src="game.js" defer></script>
 </head>
-<body>
+
+<!-- KLUCZ: body MUSI mieć klasę arcade-body -->
+<body class="arcade-body">
+  <!-- guzik powrotu korzystający z .arcade-backbtn z theme.css -->
+  <button
+    type="button"
+    class="arcade-backbtn"
+    onclick="window.location.href='../../../arcade.html'"
+  >
+    ← Powrót do Arcade
+  </button>
+
+  <!-- pasek logowania w motywie -->
   <div data-arcade-auth-bar></div>
 
-  <main class="game-root">
-    <header class="game-header">
-      <div>
-        <h1 class="game-title">Neon 2048</h1>
-        <p class="game-subtitle">Połącz kafelki, aby dojść do <strong>2048</strong>.</p>
-      </div>
-
-      <div class="score-panel">
-        <div class="score-box">
-          <span class="score-label">Wynik</span>
-          <span id="score-value" class="score-value">0</span>
+  <!-- środek strony w motywie: shell + card -->
+  <div class="shell">
+    <div class="card">
+      <header class="header">
+        <div>
+          <div class="title">NEON 2048</div>
+          <div class="subtitle">
+            Połącz kafelki, aby dojść do <strong>2048</strong>.
+          </div>
         </div>
-        <div class="score-box">
-          <span class="score-label">Rekord</span>
-          <span id="best-score-value" class="score-value">0</span>
+      </header>
+
+      <main class="game-root">
+        <div class="game-header">
+          <div>
+            <h2 class="game-title">Rozgrywka</h2>
+          </div>
+
+          <div class="score-panel">
+            <div class="score-box">
+              <span class="score-label">Wynik</span>
+              <span id="score-value" class="score-value">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Rekord</span>
+              <span id="best-score-value" class="score-value">0</span>
+            </div>
+            <button id="new-game-btn" class="btn-main">Nowa gra</button>
+          </div>
         </div>
-        <button id="new-game-btn" class="btn-primary">Nowa gra</button>
-      </div>
-    </header>
 
-    <section class="board-wrapper">
-      <div id="game-board" class="board"></div>
+        <section class="board-wrapper">
+          <div id="game-board" class="board"></div>
 
-      <div id="game-message" class="overlay overlay--hidden">
-        <div class="overlay-content">
-          <h2 id="overlay-title">Koniec gry</h2>
-          <p id="overlay-text">Brak ruchów. Spróbuj jeszcze raz!</p>
-          <button id="overlay-restart-btn" class="btn-primary">Zagraj ponownie</button>
-        </div>
-      </div>
-    </section>
+          <div id="game-message" class="overlay overlay--hidden">
+            <div class="overlay-content">
+              <h3 id="overlay-title">Koniec gry</h3>
+              <p id="overlay-text">Brak ruchów. Spróbuj jeszcze raz!</p>
+              <button id="overlay-restart-btn" class="btn-secondary">
+                Zagraj ponownie
+              </button>
+            </div>
+          </div>
+        </section>
 
-    <section class="game-info">
-      <p>Sterowanie: strzałki na klawiaturze lub przeciągnięcia na ekranie dotykowym.</p>
-      <p id="games-played-info" class="games-played-info"></p>
-    </section>
-  </main>
+        <section class="game-info">
+          <p>Sterowanie: strzałki na klawiaturze lub przeciągnięcia na ekranie dotykowym.</p>
+          <p id="games-played-info" class="games-played-info"></p>
+        </section>
+      </main>
+    </div>
+  </div>
 </body>
 </html>
-
