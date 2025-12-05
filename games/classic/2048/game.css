@@ -1,0 +1,246 @@
+/* games/classic/2048/game.css */
+
+.game-root {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.game-title {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.game-subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.8;
+}
+
+.score-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.score-box {
+  min-width: 80px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.score-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.score-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff2cdf, #00f0ff);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  opacity: 0.8;
+}
+
+.board-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.board {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.75rem;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.tile {
+  border-radius: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* kafelki wypełnione */
+
+.tile--filled {
+  transform: translateZ(0);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Prosty system kolorów – możesz zmienić pod swój theme */
+
+.tile--2 {
+  background: rgba(0, 240, 255, 0.3);
+}
+
+.tile--4 {
+  background: rgba(0, 255, 157, 0.35);
+}
+
+.tile--8 {
+  background: rgba(255, 204, 0, 0.5);
+}
+
+.tile--16 {
+  background: rgba(255, 153, 0, 0.6);
+}
+
+.tile--32 {
+  background: rgba(255, 102, 0, 0.7);
+}
+
+.tile--64 {
+  background: rgba(255, 51, 51, 0.8);
+}
+
+.tile--128 {
+  background: rgba(255, 51, 153, 0.8);
+  font-size: 1.2rem;
+}
+
+.tile--256 {
+  background: rgba(204, 51, 255, 0.85);
+  font-size: 1.2rem;
+}
+
+.tile--512 {
+  background: rgba(153, 51, 255, 0.9);
+  font-size: 1.2rem;
+}
+
+.tile--1024 {
+  background: rgba(102, 51, 255, 0.95);
+  font-size: 1.1rem;
+}
+
+.tile--2048,
+.tile--4096,
+.tile--8192 {
+  background: rgba(0, 255, 255, 0.95);
+  color: #000;
+  font-size: 1.1rem;
+}
+
+/* overlay */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background: radial-gradient(circle at top, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.9));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.2s ease;
+}
+
+.overlay--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.overlay-content {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.85);
+  max-width: 260px;
+}
+
+.overlay-content h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.overlay-content p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+/* info */
+
+.game-info {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.games-played-info {
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+
+/* RWD */
+
+@media (max-width: 640px) {
+  .game-root {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .score-panel {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .board {
+    max-width: 100%;
+  }
+}
