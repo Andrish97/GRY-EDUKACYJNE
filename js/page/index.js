@@ -1,5 +1,7 @@
 // js/pages/index.js
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("[index.js] DOMContentLoaded");
+
   const emailInput   = document.getElementById("email");
   const passInput    = document.getElementById("pass");
   const pass2Input   = document.getElementById("pass2");
@@ -44,12 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1) Start: domyślnie tryb logowania
   updateModeUI();
 
-  // 2) Sprawdź, czy weszliśmy z linka aktywacyjnego Supabase
-  // Supabase daje coś w stylu:
-  //   https://andrish97.github.io/twoje-repo/#access_token=...&type=signup
-  //
-  // Nie bawimy się w weryfikację tokena – to już zrobił backend.
-  // Jeśli widzimy type=signup w hash, to po prostu pokazujemy komunikat: "możesz się zalogować".
+  // 2) Sprawdź, czy weszliśmy z linka aktywacyjnego Supabase (#...type=signup)
   (function checkSignupFromHash() {
     const rawHash = window.location.hash || "";
     const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
@@ -57,31 +54,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const hashParams = new URLSearchParams(hash);
     const type = hashParams.get("type");
+    console.log("[index.js] hash type =", type);
 
     if (type === "signup") {
+      // niezależnie od tego, czy to pierwsze czy kolejne kliknięcie linka:
       registerMode = false;
       updateModeUI();
       subtitleEl.textContent = "Konto aktywowane. Możesz się zalogować.";
       showError("");
 
-      // Sprzątanie: usuń hash z paska adresu, żeby po odświeżeniu nie mielić tego znów
+      // wyczyść hash, żeby po odświeżeniu nie pokazywać tego w kółko
       history.replaceState({}, "", window.location.pathname);
     }
   })();
 
+  function ensureAuthOrShowError() {
+    if (!window.ArcadeAuth) {
+      console.error("[index.js] ArcadeAuth is undefined");
+      showError("Błąd połączenia z serwerem logowania. Spróbuj za chwilę.");
+      return null;
+    }
+    return window.ArcadeAuth;
+  }
+
   // Gość
   btnGuest.onclick = () => {
-    ArcadeAuth.setGuest();
+    console.log("[index.js] Klik: GOŚĆ");
+    const auth = ensureAuthOrShowError();
+    // nawet jeśli ArcadeAuth nie działa, pozwólmy wejść jako gość
+    try {
+      auth && auth.setGuest && auth.setGuest();
+    } catch (e) {
+      console.error("Błąd ArcadeAuth.setGuest:", e);
+    }
     showError("");
     goToArcade();
   };
 
   // Logowanie (tylko w trybie logowania)
   btnLogin.onclick = async () => {
-    if (registerMode) {
-      // w trybie rejestracji przycisk logowania jest ukryty, ale na wszelki wypadek:
-      return;
-    }
+    console.log("[index.js] Klik: ZALOGUJ, registerMode =", registerMode);
+    if (registerMode) return;
+
+    const auth = ensureAuthOrShowError();
+    if (!auth) return;
 
     showError("");
     const email = emailInput.value.trim();
@@ -92,8 +108,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const { error } = await ArcadeAuth.login(email, pass);
+    const { error } = await auth.login(email, pass);
     if (error) {
+      console.error("Błąd logowania:", error);
       showError("Nieprawidłowy email lub hasło.");
       return;
     }
@@ -101,16 +118,21 @@ document.addEventListener("DOMContentLoaded", () => {
     goToArcade();
   };
 
-  // Rejestracja:
-  // 1. pierwsze kliknięcie -> wejście w tryb rejestracji
-  // 2. drugie kliknięcie w tym trybie -> faktyczna rejestracja
+  // Rejestracja
   btnRegister.onclick = async () => {
+    console.log("[index.js] Klik: ZAŁÓŻ KONTO, registerMode =", registerMode);
+
+    const auth = ensureAuthOrShowError();
+    if (!auth) return;
+
+    // pierwsze kliknięcie -> wejście w tryb rejestracji
     if (!registerMode) {
       registerMode = true;
       updateModeUI();
       return;
     }
 
+    // drugie kliknięcie -> faktyczna rejestracja
     showError("");
     const email = emailInput.value.trim();
     const pass  = passInput.value;
@@ -129,8 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const { error } = await ArcadeAuth.register(email, pass);
+    const { error } = await auth.register(email, pass);
     if (error) {
+      console.error("Błąd rejestracji:", error);
       const msg = (error.message || "").toLowerCase();
       if (msg.includes("already") || msg.includes("registered")) {
         showError("Taki użytkownik już istnieje. Spróbuj się zalogować.");
@@ -146,13 +169,18 @@ document.addEventListener("DOMContentLoaded", () => {
     registerMode = false;
     updateModeUI();
 
-    // wyczyść hasła, żeby nie zostały w inputach
+    // wyczyść hasła
     passInput.value = "";
     pass2Input.value = "";
   };
 
   // Przypomnienie hasła
   btnForgot.onclick = async () => {
+    console.log("[index.js] Klik: PRZYPOMNIJ HASŁO");
+
+    const auth = ensureAuthOrShowError();
+    if (!auth) return;
+
     showError("");
     const email = emailInput.value.trim();
     if (!email) {
@@ -160,12 +188,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const { error } = await ArcadeAuth.resetPassword(
+    const redirectBase =
+      window.location.origin +
+      window.location.pathname.replace(/index\.html$/, "");
+
+    const { error } = await auth.resetPassword(
       email,
-      // przekierowanie po kliknięciu w maila z resetem
-      window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "index.html"
+      redirectBase + "index.html"
     );
     if (error) {
+      console.error("Błąd resetu hasła:", error);
       showError("Nie udało się wysłać maila: " + error.message);
       return;
     }
