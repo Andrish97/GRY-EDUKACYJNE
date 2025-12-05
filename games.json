@@ -2,26 +2,10 @@
   "categories": [
     {
       "id": "classic",
-      "name": "Klasyki",
+      "name": "Gry klasyczne",
       "icon": "🎮",
       "folder": "games/classic",
-      "games": [
-        { "id": "snake" },
-        { "id": "tetris" },
-        { "id": "saper" },
-        { "id": "wordl" },
-        { "id": "2048" },
-        { "id": "pong" }
-      ]
-    },
-    {
-      "id": "language",
-      "name": "Językowe",
-      "icon": "🗣️",
-      "folder": "games/language",
-      "games": [
-        { "id": "znajdz_slowo" }
-      ]
+      "games": ["2048"]
     }
   ]
 }
