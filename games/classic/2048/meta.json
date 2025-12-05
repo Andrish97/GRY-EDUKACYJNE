@@ -1,6 +1,8 @@
 {
-  "name": "Snake",
-  "icon": "🐍",
-  "description": "Klasyczny wąż w neonowym wydaniu."
+  "id": "2048",
+  "name": "Neon 2048",
+  "description": "Klasyczna gra 2048 w neonowym wydaniu – połącz kafelki, aby dojść do 2048.",
+  "icon": "🔢",
+  "thumb": null,
+  "entry": "index.html"
 }
-
