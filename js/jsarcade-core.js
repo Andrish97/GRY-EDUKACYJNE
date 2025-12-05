@@ -1,5 +1,5 @@
 // js/arcade-core.js
-// Wspólny rdzeń: Supabase, gość/użytkownik, pasek u góry, zapis progresu
+// Wspólny rdzeń: Supabase, tryb gościa, pasek u góry, zapis progresu
 
 const ArcadeCore = (() => {
   const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co";
@@ -21,17 +21,12 @@ const ArcadeCore = (() => {
 
   function loadModeFromStorage() {
     const mode = localStorage.getItem("arcade_mode");
-    guestMode = (mode === "guest");
+    guestMode = mode === "guest";
   }
 
-  function setGuestMode() {
-    guestMode = true;
-    localStorage.setItem("arcade_mode", "guest");
-  }
-
-  function setUserMode() {
-    guestMode = false;
-    localStorage.setItem("arcade_mode", "user");
+  function setMode(mode) {
+    guestMode = mode === "guest";
+    localStorage.setItem("arcade_mode", guestMode ? "guest" : "user");
   }
 
   async function getCurrentUser() {
@@ -41,7 +36,7 @@ const ArcadeCore = (() => {
     return data.user || null;
   }
 
-  // ---------- PROGRES ----------
+  // ---------- Progres gier ----------
 
   async function saveProgress(gameId, data) {
     ensureClient();
@@ -99,7 +94,7 @@ const ArcadeCore = (() => {
     return data ? data.data : null;
   }
 
-  // ---------- TOPBAR ----------
+  // ---------- Topbar (UI) ----------
 
   function renderTopBar() {
     loadModeFromStorage();
@@ -133,7 +128,7 @@ const ArcadeCore = (() => {
       const user = await getCurrentUser();
 
       if (guestMode) {
-        userLabel.textContent = "Tryb gościa (lokalny zapis)";
+        userLabel.textContent = "Tryb gościa (zapis lokalny)";
         email.style.display = "inline-block";
         pass.style.display = "inline-block";
         login.style.display = "inline-block";
@@ -160,44 +155,30 @@ const ArcadeCore = (() => {
     }
 
     login.onclick = async () => {
-      ensureClient();
-      const { error } = await sb.auth.signInWithPassword({
-        email: email.value,
-        password: pass.value
-      });
-      if (error) {
-        alert("Błąd logowania: " + error.message);
-        return;
-      }
-      setUserMode();
+      const emailVal = email.value.trim();
+      const passVal = pass.value;
+      const { error } = await loginUser(emailVal, passVal);
+      if (error) alert("Błąd logowania: " + error.message);
       refresh();
     };
 
     register.onclick = async () => {
-      ensureClient();
-      const { error } = await sb.auth.signUp({
-        email: email.value,
-        password: pass.value
-      });
-      if (error) {
-        alert("Błąd rejestracji: " + error.message);
-        return;
-      }
-      alert("Sprawdź maila, żeby potwierdzić konto.");
-      setUserMode();
+      const emailVal = email.value.trim();
+      const passVal = pass.value;
+      const { error } = await registerUser(emailVal, passVal);
+      if (error) alert("Błąd rejestracji: " + error.message);
       refresh();
     };
 
     logout.onclick = async () => {
       ensureClient();
       await sb.auth.signOut();
-      // po wylogowaniu traktujemy jak gościa, ale można też wyczyścić całkiem
-      setGuestMode();
+      setMode("guest"); // po wylogowaniu traktujemy jako gościa
       refresh();
     };
 
     guest.onclick = () => {
-      setGuestMode();
+      setMode("guest");
       refresh();
     };
 
@@ -214,24 +195,71 @@ const ArcadeCore = (() => {
     document.body.appendChild(btn);
   }
 
+  // ---------- Metody auth dla index.html ----------
+
+  async function loginUser(email, password) {
+    ensureClient();
+    if (!sb) return { error: new Error("Brak Supabase") };
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (!error) setMode("user");
+    return { data, error };
+  }
+
+  async function registerUser(email, password) {
+    ensureClient();
+    if (!sb) return { error: new Error("Brak Supabase") };
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (!error) setMode("user");
+    return { data, error };
+  }
+
+  async function resetPassword(email, redirectTo) {
+    ensureClient();
+    if (!sb) return { error: new Error("Brak Supabase") };
+    const { data, error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo
+    });
+    return { data, error };
+  }
+
+  // ---------- API publiczne ----------
+
   return {
+    // dla listy gier
     initIndex() {
       renderTopBar();
     },
 
+    // dla gier
     async initGame({ gameId, backUrl }) {
       renderTopBar();
 
       const params = new URLSearchParams(window.location.search);
       const isFullscreen = params.get("fullscreen") === "1";
-      if (isFullscreen) {
-        injectBackButton(backUrl);
-      }
+      if (isFullscreen) injectBackButton(backUrl);
 
       return {
         saveProgress: (id, data) => saveProgress(id, data),
         loadProgress: (id) => loadProgress(id)
       };
+    },
+
+    // dla ekranu startowego
+    async login(email, password) {
+      return loginUser(email, password);
+    },
+    async register(email, password) {
+      return registerUser(email, password);
+    },
+    async resetPassword(email, redirectTo) {
+      return resetPassword(email, redirectTo);
+    },
+    setGuest() {
+      setMode("guest");
+    },
+    getMode() {
+      loadModeFromStorage();
+      return guestMode ? "guest" : "user";
     }
   };
 })();
