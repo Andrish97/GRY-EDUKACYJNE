@@ -4,9 +4,14 @@
   <meta charset="UTF-8" />
   <title>Neon Arcade</title>
 
-  <link rel="stylesheet" href="css/arcade-theme.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/arcade.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/arcade-core.js"></script>
+  <script src="js/core/auth.js"></script>
+  <script src="js/core/ui.js"></script>
+  <script src="js/core/games-api.js"></script>
+  <script src="js/pages/arcade.js" defer></script>
 </head>
 <body class="arcade-body">
   <div class="shell" id="arcade-main">
@@ -24,111 +29,5 @@
       <div id="games"></div>
     </div>
   </div>
-
-  <script>
-    const CLASSIC_GAMES = [ /* jak wcześniej, ale bez opisów devowych */ ];
-    const LANGUAGE_GAMES = [ /* ... */ ];
-
-    const CATEGORIES = [
-      { id: "classic", name: "Klasyki",   icon: "🎮", games: CLASSIC_GAMES },
-      { id: "language", name: "Językowe", icon: "🗣️", games: LANGUAGE_GAMES }
-    ];
-
-    function launchGame(file) {
-      window.location.href = file + "?fullscreen=1";
-    }
-
-    function createGameCard(game) {
-      const card = document.createElement("div");
-      card.className = "game-card";
-      card.onclick = (e) => {
-        if (e.target.closest("button")) return;
-        launchGame(game.file);
-      };
-
-      const thumbWrap = document.createElement("div");
-      thumbWrap.className = "thumb-wrap";
-      if (game.thumb) {
-        const img = document.createElement("img");
-        img.src = game.thumb;
-        img.alt = game.name;
-        img.onerror = () => {
-          thumbWrap.innerHTML = `<div class="thumb-placeholder">${game.icon || "🎮"}</div>`;
-        };
-        thumbWrap.appendChild(img);
-      } else {
-        thumbWrap.innerHTML = `<div class="thumb-placeholder">${game.icon || "🎮"}</div>`;
-      }
-
-      const headline = document.createElement("div");
-      headline.className = "game-headline";
-      headline.innerHTML = `
-        <span class="game-icon">${game.icon || "🎮"}</span>
-        <span class="game-name">${game.name}</span>
-      `;
-
-      const desc = document.createElement("div");
-      desc.className = "game-desc";
-      desc.textContent = game.description || "";
-
-      const footer = document.createElement("div");
-      footer.className = "game-footer";
-      footer.innerHTML = `<span class="pill">Gra</span>`;
-
-      const play = document.createElement("button");
-      play.className = "play-btn";
-      play.textContent = "Graj";
-      play.onclick = (e) => {
-        e.stopPropagation();
-        launchGame(game.file);
-      };
-      footer.appendChild(play);
-
-      card.appendChild(thumbWrap);
-      card.appendChild(headline);
-      card.appendChild(desc);
-      card.appendChild(footer);
-
-      return card;
-    }
-
-    function renderGamesForCategory(catId) {
-      const category = CATEGORIES.find(c => c.id === catId);
-      if (!category) return;
-      const gamesContainer = document.getElementById("games");
-      gamesContainer.innerHTML = "";
-      [...category.games]
-        .sort((a, b) => a.name.localeCompare(b.name, "pl"))
-        .forEach(game => gamesContainer.appendChild(createGameCard(game)));
-    }
-
-    function renderCategories() {
-      const catContainer = document.getElementById("categories");
-      catContainer.innerHTML = "";
-      CATEGORIES.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.className = "cat-btn";
-        btn.dataset.catId = cat.id;
-        btn.innerHTML = `<span class="icon">${cat.icon}</span><span>${cat.name}</span>`;
-        btn.onclick = () => {
-          document.querySelectorAll(".cat-btn").forEach(b => {
-            b.classList.toggle("active", b === btn);
-          });
-          renderGamesForCategory(cat.id);
-        };
-        catContainer.appendChild(btn);
-      });
-      const first = catContainer.querySelector(".cat-btn");
-      if (first) {
-        first.classList.add("active");
-        renderGamesForCategory(first.dataset.catId);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      ArcadeCore.initIndex();  // pasek u góry (korzysta z trybu user/guest)
-      renderCategories();      // lista gier
-    });
-  </script>
 </body>
 </html>
