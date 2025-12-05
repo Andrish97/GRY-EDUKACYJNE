@@ -44,33 +44,30 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1) Start: domyślnie tryb logowania
   updateModeUI();
 
-  // 2) Sprawdź, czy wróciliśmy z aktywacji konta (Supabase używa hash #...)
-  // np. URL wygląda tak:
-  // https://andrish97.github.io/neon-arcade/#access_token=...&type=signup
-  const hash = window.location.hash.startsWith("#")
-    ? window.location.hash.slice(1)
-    : window.location.hash;
-  const hashParams = new URLSearchParams(hash);
+  // 2) Sprawdź, czy weszliśmy z linka aktywacyjnego Supabase
+  // Supabase daje coś w stylu:
+  //   https://andrish97.github.io/twoje-repo/#access_token=...&type=signup
+  //
+  // Nie bawimy się w weryfikację tokena – to już zrobił backend.
+  // Jeśli widzimy type=signup w hash, to po prostu pokazujemy komunikat: "możesz się zalogować".
+  (function checkSignupFromHash() {
+    const rawHash = window.location.hash || "";
+    const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
+    if (!hash) return;
 
-  const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(hash);
+    const type = hashParams.get("type");
 
-  const typeFromHash   = hashParams.get("type");
-  const activatedToken = hashParams.get("access_token");
-  const activatedFlag  = searchParams.get("activated");
+    if (type === "signup") {
+      registerMode = false;
+      updateModeUI();
+      subtitleEl.textContent = "Konto aktywowane. Możesz się zalogować.";
+      showError("");
 
-  const cameFromSignup =
-    (activatedToken && typeFromHash === "signup") ||
-    activatedFlag === "1";
-
-  if (cameFromSignup) {
-    registerMode = false;
-    updateModeUI(); // na wszelki wypadek wracamy do logowania
-    subtitleEl.textContent = "Konto aktywowane. Możesz się zalogować.";
-    showError("");
-
-    // usuń hash / query z URL (żeby po odświeżeniu nie pokazywało ponownie)
-    history.replaceState({}, "", window.location.pathname);
-  }
+      // Sprzątanie: usuń hash z paska adresu, żeby po odświeżeniu nie mielić tego znów
+      history.replaceState({}, "", window.location.pathname);
+    }
+  })();
 
   // Gość
   btnGuest.onclick = () => {
@@ -162,8 +159,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showError("Podaj email, na który wysłać link.");
       return;
     }
+
     const { error } = await ArcadeAuth.resetPassword(
       email,
+      // przekierowanie po kliknięciu w maila z resetem
       window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "index.html"
     );
     if (error) {
