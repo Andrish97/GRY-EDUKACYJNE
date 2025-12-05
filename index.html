@@ -1,209 +1,237 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8" />
-  <title>Neon Arcade – start</title>
+// js/arcade-core.js
+// Wspólny rdzeń: Supabase, gość/użytkownik, pasek u góry, zapis progresu
 
-  <link rel="stylesheet" href="css/arcade-theme.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const ArcadeCore = (() => {
+  const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740";
 
-  <style>
-    body {
-      background: radial-gradient(circle at top, #1f2933, #020617);
-      color: #e5e7eb;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+  let sb = null;
+  let guestMode = false;
 
-    .start-card {
-      background: rgba(15,23,42,0.95);
-      border-radius: 16px;
-      padding: 20px 24px 22px;
-      box-shadow:
-        0 18px 45px rgba(0,0,0,0.8),
-        0 0 0 1px rgba(148,163,184,0.14);
-      max-width: 380px;
-      width: 100%;
-      box-sizing: border-box;
-      backdrop-filter: blur(8px);
-    }
-
-    .start-title {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      text-align: center;
-      margin-bottom: 4px;
-    }
-
-    .start-subtitle {
-      font-size: 13px;
-      color: #9ca3af;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .start-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: #9ca3af;
-      margin-bottom: 4px;
-    }
-
-    .start-input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-
-    .start-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .btn-main,
-    .btn-secondary,
-    .btn-ghost {
-      flex: 1;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
-      white-space: nowrap;
-    }
-
-    .btn-main {
-      background: linear-gradient(135deg,#22c55e,#16a34a);
-      color: #052e16;
-      box-shadow: 0 8px 18px rgba(22,163,74,0.5);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg,#38bdf8,#0ea5e9);
-      color: #0b1120;
-      box-shadow: 0 8px 18px rgba(56,189,248,0.5);
-    }
-
-    .btn-ghost {
-      background: linear-gradient(135deg,#6b7280,#4b5563);
-      color: #f9fafb;
-      box-shadow: 0 8px 18px rgba(107,114,128,0.5);
-      margin-top: 10px;
-      width: 100%;
-    }
-
-    .btn-main:hover,
-    .btn-secondary:hover,
-    .btn-ghost:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-    }
-
-    .start-hint {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 10px;
-      text-align: center;
-      line-height: 1.4;
-    }
-  </style>
-</head>
-<body>
-  <div class="start-card">
-    <div class="start-title">Neon Arcade</div>
-    <div class="start-subtitle">
-      Zaloguj się lub wejdź jako gość. Potem wybierzesz grę.
-    </div>
-
-    <div class="start-label">Email</div>
-    <input id="email" type="email" class="start-input" placeholder="twoj@mail.com">
-
-    <div class="start-label">Hasło</div>
-    <input id="pass" type="password" class="start-input" placeholder="••••••••">
-
-    <div class="start-row">
-      <button id="btn-login" class="btn-main">Zaloguj</button>
-      <button id="btn-register" class="btn-secondary">Rejestracja</button>
-    </div>
-
-    <button id="btn-guest" class="btn-ghost">Graj jako gość</button>
-
-    <div class="start-hint">
-      Gość zapisuje progres tylko lokalnie. <br>
-      Zalogowane konto zapisuje wyniki w Supabase.
-    </div>
-  </div>
-
-  <script>
-    const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740";
-
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const emailInput = document.getElementById("email");
-    const passInput = document.getElementById("pass");
-    const btnLogin = document.getElementById("btn-login");
-    const btnRegister = document.getElementById("btn-register");
-    const btnGuest = document.getElementById("btn-guest");
-
-    function goToArcade() {
-      window.location.href = "arcade.html";
-    }
-
-    btnGuest.onclick = () => {
-      localStorage.setItem("arcade_mode", "guest");
-      goToArcade();
-    };
-
-    btnLogin.onclick = async () => {
-      const email = emailInput.value.trim();
-      const pass = passInput.value;
-      if (!email || !pass) {
-        alert("Podaj email i hasło.");
+  function ensureClient() {
+    if (!sb) {
+      if (typeof supabase === "undefined") {
+        console.error("Supabase CDN nie jest dostępny");
         return;
       }
-      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  }
+
+  function loadModeFromStorage() {
+    const mode = localStorage.getItem("arcade_mode");
+    guestMode = (mode === "guest");
+  }
+
+  function setGuestMode() {
+    guestMode = true;
+    localStorage.setItem("arcade_mode", "guest");
+  }
+
+  function setUserMode() {
+    guestMode = false;
+    localStorage.setItem("arcade_mode", "user");
+  }
+
+  async function getCurrentUser() {
+    ensureClient();
+    if (!sb) return null;
+    const { data } = await sb.auth.getUser();
+    return data.user || null;
+  }
+
+  // ---------- PROGRES ----------
+
+  async function saveProgress(gameId, data) {
+    ensureClient();
+    if (!sb) {
+      localStorage.setItem("progress_local_" + gameId, JSON.stringify(data));
+      return;
+    }
+
+    if (guestMode) {
+      localStorage.setItem("progress_guest_" + gameId, JSON.stringify(data));
+      return;
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+      localStorage.setItem("progress_local_" + gameId, JSON.stringify(data));
+      return;
+    }
+
+    await sb
+      .from("user_progress")
+      .upsert({
+        user_id: user.id,
+        game_id: gameId,
+        data,
+        updated_at: new Date().toISOString()
+      });
+  }
+
+  async function loadProgress(gameId) {
+    ensureClient();
+    if (!sb) {
+      const raw = localStorage.getItem("progress_local_" + gameId);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    if (guestMode) {
+      const raw = localStorage.getItem("progress_guest_" + gameId);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+      const raw = localStorage.getItem("progress_local_" + gameId);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    const { data } = await sb
+      .from("user_progress")
+      .select("data")
+      .eq("user_id", user.id)
+      .eq("game_id", gameId)
+      .maybeSingle();
+
+    return data ? data.data : null;
+  }
+
+  // ---------- TOPBAR ----------
+
+  function renderTopBar() {
+    loadModeFromStorage();
+    const bar = document.createElement("div");
+    bar.className = "arcade-topbar";
+
+    bar.innerHTML = `
+      <span class="arcade-user"></span>
+      <div class="arcade-auth">
+        <input type="email" placeholder="email" class="arcade-input email">
+        <input type="password" placeholder="hasło" class="arcade-input pass">
+        <button class="arcade-btn login">Zaloguj</button>
+        <button class="arcade-btn register">Rejestracja</button>
+        <button class="arcade-btn logout" style="display:none;">Wyloguj</button>
+        <button class="arcade-btn guest">Gość</button>
+      </div>
+    `;
+
+    document.body.prepend(bar);
+
+    const email = bar.querySelector(".email");
+    const pass = bar.querySelector(".pass");
+    const login = bar.querySelector(".login");
+    const register = bar.querySelector(".register");
+    const logout = bar.querySelector(".logout");
+    const guest = bar.querySelector(".guest");
+    const userLabel = bar.querySelector(".arcade-user");
+
+    async function refresh() {
+      ensureClient();
+      const user = await getCurrentUser();
+
+      if (guestMode) {
+        userLabel.textContent = "Tryb gościa (lokalny zapis)";
+        email.style.display = "inline-block";
+        pass.style.display = "inline-block";
+        login.style.display = "inline-block";
+        register.style.display = "inline-block";
+        logout.style.display = "none";
+        return;
+      }
+
+      if (user) {
+        userLabel.textContent = "Zalogowany: " + (user.email || user.id);
+        email.style.display = "none";
+        pass.style.display = "none";
+        login.style.display = "none";
+        register.style.display = "none";
+        logout.style.display = "inline-block";
+      } else {
+        userLabel.textContent = "Nie zalogowany (zapis lokalny)";
+        email.style.display = "inline-block";
+        pass.style.display = "inline-block";
+        login.style.display = "inline-block";
+        register.style.display = "inline-block";
+        logout.style.display = "none";
+      }
+    }
+
+    login.onclick = async () => {
+      ensureClient();
+      const { error } = await sb.auth.signInWithPassword({
+        email: email.value,
+        password: pass.value
+      });
       if (error) {
         alert("Błąd logowania: " + error.message);
         return;
       }
-      localStorage.setItem("arcade_mode", "user");
-      goToArcade();
+      setUserMode();
+      refresh();
     };
 
-    btnRegister.onclick = async () => {
-      const email = emailInput.value.trim();
-      const pass = passInput.value;
-      if (!email || !pass) {
-        alert("Podaj email i hasło.");
-        return;
-      }
-      const { error } = await sb.auth.signUp({ email, password: pass });
+    register.onclick = async () => {
+      ensureClient();
+      const { error } = await sb.auth.signUp({
+        email: email.value,
+        password: pass.value
+      });
       if (error) {
         alert("Błąd rejestracji: " + error.message);
         return;
       }
       alert("Sprawdź maila, żeby potwierdzić konto.");
-      localStorage.setItem("arcade_mode", "user");
-      goToArcade();
+      setUserMode();
+      refresh();
     };
-  </script>
-</body>
-</html>
+
+    logout.onclick = async () => {
+      ensureClient();
+      await sb.auth.signOut();
+      // po wylogowaniu traktujemy jak gościa, ale można też wyczyścić całkiem
+      setGuestMode();
+      refresh();
+    };
+
+    guest.onclick = () => {
+      setGuestMode();
+      refresh();
+    };
+
+    refresh();
+  }
+
+  function injectBackButton(backUrl) {
+    const btn = document.createElement("button");
+    btn.textContent = "Powrót do Arcade";
+    btn.className = "arcade-backbtn";
+    btn.onclick = () => {
+      window.location.href = backUrl;
+    };
+    document.body.appendChild(btn);
+  }
+
+  return {
+    initIndex() {
+      renderTopBar();
+    },
+
+    async initGame({ gameId, backUrl }) {
+      renderTopBar();
+
+      const params = new URLSearchParams(window.location.search);
+      const isFullscreen = params.get("fullscreen") === "1";
+      if (isFullscreen) {
+        injectBackButton(backUrl);
+      }
+
+      return {
+        saveProgress: (id, data) => saveProgress(id, data),
+        loadProgress: (id) => loadProgress(id)
+      };
+    }
+  };
+})();
