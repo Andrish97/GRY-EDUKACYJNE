@@ -4,17 +4,12 @@
   <meta charset="UTF-8" />
   <title>Neon Arcade – start</title>
 
+  <!-- STYLE -->
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/login.css">
 
   <!-- Supabase z CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-
-  <!-- Core auth -->
-  <script src="js/core/auth.js" defer></script>
-
-  <!-- Logika tej strony -->
-  <script src="js/pages/index.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="arcade-body">
   <div class="shell login-shell">
@@ -36,11 +31,13 @@
       <input id="pass2" type="password" class="login-input" placeholder="••••••••" style="display:none;">
 
       <div class="login-row">
-        <button id="btn-login" class="btn btn-main" type="button">Zaloguj</button>
-        <button id="btn-register" class="btn btn-secondary" type="button">Załóż konto</button>
+        <button id="btn-login" class="btn btn-main">Zaloguj</button>
+        <button id="btn-register" class="btn btn-secondary">Załóż konto</button>
       </div>
-      <button id="btn-forgot" class="btn btn-link" type="button">Przypomnij hasło</button>
-      <button id="btn-guest" class="btn btn-ghost" type="button" style="width:100%;margin-top:8px;">
+
+      <button id="btn-forgot" class="btn btn-link">Przypomnij hasło</button>
+
+      <button id="btn-guest" class="btn btn-ghost" style="width:100%;margin-top:8px;">
         Graj jako gość
       </button>
 
@@ -52,5 +49,188 @@
       </div>
     </div>
   </div>
+
+ <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // 1. Spróbuj zainicjalizować Supabase, ale NIE rozwalaj strony jeśli się nie uda
+    const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740";
+
+    let sb = null;
+    let supabaseOk = false;
+
+    if (typeof supabase !== "undefined") {
+      try {
+        sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseOk = true;
+      } catch (e) {
+        console.error("Błąd inicjalizacji Supabase:", e);
+      }
+    } else {
+      console.warn("Supabase CDN niezaładowany – logowanie/rejestracja wyłączone.");
+    }
+
+    // 2. Pobierz elementy z DOM
+    const emailInput   = document.getElementById("email");
+    const passInput    = document.getElementById("pass");
+    const pass2Input   = document.getElementById("pass2");
+    const labelPass2   = document.getElementById("label-pass2");
+    const btnLogin     = document.getElementById("btn-login");
+    const btnRegister  = document.getElementById("btn-register");
+    const btnGuest     = document.getElementById("btn-guest");
+    const btnForgot    = document.getElementById("btn-forgot");
+    const errorBox     = document.getElementById("error");
+    const subtitleEl   = document.getElementById("subtitle");
+
+    let registerMode = false; // false = logowanie, true = rejestracja
+
+    function showError(msg) {
+      errorBox.textContent = msg || "";
+    }
+
+    function goToArcade() {
+      window.location.href = "arcade.html";
+    }
+
+    function updateModeUI() {
+      if (registerMode) {
+        // TRYB REJESTRACJI
+        labelPass2.style.display = "block";
+        pass2Input.style.display = "block";
+        btnLogin.style.display = "none";
+        btnRegister.textContent = "Utwórz konto";
+        subtitleEl.textContent = "Wpisz dane i powtórz hasło, aby założyć konto.";
+        showError("");
+      } else {
+        // TRYB LOGOWANIA
+        labelPass2.style.display = "none";
+        pass2Input.style.display = "none";
+        btnLogin.style.display = "inline-block";
+        btnRegister.textContent = "Załóż konto";
+        subtitleEl.textContent = "Zaloguj się albo wejdź jako gość.";
+        showError("");
+      }
+    }
+
+    // 3. Gość – to działa ZAWSZE, niezależnie od Supabase
+    btnGuest.addEventListener("click", () => {
+      console.log("[NeonArcade] Kliknięto GOŚĆ");
+      localStorage.setItem("arcade_mode", "guest");
+      showError("");
+      goToArcade();
+    });
+
+    // 4. Logowanie
+    btnLogin.addEventListener("click", async () => {
+      console.log("[NeonArcade] Kliknięto ZALOGUJ");
+
+      if (registerMode) return; // i tak jest ukryty w tym trybie
+
+      if (!supabaseOk || !sb) {
+        showError("Logowanie chwilowo niedostępne (brak połączenia z serwerem).");
+        return;
+      }
+
+      showError("");
+      const email = emailInput.value.trim();
+      const pass  = passInput.value;
+
+      if (!email || !pass) {
+        showError("Podaj email i hasło.");
+        return;
+      }
+
+      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) {
+        showError("Nieprawidłowy email lub hasło.");
+        return;
+      }
+
+      localStorage.setItem("arcade_mode", "user");
+      goToArcade();
+    });
+
+    // 5. Rejestracja (dwustopniowa)
+    btnRegister.addEventListener("click", async () => {
+      console.log("[NeonArcade] Kliknięto ZAŁÓŻ KONTO (tryb:", registerMode, ")");
+
+      if (!registerMode) {
+        registerMode = true;
+        updateModeUI();
+        return;
+      }
+
+      if (!supabaseOk || !sb) {
+        showError("Rejestracja chwilowo niedostępna (brak połączenia z serwerem).");
+        return;
+      }
+
+      showError("");
+      const email = emailInput.value.trim();
+      const pass  = passInput.value;
+      const pass2 = pass2Input.value;
+
+      if (!email || !pass || !pass2) {
+        showError("Uzupełnij wszystkie pola.");
+        return;
+      }
+      if (pass !== pass2) {
+        showError("Hasła muszą być takie same.");
+        return;
+      }
+      if (pass.length < 6) {
+        showError("Hasło powinno mieć co najmniej 6 znaków.");
+        return;
+      }
+
+      const { error } = await sb.auth.signUp({ email, password: pass });
+      if (error) {
+        const msg = (error.message || "").toLowerCase();
+        if (msg.includes("already") || msg.includes("registered")) {
+          showError("Taki użytkownik już istnieje. Spróbuj się zalogować.");
+        } else {
+          showError("Błąd rejestracji: " + error.message);
+        }
+        return;
+      }
+
+      alert("Konto utworzone. Sprawdź maila, żeby aktywować konto.");
+      localStorage.setItem("arcade_mode", "user");
+      goToArcade();
+    });
+
+    // 6. Przypomnienie hasła
+    btnForgot.addEventListener("click", async () => {
+      console.log("[NeonArcade] Kliknięto PRZYPOMNIJ HASŁO");
+
+      if (!supabaseOk || !sb) {
+        showError("Funkcja resetu hasła chwilowo niedostępna.");
+        return;
+      }
+
+      showError("");
+      const email = emailInput.value.trim();
+      if (!email) {
+        showError("Podaj email, na który wysłać link.");
+        return;
+      }
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/arcade.html"
+      });
+      if (error) {
+        showError("Nie udało się wysłać maila: " + error.message);
+        return;
+      }
+      alert("Jeśli konto istnieje, wyślemy mail z linkiem do ustawienia nowego hasła.");
+    });
+
+    // 7. Start: tryb logowania
+    updateModeUI();
+  });
+</script>
+
+
+
 </body>
 </html>
