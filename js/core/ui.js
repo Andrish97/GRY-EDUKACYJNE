@@ -58,6 +58,10 @@ window.ArcadeUI = (() => {
     login.onclick = async () => {
       const e = email.value.trim();
       const p = pass.value;
+      if (!e || !p) {
+        alert("Podaj email i hasło.");
+        return;
+      }
       const { error } = await ArcadeAuth.login(e, p);
       if (error) alert("Błąd logowania: " + error.message);
       refresh();
@@ -66,6 +70,10 @@ window.ArcadeUI = (() => {
     register.onclick = async () => {
       const e = email.value.trim();
       const p = pass.value;
+      if (!e || !p) {
+        alert("Podaj email i hasło.");
+        return;
+      }
       const { error } = await ArcadeAuth.register(e, p);
       if (error) alert("Błąd rejestracji: " + error.message);
       else alert("Sprawdź maila, żeby aktywować konto.");
@@ -93,28 +101,8 @@ window.ArcadeUI = (() => {
     document.body.appendChild(btn);
   }
 
-  async function initGamePage({ gameId, backUrl }) {
-    renderTopBar();
-
-    const params = new URLSearchParams(window.location.search);
-    const isFS = params.get("fullscreen") === "1";
-    if (isFS) injectBackButton(backUrl);
-
-    // zwracamy gotowe API dla gry
-    return {
-      saveProgress: (data) => ArcadeProgress.save(gameId, data),
-      loadProgress: () => ArcadeProgress.load(gameId)
-    };
-  }
-
-  function initArcadePage() {
-    renderTopBar();
-  }
-
   return {
     renderTopBar,
-    injectBackButton,
-    initGamePage,
-    initArcadePage
+    injectBackButton
   };
 })();
