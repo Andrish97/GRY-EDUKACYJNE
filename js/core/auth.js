@@ -5,26 +5,29 @@ window.ArcadeAuth = (() => {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740";
 
   let sb = null;
-  let guestMode = false;
 
   function ensureClient() {
     if (!sb) {
       if (typeof supabase === "undefined") {
-        console.error("Supabase niezaładowany");
+        console.error("Supabase CDN niezaładowany");
         return;
       }
       sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
   }
 
-  function loadMode() {
+  function getClient() {
+    ensureClient();
+    return sb;
+  }
+
+  function getMode() {
     const m = localStorage.getItem("arcade_mode");
-    guestMode = (m === "guest");
+    return m === "guest" ? "guest" : "user";
   }
 
   function setMode(mode) {
-    guestMode = (mode === "guest");
-    localStorage.setItem("arcade_mode", guestMode ? "guest" : "user");
+    localStorage.setItem("arcade_mode", mode === "guest" ? "guest" : "user");
   }
 
   async function getCurrentUser() {
@@ -64,16 +67,15 @@ window.ArcadeAuth = (() => {
     setMode("guest");
   }
 
-  loadMode();
-
   return {
-    getClient() { ensureClient(); return sb; },
+    getClient,
     getCurrentUser,
+    getMode,
+    setMode,
     login,
     register,
     resetPassword,
     logout,
-    setGuest() { setMode("guest"); },
-    getMode() { loadMode(); return guestMode ? "guest" : "user"; }
+    setGuest() { setMode("guest"); }
   };
 })();
