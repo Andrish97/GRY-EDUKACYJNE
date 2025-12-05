@@ -40,7 +40,7 @@
     `;
   }
 
-  function mountOne(holder) {
+  function initPanel(holder) {
     holder.innerHTML = barHTML();
 
     const email = holder.querySelector(".auth-email");
@@ -88,14 +88,13 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     const holders = document.querySelectorAll("[data-arcade-auth-bar]");
-    holders.forEach(mountOne);
+    holders.forEach(initPanel);
   });
 
-  // na wszelki wypadek API ręczne
+  // ręczne API (na przyszłość)
   window.ArcadeAuthBar = {
-    mount(holder, options = {}) {
-      holder.innerHTML = barHTML();
-      mountOne(holder, options);
+    mount(holder) {
+      initPanel(holder);
     },
   };
 })();
