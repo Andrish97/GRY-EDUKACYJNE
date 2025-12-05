@@ -57,7 +57,7 @@
 
   function mountOne(holder) {
     holder.innerHTML = barHTML();
-
+  
     const email   = holder.querySelector(".auth-email");
     const pass    = holder.querySelector(".auth-pass");
     const pass2   = holder.querySelector(".auth-pass2");
@@ -68,12 +68,12 @@
     const btnGst  = holder.querySelector(".auth-guest");
     const btnOut  = holder.querySelector(".auth-logout");
     const btnFgt  = holder.querySelector(".auth-forgot");
-
+  
     const afterLogin = holder.getAttribute("data-after-login") || null;
     const afterGuest = holder.getAttribute("data-after-guest") || null;
     const checkHash  = holder.hasAttribute("data-check-signup-hash");
-
-    ArcadeAuthUI.initLoginPanel({
+  
+    const opts = {
       email,
       pass,
       pass2,
@@ -84,20 +84,23 @@
       btnGuest:    btnGst,
       btnLogout:   btnOut,
       btnForgot:   btnFgt,
-      checkSignupHash: checkHash,
-      onLoginSuccess() {
-        if (afterLogin) {
-          window.location.href = afterLogin;
-        } else {
-          // domyślnie tylko odświeża stan paska – robi to sama initLoginPanel
-        }
-      },
-      onGuest() {
-        if (afterGuest) {
-          window.location.href = afterGuest;
-        }
-      }
-    });
+      checkSignupHash: checkHash
+    };
+  
+    // TYLKO jeśli chcemy przekierowanie, nadpisujemy domyślne zachowanie
+    if (afterLogin) {
+      opts.onLoginSuccess = () => {
+        window.location.href = afterLogin;
+      };
+    }
+  
+    if (afterGuest) {
+      opts.onGuest = () => {
+        window.location.href = afterGuest;
+      };
+    }
+  
+    ArcadeAuthUI.initLoginPanel(opts);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
