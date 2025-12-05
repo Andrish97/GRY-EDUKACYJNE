@@ -177,7 +177,7 @@ body.arcade-body {
 /* Przycisk "Powrót do Arcade" dla gier */
 .arcade-backbtn {
   position: fixed;
-  top: 16px;
+  top: 72px; /* było 16px */
   left: 16px;
   padding: 6px 14px;
   border-radius: 999px;
@@ -188,12 +188,10 @@ body.arcade-body {
   background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #052e16;
   box-shadow: 0 8px 18px rgba(22, 163, 74, 0.5);
-  z-index: 40;
-  transition:
-    transform 0.06s ease,
-    box-shadow 0.06s ease,
-    filter 0.08s ease;
+  z-index: 30; /* trochę mniejsze niż 40, ale wyżej niż gra */
+  transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.08s ease;
 }
+
 
 .arcade-backbtn:hover {
   transform: translateY(-1px);
