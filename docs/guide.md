@@ -1,20 +1,5 @@
 🕹️ Neon Arcade – Kompletny Przewodnik Tworzenia Gier
 
-(wersja do repo – gotowa do wrzucenia na GitHub)
-
-Ten dokument jest instrukcją dla programisty oraz ChatGPT, jak tworzyć
-nowe gry zgodnie z architekturą Neon Arcade.
-Zawiera wytyczne, szablony, struktury katalogów, reguły logiki i zasady
-integracji z istniejącym systemem (auth, pasek, progres, motyw).
-
-Możesz wrzucić ten plik jako:
-
-    docs/GUIDE_GAMES.md
-
-lub bezpośrednio w katalog główny.
-
-------------------------------------------------------------------------
-
 1. Struktura projektu Neon Arcade
 
 Projekt ma jasno określoną strukturę katalogów:
