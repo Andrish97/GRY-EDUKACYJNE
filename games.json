@@ -3,10 +3,10 @@
     {
       "id": "classic",
       "name": "Gry klasyczne",
-      "icon": "🎮",
+      "icon": "",
       "folder": "games/classic",
       "games": ["2048"]
-    }
+    },
     {
       "id": "language",
       "name": "Słownictwo",
