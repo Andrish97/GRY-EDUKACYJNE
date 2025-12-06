@@ -1,1 +1,9 @@
+{
+  "id": "znajdz_slowo",
+  "name": "Znajdź słowo – Zwierzęta",
+  "description": "Kliknij wyraz, który pasuje do obrazka. Prosta gra na słownictwo w neonowym stylu.",
+  "icon": "🐾",
+  "thumb": null,
+  "entry": "index.html"
+}
 
