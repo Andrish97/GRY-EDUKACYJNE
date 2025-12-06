@@ -18,7 +18,7 @@
     <script src="js/core/auth-bar.js" defer></script>
     <script src="js/core/ui.js" defer></script>
 
-    <!-- Logika arcade -->
+    <!-- Logika arcade (nowa) -->
     <script src="js/pages/arcade.js" defer></script>
   </head>
   <body class="arcade-body">
@@ -36,29 +36,26 @@
         </p>
       </header>
 
-      <!-- KATEGORIE -->
+      <!-- KATEGORIE JAKO KARTY -->
       <section class="arcade-section">
         <h2 class="arcade-section-title">Kategorie</h2>
-        <div id="categories" class="arcade-category-grid"></div>
+        <div id="categories" class="categories-row"></div>
       </section>
 
       <!-- GRY W WYBRANEJ KATEGORII -->
       <section
-        class="arcade-section arcade-games-section"
+        class="arcade-section games-section"
         id="games-section"
         hidden
       >
-        <div class="arcade-games-header">
-          <button
-            id="back-to-categories"
-            class="arcade-btn arcade-btn-ghost"
-            type="button"
-          >
+        <div class="games-header">
+          <button id="back-to-categories" class="back-to-categories-btn" type="button">
             ← Wszystkie kategorie
           </button>
           <h2 id="games-section-title" class="arcade-section-title"></h2>
         </div>
-        <div id="games" class="arcade-games-grid"></div>
+
+        <div id="games"></div>
       </section>
 
       <div id="arcade-error" data-arcade-error style="display:none"></div>
