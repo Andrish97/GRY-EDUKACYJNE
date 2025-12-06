@@ -163,3 +163,85 @@
   box-shadow: 0 5px 14px rgba(22, 163, 74, 0.6);
   filter: brightness(0.97);
 }
+/* Layout ogólny arcade */
+
+.arcade-main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+}
+
+.arcade-header {
+  margin-bottom: 1.5rem;
+}
+
+.arcade-title {
+  font-size: 1.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 0.25rem;
+}
+
+.arcade-subtitle {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.arcade-section {
+  margin-top: 1.5rem;
+}
+
+.arcade-section-title {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.9;
+  margin: 0 0 0.75rem;
+}
+
+/* Sekcja gier (po kliknięciu kategorii) */
+
+.games-section {
+  margin-top: 2rem;
+}
+
+.games-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Przycisk powrotu do listy kategorii */
+
+.back-to-categories-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+
+.back-to-categories-btn:hover {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+/* Teksty pomocnicze / błędy */
+
+.arcade-empty {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+[data-arcade-error] {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #fecaca;
+}
