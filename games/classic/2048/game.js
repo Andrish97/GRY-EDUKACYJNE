@@ -408,16 +408,6 @@ function setupClickGuard() {
     }
   });
 }
-
-// ----- Integracja z Neon Arcade -----
-function initArcadeBackButton() {
-  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
-    ArcadeUI.addBackToArcadeButton({
-      backUrl: "../../../arcade.html",
-    });
-  }
-}
-
 // ----- Inicjalizacja gry -----
 function initGame2048() {
   boardEl = document.getElementById("board");
@@ -498,7 +488,16 @@ function initGame2048() {
 
   setupBeforeUnloadGuard();
   setupClickGuard();
-  initArcadeBackButton();
+  setupBeforeUnloadGuard();
+  setupClickGuard();
+
+  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
+    ArcadeUI.addBackToArcadeButton({
+      backUrl: "../../../arcade.html",
+    });
+  }
+}
+
 }
 
 document.addEventListener("DOMContentLoaded", function () {
