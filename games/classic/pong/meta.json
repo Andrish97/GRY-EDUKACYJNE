@@ -1,1 +1,9 @@
+{
+  "id": "neon-pong",
+  "name": "Neon Pong",
+  "description": "Klasyczny Pong w neonowym wydaniu – odbijaj piłkę i nie przepuść żadnej!",
+  "icon": "🏓",
+  "thumb": null,
+  "entry": "index.html"
+}
 
