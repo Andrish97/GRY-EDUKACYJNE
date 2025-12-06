@@ -7,40 +7,64 @@
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/arcade.css" />
 
-    <!-- Supabase klient -->
+    <!-- Supabase -->
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
       defer
     ></script>
 
-    <!-- Core auth + pasek -->
+    <!-- Core -->
     <script src="js/core/auth.js" defer></script>
     <script src="js/core/auth-bar.js" defer></script>
+    <script src="js/core/ui.js" defer></script>
 
-    <!-- API gier + logika arcade -->
-    <script src="js/core/game-api.js" defer></script>
+    <!-- Logika arcade -->
     <script src="js/pages/arcade.js" defer></script>
   </head>
   <body class="arcade-body">
-    <!-- Pasek logowania -->
     <div
       data-arcade-auth-bar
       data-after-login="arcade.html"
       data-after-guest="arcade.html"
     ></div>
 
-    <div class="shell">
-      <div class="card">
-        <header class="header">
-          <div>
-            <div class="title">NEON ARCADE</div>
-            <div class="subtitle">Wybierz grę i zanurz się w neonie.</div>
-          </div>
-        </header>
+    <main class="arcade-main">
+      <header class="arcade-header">
+        <h1 class="arcade-title">Neon Arcade</h1>
+        <p class="arcade-subtitle">
+          Wybierz kategorię, a potem grę.
+        </p>
+      </header>
 
-        <!-- KAFELKI GIER -->
-        <div id="games"></div>
+      <!-- KATEGORIE -->
+      <section class="arcade-section">
+        <h2 class="arcade-section-title">Kategorie</h2>
+        <div id="categories" class="arcade-category-grid"></div>
+      </section>
+
+      <!-- GRY W WYBRANEJ KATEGORII -->
+      <section
+        class="arcade-section arcade-games-section"
+        id="games-section"
+        hidden
+      >
+        <div class="arcade-games-header">
+          <button
+            id="back-to-categories"
+            class="arcade-btn arcade-btn-ghost"
+            type="button"
+          >
+            ← Wszystkie kategorie
+          </button>
+          <h2 id="games-section-title" class="arcade-section-title"></h2>
+        </div>
+        <div id="games" class="arcade-games-grid"></div>
+      </section>
+
+      <div id="arcade-error" data-arcade-error style="display:none"></div>
+      <div id="arcade-loading" data-arcade-wait style="display:none">
+        Ładowanie gier…
       </div>
-    </div>
+    </main>
   </body>
 </html>
