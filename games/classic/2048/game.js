@@ -1,482 +1,489 @@
 // games/classic/2048/game.js
+// Neon 2048 – pełna logika gry + zapis progresu przez ArcadeProgress
 
-(function () {
-  const GRID_SIZE = 4;
-  const STORAGE_ID = "2048";
-  var hasUnsavedChanges = false;
-  var LAST_SAVE_DATA = null; // opcjonalnie, gdybyś chciał kiedyś sprawdzać różnice
-  var GAME_ID = "2048";
+// ----- Konfiguracja gry -----
+const GRID_SIZE = 4;
+const GAME_ID = "2048";
 
+let board = [];
+let score = 0;
+let bestScore = 0;
+let totalGames = 0;
 
-  let board = [];
-  let score = 0;
-  let bestScore = 0;
-  let totalGames = 0;
-  let hasWon = false;
+// śledzenie zapisu
+let hasUnsavedChanges = false;
+let LAST_SAVE_DATA = null;
 
-  let boardEl;
-  let scoreEl;
-  let bestScoreEl;
-  let gamesPlayedEl;
-  let messageEl;
-  let overlayTitleEl;
-  let overlayTextEl;
-  let overlayRestartBtn;
-  let newGameBtn;
+// referencje do elementów DOM
+let boardEl;
+let scoreEl;
+let bestScoreEl;
+let totalGamesEl;
 
-  function initDomRefs() {
-    boardEl = document.getElementById("game-board");
-    scoreEl = document.getElementById("score-value");
-    bestScoreEl = document.getElementById("best-score-value");
-    gamesPlayedEl = document.getElementById("games-played-info");
-    messageEl = document.getElementById("game-message");
-    overlayTitleEl = document.getElementById("overlay-title");
-    overlayTextEl = document.getElementById("overlay-text");
-    overlayRestartBtn = document.getElementById("overlay-restart-btn");
-    newGameBtn = document.getElementById("new-game-btn");
-  }
-
-  function createEmptyBoard() {
-    board = [];
-    for (let r = 0; r < GRID_SIZE; r++) {
-      const row = [];
-      for (let c = 0; c < GRID_SIZE; c++) {
-        row.push(0);
-      }
-      board.push(row);
-    }
-  }
-
-  function getEmptyCells() {
-    const cells = [];
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (board[r][c] === 0) {
-          cells.push({ r, c });
-        }
-      }
-    }
-    return cells;
-  }
-
-  function addRandomTile() {
-    const emptyCells = getEmptyCells();
-    if (emptyCells.length === 0) return;
-
-    const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    const value = Math.random() < 0.9 ? 2 : 4;
-    board[r][c] = value;
-  }
-
-  function slideAndCombine(line) {
-    // usuń zera
-    const filtered = line.filter((v) => v !== 0);
-
-    let combined = [];
-    let gainedScore = 0;
-
-    for (let i = 0; i < filtered.length; i++) {
-      if (filtered[i] === filtered[i + 1]) {
-        const newValue = filtered[i] * 2;
-        combined.push(newValue);
-        gainedScore += newValue;
-        i++; // przeskocz scalony kafelek
-      } else {
-        combined.push(filtered[i]);
-      }
-    }
-
-    // dopełnij zerami
-    while (combined.length < GRID_SIZE) {
-      combined.push(0);
-    }
-
-    return { line: combined, gainedScore };
-  }
-
-  function moveLeft() {
-    let moved = false;
-    let totalGained = 0;
-
-    for (let r = 0; r < GRID_SIZE; r++) {
-      const row = board[r];
-      const { line, gainedScore } = slideAndCombine(row);
-      if (!arraysEqual(line, row)) {
-        moved = true;
-        board[r] = line;
-      }
-      totalGained += gainedScore;
-    }
-
-    if (totalGained > 0) {
-      score += totalGained;
-      if (score > bestScore) bestScore = score;
-    }
-
-    return moved;
-  }
-
-  function moveRight() {
-    let moved = false;
-    let totalGained = 0;
-
-    for (let r = 0; r < GRID_SIZE; r++) {
-      const reversed = [...board[r]].reverse();
-      const { line, gainedScore } = slideAndCombine(reversed);
-      const restored = line.reverse();
-
-      if (!arraysEqual(restored, board[r])) {
-        moved = true;
-        board[r] = restored;
-      }
-      totalGained += gainedScore;
-    }
-
-    if (totalGained > 0) {
-      score += totalGained;
-      if (score > bestScore) bestScore = score;
-    }
-
-    return moved;
-  }
-
-  function moveUp() {
-    let moved = false;
-    let totalGained = 0;
-
+// ----- Pomocnicze -----
+function createEmptyBoard() {
+  const grid = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    const row = [];
     for (let c = 0; c < GRID_SIZE; c++) {
-      const column = [];
-      for (let r = 0; r < GRID_SIZE; r++) {
-        column.push(board[r][c]);
-      }
-
-      const { line, gainedScore } = slideAndCombine(column);
-
-      for (let r = 0; r < GRID_SIZE; r++) {
-        if (board[r][c] !== line[r]) {
-          moved = true;
-          board[r][c] = line[r];
-        }
-      }
-
-      totalGained += gainedScore;
+      row.push(0);
     }
-
-    if (totalGained > 0) {
-      score += totalGained;
-      if (score > bestScore) bestScore = score;
-    }
-
-    return moved;
+    grid.push(row);
   }
+  return grid;
+}
 
-  function moveDown() {
-    let moved = false;
-    let totalGained = 0;
+function copyBoard(src) {
+  return src.map((row) => row.slice());
+}
 
+function boardsEqual(a, b) {
+  for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
-      const column = [];
-      for (let r = 0; r < GRID_SIZE; r++) {
-        column.push(board[r][c]);
-      }
-
-      const reversed = column.reverse();
-      const { line, gainedScore } = slideAndCombine(reversed);
-      const restored = line.reverse();
-
-      for (let r = 0; r < GRID_SIZE; r++) {
-        if (board[r][c] !== restored[r]) {
-          moved = true;
-          board[r][c] = restored[r];
-        }
-      }
-
-      totalGained += gainedScore;
+      if (a[r][c] !== b[r][c]) return false;
     }
-
-    if (totalGained > 0) {
-      score += totalGained;
-      if (score > bestScore) bestScore = score;
-    }
-
-    return moved;
   }
+  return true;
+}
 
-  function arraysEqual(a, b) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  }
+// ----- UI planszy -----
+function initBoardDOM() {
+  boardEl.innerHTML = "";
+  boardEl.classList.add("board-2048-grid");
+  const frag = document.createDocumentFragment();
 
-  function isBoardFull() {
-    return getEmptyCells().length === 0;
-  }
-
-  function hasMovesAvailable() {
-    if (!isBoardFull()) return true;
-
-    // sprawdź poziomo
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE - 1; c++) {
-        if (board[r][c] === board[r][c + 1]) return true;
-      }
-    }
-
-    // sprawdź pionowo
+  for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
-      for (let r = 0; r < GRID_SIZE - 1; r++) {
-        if (board[r][c] === board[r + 1][c]) return true;
-      }
-    }
-
-    return false;
-  }
-
-  function checkWin() {
-    if (hasWon) return;
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (board[r][c] >= 2048) {
-          hasWon = true;
-          showOverlay("Gratulacje!", "Osiągnąłeś 2048! Możesz grać dalej dla lepszego wyniku.");
-          return;
-        }
-      }
+      const cell = document.createElement("div");
+      cell.className = "cell-2048";
+      cell.dataset.row = String(r);
+      cell.dataset.col = String(c);
+      frag.appendChild(cell);
     }
   }
 
-  function checkGameOver() {
-    if (!hasMovesAvailable()) {
-      showOverlay("Koniec gry", "Brak możliwych ruchów. Spróbuj jeszcze raz!");
-      totalGames++;
-      updateGamesPlayedInfo();
-      saveProgress();
+  boardEl.appendChild(frag);
+}
+
+function updateBoardUI() {
+  const cells = boardEl.querySelectorAll(".cell-2048");
+  cells.forEach((cell) => {
+    const r = parseInt(cell.dataset.row, 10);
+    const c = parseInt(cell.dataset.col, 10);
+    const value = board[r][c];
+
+    cell.textContent = value > 0 ? String(value) : "";
+    cell.className = "cell-2048"; // reset klas
+
+    if (value > 0) {
+      cell.classList.add("cell-2048--filled");
+      cell.classList.add("cell-2048--v" + value);
     }
-  }
-
-  function renderBoardGrid() {
-    boardEl.innerHTML = "";
-
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const tile = document.createElement("div");
-        tile.classList.add("tile");
-        tile.dataset.pos = `${r}-${c}`;
-        boardEl.appendChild(tile);
-      }
-    }
-  }
-
-  function updateBoardView() {
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const tile = boardEl.querySelector(`[data-pos="${r}-${c}"]`);
-        const value = board[r][c];
-
-        tile.textContent = value === 0 ? "" : value;
-        tile.className = "tile"; // reset klas
-
-        if (value > 0) {
-          tile.classList.add("tile--filled");
-          tile.classList.add("tile--" + value);
-        }
-      }
-    }
-
-    scoreEl.textContent = score;
-    bestScoreEl.textContent = bestScore;
-  }
-
-  function updateGamesPlayedInfo() {
-    if (!gamesPlayedEl) return;
-    gamesPlayedEl.textContent =
-      totalGames > 0
-        ? `Rozegrane partie: ${totalGames}`
-        : "Rozegraj swoją pierwszą partię!";
-  }
-
-  function resetGame() {
-    hideOverlay();
-    score = 0;
-    hasWon = false;
-
-    createEmptyBoard();
-    addRandomTile();
-    addRandomTile();
-    updateBoardView();
-    saveProgress(); // od razu zapisujemy, żeby odświeżyć np. rekord po resecie
-  }
-
-  function showOverlay(title, text) {
-    overlayTitleEl.textContent = title;
-    overlayTextEl.textContent = text;
-    messageEl.classList.remove("overlay--hidden");
-  }
-
-  function hideOverlay() {
-    messageEl.classList.add("overlay--hidden");
-  }
-
-  function handleMove(direction) {
-    let moved = false;
-
-    switch (direction) {
-      case "left":
-        moved = moveLeft();
-        break;
-      case "right":
-        moved = moveRight();
-        break;
-      case "up":
-        moved = moveUp();
-        break;
-      case "down":
-        moved = moveDown();
-        break;
-    }
-
-    if (!moved) return;
-
-    addRandomTile();
-    updateBoardView();
-    checkWin();
-    checkGameOver();
-    saveProgress();
-  }
-
-  function setupKeyboardControls() {
-    window.addEventListener("keydown", (e) => {
-      let handled = true;
-
-      switch (e.key) {
-        case "ArrowLeft":
-          handleMove("left");
-          break;
-        case "ArrowRight":
-          handleMove("right");
-          break;
-        case "ArrowUp":
-          handleMove("up");
-          break;
-        case "ArrowDown":
-          handleMove("down");
-          break;
-        default:
-          handled = false;
-      }
-
-      if (handled) {
-        e.preventDefault();
-      }
-    });
-  }
-
-  function setupTouchControls() {
-    let startX = 0;
-    let startY = 0;
-    let isTouching = false;
-
-    const threshold = 30; // minimalna odległość w px
-
-    boardEl.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1) return;
-      isTouching = true;
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    });
-
-    boardEl.addEventListener("touchmove", (e) => {
-      if (!isTouching) return;
-      e.preventDefault(); // żeby nie przewijać strony
-    });
-
-    boardEl.addEventListener("touchend", (e) => {
-      if (!isTouching) return;
-      isTouching = false;
-
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-
-      const dx = endX - startX;
-      const dy = endY - startY;
-
-      if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
-
-      if (Math.abs(dx) > Math.abs(dy)) {
-        // poziomo
-        if (dx > 0) {
-          handleMove("right");
-        } else {
-          handleMove("left");
-        }
-      } else {
-        // pionowo
-        if (dy > 0) {
-          handleMove("down");
-        } else {
-          handleMove("up");
-        }
-      }
-    });
-  }
-
-  async function loadProgress() {
-    try {
-      const save = await ArcadeProgress.load(STORAGE_ID);
-      if (save) {
-        if (typeof save.bestScore === "number") {
-          bestScore = save.bestScore;
-        }
-        if (typeof save.totalGames === "number") {
-          totalGames = save.totalGames;
-        }
-      }
-    } catch (err) {
-      console.error("Nie udało się wczytać progresu 2048:", err);
-    }
-  }
-
-  async function saveProgress() {
-    try {
-      await ArcadeProgress.save(STORAGE_ID, {
-        bestScore,
-        totalGames,
-      });
-    } catch (err) {
-      console.error("Nie udało się zapisać progresu 2048:", err);
-    }
-  }
-
-  async function initGame() {
-    initDomRefs();
-
-    // wczytaj progres użytkownika
-    await loadProgress();
-    updateGamesPlayedInfo();
-
-    renderBoardGrid();
-    resetGame();
-    setupKeyboardControls();
-    setupTouchControls();
-
-    newGameBtn.addEventListener("click", () => {
-      totalGames++;
-      updateGamesPlayedInfo();
-      resetGame();
-    });
-
-    overlayRestartBtn.addEventListener("click", () => {
-      totalGames++;
-      updateGamesPlayedInfo();
-      resetGame();
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    initGame().catch((err) => {
-      console.error("Błąd inicjalizacji 2048:", err);
-    });
   });
-})();
+
+  if (scoreEl) scoreEl.textContent = String(score);
+  if (bestScoreEl) bestScoreEl.textContent = String(bestScore);
+  if (totalGamesEl) totalGamesEl.textContent = String(totalGames);
+}
+
+// ----- Logika ruchów -----
+function getEmptyCells() {
+  const empties = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (board[r][c] === 0) {
+        empties.push({ r, c });
+      }
+    }
+  }
+  return empties;
+}
+
+function addRandomTile() {
+  const empties = getEmptyCells();
+  if (!empties.length) return;
+
+  const idx = Math.floor(Math.random() * empties.length);
+  const { r, c } = empties[idx];
+  // 90% szans na 2, 10% na 4
+  board[r][c] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function compressRow(row) {
+  // przesuwamy wartości w lewo, usuwając zera
+  const filtered = row.filter((v) => v !== 0);
+  while (filtered.length < GRID_SIZE) {
+    filtered.push(0);
+  }
+  return filtered;
+}
+
+function mergeRow(row) {
+  // zakładamy, że row jest już skompresowany
+  for (let i = 0; i < GRID_SIZE - 1; i++) {
+    if (row[i] !== 0 && row[i] === row[i + 1]) {
+      row[i] *= 2;
+      score += row[i];
+      row[i + 1] = 0;
+    }
+  }
+  return row;
+}
+
+function operateRowLeft(row) {
+  row = compressRow(row);
+  row = mergeRow(row);
+  row = compressRow(row);
+  return row;
+}
+
+function rotateBoardClockwise(b) {
+  const res = createEmptyBoard();
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      res[c][GRID_SIZE - 1 - r] = b[r][c];
+    }
+  }
+  return res;
+}
+
+function moveLeft() {
+  const oldBoard = copyBoard(board);
+  for (let r = 0; r < GRID_SIZE; r++) {
+    board[r] = operateRowLeft(board[r]);
+  }
+  if (!boardsEqual(oldBoard, board)) {
+    addRandomTile();
+    afterSuccessfulMove();
+  }
+}
+
+function moveRight() {
+  const oldBoard = copyBoard(board);
+  for (let r = 0; r < GRID_SIZE; r++) {
+    board[r].reverse();
+    board[r] = operateRowLeft(board[r]);
+    board[r].reverse();
+  }
+  if (!boardsEqual(oldBoard, board)) {
+    addRandomTile();
+    afterSuccessfulMove();
+  }
+}
+
+function moveUp() {
+  let oldBoard = copyBoard(board);
+  // obróć w prawo, rusz w lewo, obróć w lewo
+  board = rotateBoardClockwise(board);
+  for (let r = 0; r < GRID_SIZE; r++) {
+    board[r] = operateRowLeft(board[r]);
+  }
+  // 3x obrót w prawo = 1x w lewo
+  board = rotateBoardClockwise(board);
+  board = rotateBoardClockwise(board);
+  board = rotateBoardClockwise(board);
+
+  if (!boardsEqual(oldBoard, board)) {
+    addRandomTile();
+    afterSuccessfulMove();
+  }
+}
+
+function moveDown() {
+  let oldBoard = copyBoard(board);
+  // obróć w prawo 3x, rusz w lewo, obróć w prawo
+  board = rotateBoardClockwise(board);
+  board = rotateBoardClockwise(board);
+  board = rotateBoardClockwise(board);
+
+  for (let r = 0; r < GRID_SIZE; r++) {
+    board[r] = operateRowLeft(board[r]);
+  }
+
+  board = rotateBoardClockwise(board);
+
+  if (!boardsEqual(oldBoard, board)) {
+    addRandomTile();
+    afterSuccessfulMove();
+  }
+}
+
+function afterSuccessfulMove() {
+  if (score > bestScore) {
+    bestScore = score;
+  }
+  hasUnsavedChanges = true;
+  updateBoardUI();
+
+  if (isGameOver()) {
+    handleGameOver();
+  }
+}
+
+function isGameOver() {
+  if (getEmptyCells().length > 0) return false;
+
+  // sprawdź sąsiadów
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const v = board[r][c];
+      if (r < GRID_SIZE - 1 && v === board[r + 1][c]) return false;
+      if (c < GRID_SIZE - 1 && v === board[r][c + 1]) return false;
+    }
+  }
+  return true;
+}
+
+function handleGameOver() {
+  // prosta informacja – możesz ją zastąpić czymś ładniejszym
+  alert(
+    "Koniec gry!\nWynik: " +
+      score +
+      (score === 2048 ? "\nGratulacje, osiągnąłeś 2048!" : "")
+  );
+}
+
+// ----- Zapis progresu (per użytkownik/gość) -----
+function buildSavePayload() {
+  return {
+    score,
+    bestScore,
+    totalGames,
+    board,
+  };
+}
+
+function saveCurrentSession() {
+  if (!window.ArcadeProgress || !ArcadeProgress.save) {
+    console.warn("[2048] Brak ArcadeProgress – zapis nieaktywny.");
+    return Promise.resolve();
+  }
+
+  const payload = buildSavePayload();
+  return ArcadeProgress.save(GAME_ID, payload)
+    .then(function () {
+      LAST_SAVE_DATA = payload;
+      hasUnsavedChanges = false;
+      console.log("[2048] Progres zapisany:", payload);
+    })
+    .catch(function (err) {
+      console.error("[2048] Nie udało się zapisać progresu:", err);
+    });
+}
+
+function loadProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.load) {
+    console.warn("[2048] Brak ArcadeProgress – wczytywanie pominięte.");
+    return Promise.resolve();
+  }
+
+  return ArcadeProgress.load(GAME_ID)
+    .then(function (data) {
+      if (!data) {
+        console.log("[2048] Brak zapisanego progresu – start od zera.");
+        return;
+      }
+
+      if (typeof data.bestScore === "number") {
+        bestScore = data.bestScore;
+      }
+      if (typeof data.totalGames === "number") {
+        totalGames = data.totalGames;
+      }
+      if (Array.isArray(data.board)) {
+        board = data.board.map((row) => row.slice());
+      }
+      if (typeof data.score === "number") {
+        score = data.score;
+      }
+
+      LAST_SAVE_DATA = data;
+      hasUnsavedChanges = false;
+      console.log("[2048] Wczytano progres:", data);
+    })
+    .catch(function (err) {
+      console.error("[2048] Błąd wczytywania progresu:", err);
+    });
+}
+
+function clearProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.clear) {
+    console.warn("[2048] Brak ArcadeProgress.clear – czyszczenie pominięte.");
+    return Promise.resolve();
+  }
+
+  return ArcadeProgress.clear(GAME_ID).catch(function (err) {
+    console.error("[2048] Błąd czyszczenia progresu:", err);
+  });
+}
+
+// ----- Sterowanie grą -----
+function resetGame() {
+  board = createEmptyBoard();
+  score = 0;
+  totalGames += 1;
+  addRandomTile();
+  addRandomTile();
+  hasUnsavedChanges = true;
+  updateBoardUI();
+}
+
+function handleKeyDown(e) {
+  const key = e.key;
+
+  switch (key) {
+    case "ArrowLeft":
+    case "a":
+    case "A":
+      e.preventDefault();
+      moveLeft();
+      break;
+    case "ArrowRight":
+    case "d":
+    case "D":
+      e.preventDefault();
+      moveRight();
+      break;
+    case "ArrowUp":
+    case "w":
+    case "W":
+      e.preventDefault();
+      moveUp();
+      break;
+    case "ArrowDown":
+    case "s":
+    case "S":
+      e.preventDefault();
+      moveDown();
+      break;
+    default:
+      break;
+  }
+}
+
+// ostrzeżenie przy zamknięciu / przeładowaniu
+function setupBeforeUnloadGuard() {
+  window.addEventListener("beforeunload", function (e) {
+    if (!hasUnsavedChanges) return;
+
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+  });
+}
+
+// ostrzeżenie przy klikaniu linków do arcade.html
+function setupClickGuard() {
+  document.addEventListener("click", function (e) {
+    if (!hasUnsavedChanges) return;
+
+    const target = e.target.closest("a,button");
+    if (!target) return;
+
+    const href = target.getAttribute("href");
+    const isBackToArcade =
+      (href && href.indexOf("arcade.html") !== -1) ||
+      target.dataset.arcadeBack === "1";
+
+    if (isBackToArcade) {
+      const ok = window.confirm(
+        "Masz niezapisany postęp. Wyjść bez zapisywania?"
+      );
+      if (!ok) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+  });
+}
+
+// ----- Integracja z Neon Arcade -----
+function initArcadeBackButton() {
+  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
+    ArcadeUI.addBackToArcadeButton({
+      backUrl: "../../arcade.html",
+    });
+  }
+}
+
+// ----- Inicjalizacja gry -----
+function initGame2048() {
+  boardEl = document.getElementById("board");
+  scoreEl = document.getElementById("score");
+  bestScoreEl = document.getElementById("best-score");
+  totalGamesEl = document.getElementById("total-games");
+
+  if (!boardEl) {
+    console.error("[2048] Brak elementu #board – sprawdź index.html gry.");
+    return;
+  }
+
+  initBoardDOM();
+
+  // wczytaj zapis, potem uruchom nową grę jeśli nie było zapisanej planszy
+  loadProgress().then(function () {
+    if (!board || !board.length) {
+      board = createEmptyBoard();
+      addRandomTile();
+      addRandomTile();
+    }
+    updateBoardUI();
+  });
+
+  const newGameBtn = document.getElementById("new-game-btn");
+  if (newGameBtn) {
+    newGameBtn.addEventListener("click", function () {
+      const shouldReset =
+        !hasUnsavedChanges ||
+        window.confirm(
+          "Rozpocząć nową grę? Aktualny postęp tej rozgrywki nie zostanie zapisany."
+        );
+      if (!shouldReset) return;
+      resetGame();
+    });
+  }
+
+  const saveBtn = document.getElementById("save-game-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function () {
+      saveCurrentSession();
+    });
+  }
+
+  const resetRecordBtn = document.getElementById("reset-record-btn");
+  if (resetRecordBtn) {
+    resetRecordBtn.addEventListener("click", function () {
+      const ok = window.confirm(
+        "Na pewno chcesz zresetować rekord i statystyki dla tej gry?"
+      );
+      if (!ok) return;
+
+      bestScore = 0;
+      totalGames = 0;
+      score = 0;
+      board = createEmptyBoard();
+      addRandomTile();
+      addRandomTile();
+      hasUnsavedChanges = true;
+      updateBoardUI();
+
+      clearProgress().then(function () {
+        LAST_SAVE_DATA = null;
+      });
+    });
+  }
+
+  document.addEventListener("keydown", handleKeyDown);
+
+  setupBeforeUnloadGuard();
+  setupClickGuard();
+  initArcadeBackButton();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  try {
+    initGame2048();
+  } catch (e) {
+    console.error("[2048] Krytyczny błąd inicjalizacji gry:", e);
+  }
+});
