@@ -1,1 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Znajdź słowo – Neon Arcade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Ogólny motyw Neon Arcade -->
+  <link rel="stylesheet" href="../../css/theme.css" />
+
+  <!-- Style gry -->
+  <link rel="stylesheet" href="game.css" />
+
+  <!-- Core Neon Arcade -->
+  <script src="../../js/core/auth.js" defer></script>
+  <script src="../../js/core/progress.js" defer></script>
+  <script src="../../js/core/ui.js" defer></script>
+
+  <!-- Logika gry -->
+  <script src="game.js" defer></script>
+</head>
+<body class="arcade-body">
+  <main class="shell">
+    <section class="card game-root">
+      <header class="game-header">
+        <div>
+          <h1 class="game-title">Znajdź słowo</h1>
+          <p class="game-subtitle">
+            Świat: <span id="world-name">Zwierzęta</span>
+          </p>
+          <p class="game-subtitle game-subtitle--secondary">
+            Kliknij wyraz, który pasuje do obrazka.
+          </p>
+        </div>
+
+        <div class="score-panel">
+          <div class="score-box">
+            <span class="score-label">Seria</span>
+            <span class="score-value" id="streak">0</span>
+          </div>
+          <div class="score-box">
+            <span class="score-label">Punkty</span>
+            <span class="score-value" id="score">0</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="word-game">
+        <div
+          class="word-image"
+          id="image-area"
+          aria-label="Obrazek do odgadnięcia"
+        ></div>
+
+        <div class="options" id="options"></div>
+
+        <p class="feedback" id="feedback" aria-live="polite"></p>
+      </section>
+
+      <footer class="game-footer">
+        <div class="game-footer-left">
+          <button class="btn btn-main" id="next-btn">Następne</button>
+          <button class="btn btn-ghost" id="clear-progress-btn">
+            Wyczyść postęp
+          </button>
+        </div>
+        <p class="game-info">
+          Najpierw kliknij poprawne słowo, potem przejdź dalej do kolejnego
+          obrazka.
+        </p>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>
 
