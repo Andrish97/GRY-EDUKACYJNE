@@ -1,5 +1,5 @@
-// pages/arcade.js
-// Lista gier jako kafelki w gridzie
+// js/pages/arcade.js
+// Lista gier jako kafelki zgodne z css/arcade.css
 
 (function () {
   function createEl(tag, className, children) {
@@ -20,13 +20,13 @@
   function renderGames(root, data) {
     root.innerHTML = "";
 
-    // zbierz wszystkie gry z wszystkich kategorii do jednej listy
     const allGames = [];
     data.categories.forEach((cat) => {
       (cat.games || []).forEach((game) => {
         allGames.push({
           ...game,
           categoryName: cat.name,
+          categoryId: cat.id,
           categoryIcon: cat.icon || "",
         });
       });
@@ -37,54 +37,55 @@
       return;
     }
 
-    // główny grid kafelków
-    const grid = createEl("div", "arcade-games-grid");
-
+    // #games ma display:grid w css/arcade.css, więc każdy .game-card będzie kafelkiem
     allGames.forEach((game) => {
-      const card = createEl("article", "arcade-game-card");
+      const emoji =
+        game.icon && String(game.icon).trim().length > 0 ? game.icon : "🎮";
 
-      // górna linia: nazwa + (opcjonalnie) ikonka
-      const titleRow = createEl("div", "arcade-game-card-header");
-      const title = createEl("h3", "arcade-game-title", [
-        (game.icon ? game.icon + " " : "") + game.name,
-      ]);
-      titleRow.appendChild(title);
+      const card = createEl("article", "game-card");
 
-      // kategoria jako "badge"
-      if (game.categoryName) {
-        const badge = createEl(
-          "span",
-          "arcade-game-category",
-          [
-            (game.categoryIcon ? game.categoryIcon + " " : "") +
-              game.categoryName,
-          ]
-        );
-        titleRow.appendChild(badge);
-      }
+      // „miniaturka” z emoji
+      const thumbWrap = createEl("div", "thumb-wrap");
+      const thumb = createEl("div", "thumb-placeholder", [emoji]);
+      thumbWrap.appendChild(thumb);
 
-      const desc = createEl("p", "arcade-game-desc", [
-        game.description || "",
-      ]);
+      // nagłówek karty: ikonka + nazwa gry
+      const headline = createEl("div", "game-headline");
+      const iconSpan = createEl("span", "game-icon", [emoji]);
+      const nameSpan = createEl("span", "game-name", [game.name]);
+      headline.appendChild(iconSpan);
+      headline.appendChild(nameSpan);
 
-      const footer = createEl("div", "arcade-game-footer");
-      const playBtn = createEl(
-        "a",
-        "arcade-game-play-btn arcade-btn",
-        ["Graj"]
-      );
-      playBtn.href = game.playUrl;
+      // opis
+      const desc = createEl("p", "game-desc", [game.description || ""]);
 
+      // dół karty: kategoria + przycisk „Graj”
+      const footer = createEl("div", "game-footer");
+      const pillText = (game.categoryName || "").toUpperCase();
+      const pill = createEl("span", "pill", [pillText || "GRA"]);
+
+      const playBtn = createEl("button", "play-btn", ["Graj"]);
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.location.href = game.playUrl;
+      });
+
+      footer.appendChild(pill);
       footer.appendChild(playBtn);
 
-      card.appendChild(titleRow);
+      // kliknięcie w całą kartę też odpala grę
+      card.addEventListener("click", () => {
+        window.location.href = game.playUrl;
+      });
+
+      card.appendChild(thumbWrap);
+      card.appendChild(headline);
       card.appendChild(desc);
       card.appendChild(footer);
 
-      grid.appendChild(card);
+      // ważne: bez dodatkowych wrapperów – .game-card jest bezpośrednim dzieckiem #games
+      root.appendChild(card);
     });
-
-    root.appendChild(grid);
   }
 
   async function initArcade() {
