@@ -3,6 +3,10 @@
 (function () {
   const GRID_SIZE = 4;
   const STORAGE_ID = "2048";
+  var hasUnsavedChanges = false;
+  var LAST_SAVE_DATA = null; // opcjonalnie, gdybyś chciał kiedyś sprawdzać różnice
+  var GAME_ID = "2048";
+
 
   let board = [];
   let score = 0;
