@@ -1,5 +1,5 @@
 // pages/arcade.js
-// Renderowanie listy gier do #games
+// Lista gier jako kafelki w gridzie
 
 (function () {
   function createEl(tag, className, children) {
@@ -20,49 +20,71 @@
   function renderGames(root, data) {
     root.innerHTML = "";
 
-    if (!data.categories.length) {
+    // zbierz wszystkie gry z wszystkich kategorii do jednej listy
+    const allGames = [];
+    data.categories.forEach((cat) => {
+      (cat.games || []).forEach((game) => {
+        allGames.push({
+          ...game,
+          categoryName: cat.name,
+          categoryIcon: cat.icon || "",
+        });
+      });
+    });
+
+    if (!allGames.length) {
       root.textContent = "Brak gier do wyświetlenia.";
       return;
     }
 
-    data.categories.forEach((cat) => {
-      const section = createEl("section", "arcade-category");
+    // główny grid kafelków
+    const grid = createEl("div", "arcade-games-grid");
 
-      const header = createEl("header", "arcade-category-header", [
-        createEl("h2", "arcade-category-title", [
-          (cat.icon ? cat.icon + " " : "") + cat.name,
-        ]),
+    allGames.forEach((game) => {
+      const card = createEl("article", "arcade-game-card");
+
+      // górna linia: nazwa + (opcjonalnie) ikonka
+      const titleRow = createEl("div", "arcade-game-card-header");
+      const title = createEl("h3", "arcade-game-title", [
+        (game.icon ? game.icon + " " : "") + game.name,
+      ]);
+      titleRow.appendChild(title);
+
+      // kategoria jako "badge"
+      if (game.categoryName) {
+        const badge = createEl(
+          "span",
+          "arcade-game-category",
+          [
+            (game.categoryIcon ? game.categoryIcon + " " : "") +
+              game.categoryName,
+          ]
+        );
+        titleRow.appendChild(badge);
+      }
+
+      const desc = createEl("p", "arcade-game-desc", [
+        game.description || "",
       ]);
 
-      const grid = createEl("div", "arcade-games-grid");
+      const footer = createEl("div", "arcade-game-footer");
+      const playBtn = createEl(
+        "a",
+        "arcade-game-play-btn arcade-btn",
+        ["Graj"]
+      );
+      playBtn.href = game.playUrl;
 
-      cat.games.forEach((game) => {
-        const card = createEl("article", "arcade-game-card");
+      footer.appendChild(playBtn);
 
-        const title = createEl("h3", "arcade-game-title", [game.name]);
-        const desc = createEl("p", "arcade-game-desc", [
-          game.description || "",
-        ]);
+      card.appendChild(titleRow);
+      card.appendChild(desc);
+      card.appendChild(footer);
 
-        const footer = createEl("div", "arcade-game-footer");
-        const playBtn = createEl(
-          "a",
-          "arcade-game-play-btn arcade-btn",
-          ["Graj"]
-        );
-        playBtn.href = game.playUrl;
-
-        footer.appendChild(playBtn);
-        card.appendChild(title);
-        card.appendChild(desc);
-        card.appendChild(footer);
-        grid.appendChild(card);
-      });
-
-      section.appendChild(header);
-      section.appendChild(grid);
-      root.appendChild(section);
+      grid.appendChild(card);
     });
+
+    root.appendChild(grid);
   }
 
   async function initArcade() {
