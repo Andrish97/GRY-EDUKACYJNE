@@ -5,9 +5,10 @@ const GAME_ID = "znajdz-slowo";
 let hasUnsavedChanges = false;
 let LAST_SAVE_DATA = null;
 
-// Stan gry
+// Stałe gry
 const QUESTIONS_PER_LEVEL = 6;
 
+// Definicje światów / rund – 1:1 z poprzednią wersją
 const WORLDS = [
   {
     id: "animals",
@@ -324,7 +325,7 @@ function applyLoadedState(data) {
 
 function loadProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.load) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.load – lecimy bez chmury");
+    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.load – lecimy bez chmury");
     return Promise.resolve();
   }
 
@@ -333,13 +334,13 @@ function loadProgress() {
       applyLoadedState(data);
     })
     .catch(function (err) {
-      console.error("[GAME]", GAME_ID, "Błąd load:", err);
+      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd load:", err);
     });
 }
 
 function saveCurrentSession() {
   if (!window.ArcadeProgress || !ArcadeProgress.save) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save");
+    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.save");
     return Promise.resolve();
   }
 
@@ -349,16 +350,16 @@ function saveCurrentSession() {
     .then(function () {
       LAST_SAVE_DATA = payload;
       hasUnsavedChanges = false;
-      console.log("[GAME]", GAME_ID, "zapisano:", payload);
+      console.log("[ZnajdzSlowo]", GAME_ID, "zapisano:", payload);
     })
     .catch(function (err) {
-      console.error("[GAME]", GAME_ID, "Błąd save:", err);
+      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd save:", err);
     });
 }
 
 function clearProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.clear) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.clear");
+    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.clear");
     return Promise.resolve();
   }
 
@@ -382,10 +383,10 @@ function clearProgress() {
       loadWorldInfo();
       loadRound();
 
-      console.log("[GAME]", GAME_ID, "progress wyczyszczony");
+      console.log("[ZnajdzSlowo]", GAME_ID, "progress wyczyszczony");
     })
     .catch(function (err) {
-      console.error("[GAME]", GAME_ID, "Błąd clear:", err);
+      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd clear:", err);
     });
 }
 
@@ -428,7 +429,7 @@ function setupClickGuard() {
 
 function updateScoreUI() {
   if (scoreEl) {
-    scoreEl.textContent = "Punkty: " + score;
+    scoreEl.textContent = String(score);
   }
   if (unlockedWorldsLabel) {
     unlockedWorldsLabel.textContent = unlockedWorlds + " / " + WORLDS.length;
@@ -512,6 +513,7 @@ function buildWorldButtons() {
         loadWorldInfo();
         loadRound();
         buildWorldButtons();
+        markDirty();
       }
     });
 
@@ -595,7 +597,6 @@ function handleChoice(button, isCorrect) {
 }
 
 function completeWorldIfNeeded() {
-  const world = WORLDS[currentWorldIndex];
   if (questionInWorld >= QUESTIONS_PER_LEVEL) {
     const msg = randomItem(levelCompleteMessages);
     messageEl.textContent =
@@ -690,7 +691,7 @@ function attachEvents() {
   if (resetRecordBtn) {
     resetRecordBtn.addEventListener("click", function () {
       const ok = window.confirm(
-        "Na pewno chcesz całkowicie wyczyścić postęp w tej grze?"
+        "Na pewno chcesz całkowicie wyczyścić postęp w tej gry?"
       );
       if (!ok) return;
       clearProgress();
@@ -701,7 +702,7 @@ function attachEvents() {
 // Init
 
 function initGame() {
-  // DOM
+  // Złapanie DOM
   worldsRow = document.getElementById("worldsRow");
   emojiEl = document.getElementById("emoji");
   choicesEl = document.getElementById("choices");
@@ -716,6 +717,21 @@ function initGame() {
   unlockedWorldsLabel = document.getElementById("unlocked-worlds-label");
   questionCounterEl = document.getElementById("question-counter");
   questionsPerLevelLabel = document.getElementById("questions-per-level-label");
+
+  if (
+    !cardEl ||
+    !worldsRow ||
+    !emojiEl ||
+    !choicesEl ||
+    !messageEl ||
+    !nextBtn ||
+    !scoreEl
+  ) {
+    console.error(
+      "[ZnajdzSlowo] Brak wymaganych elementów DOM – sprawdź index.html gry."
+    );
+    return;
+  }
 
   loadProgress().then(function () {
     updateScoreUI();
