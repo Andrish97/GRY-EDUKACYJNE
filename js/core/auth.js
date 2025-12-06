@@ -5,6 +5,9 @@
 const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co"; // dokładnie Project URL
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740"; // cały anon public key
 
+// DODAJ TO (podmień na swój adres z GitHub Pages):
+const ARCADE_BASE_URL = "https://andrish97.github.io/GRY-EDUKACYJNE";
+
 let supabaseClient = null;
 
 (function initSupabase() {
