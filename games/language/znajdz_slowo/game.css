@@ -146,6 +146,26 @@
 .world-btn span.icon {
   font-size: 14px;
 }
+/* Ukrywamy tekst światów */
+.world-btn span:not(.icon) {
+  display: none !important;
+}
+
+/* Emotki zmniejszamy i ustawiamy jako jedyny element */
+.world-btn {
+  padding: 6px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  justify-content: center;
+}
+
+/* Miniaturkowy rozmiar emoji */
+.world-btn .icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
 
 .world-btn.active {
   background: linear-gradient(135deg, #22c55e, #16a34a);
