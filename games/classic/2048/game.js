@@ -413,7 +413,7 @@ function setupClickGuard() {
 function initArcadeBackButton() {
   if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
     ArcadeUI.addBackToArcadeButton({
-      backUrl: "../../arcade.html",
+      backUrl: "../../../arcade.html",
     });
   }
 }
