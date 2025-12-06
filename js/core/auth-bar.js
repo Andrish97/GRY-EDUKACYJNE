@@ -1,44 +1,47 @@
 // js/core/auth-bar.js
-// Pasek logowania na górze (w motywie)
+// Pasek logowania / rejestracji w motywie Neon Arcade
+// Wymaga: auth.js (ArcadeAuth + ArcadeAuthUI)
 
 (function () {
   function barHTML() {
     return `
       <div class="arcade-topbar">
-        <div class="auth-status">
+        <div class="arcade-user auth-status">
           Ładuję status...
         </div>
-        <div class="auth-controls">
+        <div class="arcade-auth">
           <input
             type="email"
-            class="auth-email arcade-input"
+            class="arcade-input auth-email"
             placeholder="Email"
+            autocomplete="email"
           />
           <input
             type="password"
-            class="auth-pass arcade-input"
+            class="arcade-input auth-pass"
             placeholder="Hasło"
+            autocomplete="current-password"
           />
           <input
             type="password"
-            class="auth-pass2 arcade-input"
+            class="arcade-input auth-pass2"
             placeholder="Powtórz hasło"
+            autocomplete="new-password"
             style="display:none"
           />
 
           <button class="arcade-btn auth-login">Zaloguj</button>
           <button class="arcade-btn auth-register">Załóż konto</button>
-          <button class="arcade-btn auth-guest">Gość</button>
-          <button class="arcade-btn auth-logout" style="display:none">Wyloguj</button>
+          <button class="arcade-btn guest auth-guest">Gość</button>
+          <button class="arcade-btn logout auth-logout" style="display:none">
+            Wyloguj
+          </button>
 
-          <span
-            class="auth-forgot"
-            style="cursor:pointer;font-size:11px;opacity:0.8;margin-left:8px;"
-          >
+          <button class="btn-link auth-forgot" type="button">
             Przypomnij hasło
-          </span>
+          </button>
 
-          <span class="auth-error" style="margin-left:8px;font-size:11px;color:#fca5a5;"></span>
+          <span class="auth-error" style="margin-left:8px;font-size:11px;"></span>
         </div>
       </div>
     `;
@@ -47,49 +50,47 @@
   function initPanel(holder) {
     holder.innerHTML = barHTML();
 
-    if (!window.ArcadeAuthUI || !ArcadeAuthUI.initLoginPanel) {
-      console.error(
-        "[auth-bar] Brak ArcadeAuthUI.initLoginPanel – sprawdź js/core/auth.js"
-      );
-      return;
-    }
-
     const email = holder.querySelector(".auth-email");
     const pass = holder.querySelector(".auth-pass");
     const pass2 = holder.querySelector(".auth-pass2");
     const status = holder.querySelector(".auth-status");
     const error = holder.querySelector(".auth-error");
-    const btnLogin = holder.querySelector(".auth-login");
-    const btnRegister = holder.querySelector(".auth-register");
-    const btnGuest = holder.querySelector(".auth-guest");
-    const btnLogout = holder.querySelector(".auth-logout");
-    const btnForgot = holder.querySelector(".auth-forgot");
+    const btnLog = holder.querySelector(".auth-login");
+    const btnReg = holder.querySelector(".auth-register");
+    const btnGst = holder.querySelector(".auth-guest");
+    const btnOut = holder.querySelector(".auth-logout");
+    const btnFgt = holder.querySelector(".auth-forgot");
 
-    ArcadeAuthUI.initLoginPanel({
+    const afterLogin = holder.getAttribute("data-after-login") || null;
+    const afterGuest = holder.getAttribute("data-after-guest") || null;
+    const checkHash = holder.hasAttribute("data-check-signup-hash");
+
+    const opts = {
       email,
       pass,
       pass2,
       status,
       error,
-      btnLogin,
-      btnRegister,
-      btnGuest,
-      btnLogout,
-      btnForgot,
-      onLoginSuccess() {
-        window.location.reload();
-      },
-      onRegisterSuccess() {
-        // po rejestracji zostawiamy na tej samej stronie
-        // user musi kliknąć link w mailu
-      },
-      onLogout() {
-        window.location.reload();
-      },
-      onGuest() {
-        window.location.reload();
-      },
-    });
+      btnLogin: btnLog,
+      btnRegister: btnReg,
+      btnGuest: btnGst,
+      btnLogout: btnOut,
+      btnForgot: btnFgt,
+      checkSignupHash: checkHash,
+    };
+
+    if (afterLogin) {
+      opts.onLoginSuccess = () => {
+        window.location.href = afterLogin;
+      };
+    }
+    if (afterGuest) {
+      opts.onGuest = () => {
+        window.location.href = afterGuest;
+      };
+    }
+
+    ArcadeAuthUI.initLoginPanel(opts);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -97,6 +98,7 @@
     holders.forEach(initPanel);
   });
 
+  // ręczne API (na przyszłość)
   window.ArcadeAuthBar = {
     mount(holder) {
       initPanel(holder);
