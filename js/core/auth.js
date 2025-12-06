@@ -2,8 +2,8 @@
 // Logika auth dla Neon Arcade oparta na Supabase v2
 
 // UZUPEŁNIJ SWOIMI DANYMI:
-const SUPABASE_URL = "https://TWÓJ-PROJEKT.supabase.co";
-const SUPABASE_ANON_KEY = "TWÓJ_ANON_KEY";
+const SUPABASE_URL = "https://abcdxyzqwerty.supabase.co"; // dokładnie Project URL
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."; // cały anon public key
 
 let supabaseClient = null;
 
