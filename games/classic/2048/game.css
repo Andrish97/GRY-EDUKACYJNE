@@ -1,254 +1,246 @@
-/* Karta gry 2048 – opiera się na .card z theme.css, ale delikatnie doprawiona */
-.game-card-2048 {
-  max-width: 420px;
-  margin: 32px auto;
-  padding: 18px 20px 20px;
-  background: rgba(15, 23, 42, 0.96);
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(148, 163, 184, 0.12);
-  backdrop-filter: blur(8px);
+/* games/classic/2048/game.css */
+
+.game-root {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
 }
 
-/* Nagłówek */
-.game-header-2048 {
+.game-header {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
-.game-title-2048 {
+.game-title {
+  font-size: 2rem;
   margin: 0;
-  font-size: 20px;
-  letter-spacing: 0.12em;
 }
 
-.game-subtitle-2048 {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #9ca3af;
+.game-subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.8;
 }
 
-/* Panel wyników */
-.score-panel-2048 {
+.score-panel {
   display: flex;
-  gap: 10px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.score-box-2048 {
-  min-width: 70px;
-}
-
-.label-2048 {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #9ca3af;
-}
-
-.value-2048 {
-  font-weight: 600;
-  font-size: 16px;
-  color: #e5e7eb;
-}
-
-/* Status gry */
-#status {
-  margin-bottom: 6px;
-  margin-top: 4px;
-  font-size: 13px;
-  color: #9ca3af;
-  min-height: 18px;
+.score-box {
+  min-width: 80px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
   text-align: center;
 }
 
-/* BOARD LAYERED: tło + kafelki */
-#board {
+.score-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.score-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff2cdf, #00f0ff);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  opacity: 0.8;
+}
+
+.board-wrapper {
   position: relative;
-  width: 296px; /* 8 + 4*64 + 3*8 + 8 */
-  height: 296px;
-  background: #020617;
-  border-radius: 12px;
-  padding: 8px;
-  box-sizing: border-box;
-  box-shadow:
-    inset 0 0 0 1px rgba(30, 64, 175, 0.4),
-    0 0 0 1px rgba(15, 23, 42, 0.9);
-  margin: 0 auto 12px;
-  overflow: hidden;
+  margin-bottom: 1rem;
 }
 
-#grid-bg {
-  position: absolute;
-  inset: 8px;
+.board {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(4, 64px);
-  grid-template-rows: repeat(4, 64px);
-  gap: 8px;
-  pointer-events: none;
-}
-
-.cell-bg {
-  border-radius: 10px;
-  background: #020617;
-  border: 1px solid rgba(15, 23, 42, 0.95);
-}
-
-#tiles-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.75rem;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 .tile {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  border-radius: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 22px;
-  color: #e5e7eb;
-  box-sizing: border-box;
-  border: 1px solid rgba(30, 41, 59, 0.9);
-  background: #020617;
-  transition:
-    transform 0.13s ease-out,
-    background 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
+  font-size: 1.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.tile.new {
-  animation: pop-2048 0.18s ease-out;
+/* kafelki wypełnione */
+
+.tile--filled {
+  transform: translateZ(0);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
 }
 
-.tile.merged {
-  animation: bump-2048 0.15s ease-out;
+/* Prosty system kolorów – możesz zmienić pod swój theme */
+
+.tile--2 {
+  background: rgba(0, 240, 255, 0.3);
 }
 
-@keyframes pop-2048 {
-  0% {
-    transform: scale(0.2);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
+.tile--4 {
+  background: rgba(0, 255, 157, 0.35);
 }
 
-@keyframes bump-2048 {
-  0% {
-    transform: scale(1);
-  }
-  60% {
-    transform: scale(1.12);
-  }
-  100% {
-    transform: scale(1);
-  }
+.tile--8 {
+  background: rgba(255, 204, 0, 0.5);
 }
 
-/* Kolory kafelków (neon 2048) */
-.v2 {
-  background: #0f172a;
-  color: #e5e7eb;
-  border-color: #1e293b;
-}
-.v4 {
-  background: #1f2937;
-  color: #e5e7eb;
-  border-color: #4b5563;
-}
-.v8 {
-  background: #f97316;
-  color: #1f2933;
-  border-color: #fb923c;
-}
-.v16 {
-  background: #facc15;
-  color: #422006;
-  border-color: #fde047;
-}
-.v32 {
-  background: #22c55e;
-  color: #022c22;
-  border-color: #4ade80;
-}
-.v64 {
-  background: #34d399;
-  color: #022c22;
-  border-color: #6ee7b7;
-}
-.v128 {
-  background: #38bdf8;
-  color: #0b1120;
-  border-color: #7dd3fc;
-  font-size: 20px;
-}
-.v256 {
-  background: #6366f1;
-  color: #e0f2fe;
-  border-color: #818cf8;
-  font-size: 20px;
-}
-.v512 {
-  background: #a855f7;
-  color: #fdf2ff;
-  border-color: #c4b5fd;
-  font-size: 20px;
-}
-.v1024 {
-  background: #ec4899;
-  color: #fdf2ff;
-  border-color: #f472b6;
-  font-size: 20px;
-}
-.v2048 {
-  background: linear-gradient(135deg, #eab308, #f97316, #22c55e);
-  color: #022c22;
-  border-color: #facc15;
-  font-size: 20px;
+.tile--16 {
+  background: rgba(255, 153, 0, 0.6);
 }
 
-/* Info pod planszą */
-#info {
-  margin-top: 4px;
-  text-align: center;
-  font-size: 12px;
-  color: #9ca3af;
+.tile--32 {
+  background: rgba(255, 102, 0, 0.7);
 }
 
-#info b {
-  color: #e5e7eb;
+.tile--64 {
+  background: rgba(255, 51, 51, 0.8);
 }
 
-/* Przyciski gry – używamy wyglądu arcade-btn, tylko układ */
-.controls-2048 {
-  margin-top: 4px;
-  margin-bottom: 4px;
+.tile--128 {
+  background: rgba(255, 51, 153, 0.8);
+  font-size: 1.2rem;
+}
+
+.tile--256 {
+  background: rgba(204, 51, 255, 0.85);
+  font-size: 1.2rem;
+}
+
+.tile--512 {
+  background: rgba(153, 51, 255, 0.9);
+  font-size: 1.2rem;
+}
+
+.tile--1024 {
+  background: rgba(102, 51, 255, 0.95);
+  font-size: 1.1rem;
+}
+
+.tile--2048,
+.tile--4096,
+.tile--8192 {
+  background: rgba(0, 255, 255, 0.95);
+  color: #000;
+  font-size: 1.1rem;
+}
+
+/* overlay */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background: radial-gradient(circle at top, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.9));
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.2s ease;
 }
 
-.controls-2048 .arcade-btn {
-  white-space: nowrap;
-  padding-inline: 12px;
+.overlay--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
-/* Czerwony "Resetuj rekord" */
-.danger-2048 {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
-  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.45);
-  color: #fef2f2;
+.overlay-content {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.85);
+  max-width: 260px;
+}
+
+.overlay-content h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.overlay-content p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+/* info */
+
+.game-info {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.games-played-info {
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+
+/* RWD */
+
+@media (max-width: 640px) {
+  .game-root {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .score-panel {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .board {
+    max-width: 100%;
+  }
 }
