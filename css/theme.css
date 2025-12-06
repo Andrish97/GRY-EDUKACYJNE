@@ -177,7 +177,7 @@ body.arcade-body {
 /* Przycisk "Powrót do Arcade" dla gier */
 .arcade-back-btn {
   position: fixed;
-  top: 3.8rem;
+  top: calc(1rem + 40px); /* pasek + margines */
   left: 1.2rem;
   z-index: 9999;
   padding: 0.45rem 1rem;
