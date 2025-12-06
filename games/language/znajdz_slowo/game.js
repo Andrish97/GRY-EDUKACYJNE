@@ -476,6 +476,7 @@ function loadWorldInfo() {
 function buildWorldButtons() {
   if (!worldsRow) return;
   worldsRow.innerHTML = "";
+
   WORLDS.forEach((world, index) => {
     const btn = document.createElement("button");
     btn.className = "world-btn";
@@ -487,15 +488,11 @@ function buildWorldButtons() {
     }
     btn.dataset.index = index;
 
+    // ⬇️ TUTAJ: tylko emotka, bez nazwy
     const iconSpan = document.createElement("span");
-    iconSpan.className = "icon";
+    iconSpan.className = "world-icon";
     iconSpan.textContent = world.icon;
-
-    const textSpan = document.createElement("span");
-    textSpan.textContent = world.name;
-
     btn.appendChild(iconSpan);
-    btn.appendChild(textSpan);
 
     btn.addEventListener("click", () => {
       if (index >= unlockedWorlds) {
@@ -520,6 +517,7 @@ function buildWorldButtons() {
     worldsRow.appendChild(btn);
   });
 }
+
 
 // Rundy
 
