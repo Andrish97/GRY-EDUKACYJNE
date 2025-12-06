@@ -4,14 +4,13 @@
     <meta charset="UTF-8" />
     <title>Neon 2048 – Neon Arcade</title>
 
-    <!-- favicon z root (opcjonalnie, ale warto) -->
     <link rel="icon" href="../../../favicon.ico" />
 
     <!-- Motyw globalny + styl gry -->
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="game.css" />
 
-    <!-- Core Neon Arcade -->
+    <!-- Core -->
     <script src="../../../js/core/auth.js" defer></script>
     <script src="../../../js/core/auth-bar.js" defer></script>
     <script src="../../../js/core/progress.js" defer></script>
@@ -21,7 +20,6 @@
     <script src="game.js" defer></script>
   </head>
   <body class="arcade-body">
-    <!-- Pasek logowania -->
     <div
       data-arcade-auth-bar
       data-after-login="../../../arcade.html"
@@ -29,49 +27,58 @@
     ></div>
 
     <div class="shell">
-      <div class="card game-card-2048">
-        <header class="game-header-2048">
+      <div class="card game-root">
+        <header class="game-header">
           <div>
-            <h1 class="game-title-2048">NEON 2048</h1>
-            <p class="game-subtitle-2048">
+            <h1 class="game-title">NEON 2048</h1>
+            <p class="game-subtitle">
               Łącz kafelki o takich samych wartościach, żeby dojść do 2048.
             </p>
           </div>
 
-          <div class="score-panel-2048">
-            <div class="score-box-2048">
-              <span class="label-2048">Wynik</span>
-              <span class="value-2048" id="score">0</span>
+          <div class="score-panel">
+            <div class="score-box">
+              <span class="score-label">Wynik</span>
+              <span id="score" class="score-value">0</span>
             </div>
-            <div class="score-box-2048">
-              <span class="label-2048">Rekord</span>
-              <span class="value-2048" id="best">0</span>
+            <div class="score-box">
+              <span class="score-label">Rekord</span>
+              <span id="best-score" class="score-value">0</span>
             </div>
-            <div class="score-box-2048">
-              <span class="label-2048">Gry</span>
-              <span class="value-2048" id="games-played">0</span>
+            <div class="score-box">
+              <span class="score-label">Gry</span>
+              <span id="total-games" class="score-value">0</span>
             </div>
+          </div>
+
+          <div class="score-panel">
+            <button id="new-game-btn" class="btn-primary">Nowa gra</button>
+            <button id="save-game-btn" class="btn-primary">Zapisz</button>
+            <button id="reset-record-btn" class="btn-primary">
+              Resetuj rekord
+            </button>
           </div>
         </header>
 
-        <div id="status">Połącz płytki, aby dojść do 2048!</div>
+        <div class="board-wrapper">
+          <div id="board" class="board"></div>
 
-        <div id="board">
-          <div id="grid-bg"></div>
-          <div id="tiles-layer"></div>
+          <div id="overlay" class="overlay overlay--hidden">
+            <div class="overlay-content">
+              <h2>Koniec gry</h2>
+              <p>Brak ruchów. Spróbuj jeszcze raz!</p>
+              <button id="play-again-btn" class="btn-primary">
+                Zagraj ponownie
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="controls-2048">
-          <button id="new-game-btn" class="arcade-btn">Nowa gra</button>
-          <button id="save-game-btn" class="arcade-btn">Zapisz</button>
-          <button id="reset-record-btn" class="arcade-btn danger-2048">
-            Resetuj rekord
-          </button>
-        </div>
-
-        <div id="info">
-          Sterowanie: <b>← → ↑ ↓</b> lub <b>WASD</b>.<br />
-          Brak możliwych ruchów = koniec gry.
+        <div class="game-info">
+          Sterowanie: strzałki na klawiaturze lub klawisze WASD.
+          <div class="games-played-info">
+            Rozegranych gier: <span id="games-played-info">0</span>
+          </div>
         </div>
       </div>
     </div>
