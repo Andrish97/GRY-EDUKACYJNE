@@ -498,8 +498,6 @@ function initGame2048() {
   }
 }
 
-}
-
 document.addEventListener("DOMContentLoaded", function () {
   try {
     initGame2048();
