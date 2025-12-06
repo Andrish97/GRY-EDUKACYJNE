@@ -1,336 +1,303 @@
 // js/core/auth.js
+// Logika auth dla Neon Arcade oparta na Supabase v2
 
-// --- KONFIG SUPABASE ---
+// UZUPEŁNIJ SWOIMI DANYMI:
+const SUPABASE_URL = "https://TWÓJ-PROJEKT.supabase.co";
+const SUPABASE_ANON_KEY = "TWÓJ_ANON_KEY";
 
-const SUPABASE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY3Bxd3VndGh2aXpxemt2dXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTk1NDYsImV4cCI6MjA4MDQ5NTU0Nn0.fTZiJjToYxnvhthiSIpAcmJ2wo7gQ2bAko841_dh740";
+let supabaseClient = null;
 
-let _sb = null;
-
-if (typeof supabase !== "undefined") {
-  try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch (e) {
-    console.error("[ArcadeAuth] Błąd inicjalizacji Supabase:", e);
+(function initSupabase() {
+  if (!window.supabase || !window.supabase.createClient) {
+    console.warn(
+      "[ArcadeAuth] supabase-js niezaładowany – sprawdź <script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'>"
+    );
+    return;
   }
-} else {
-  console.warn("[ArcadeAuth] supabase-js niezaładowany – tryb gościa / offline.");
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabaseClient = supabaseClient; // na wszelki wypadek dla innych plików
+})();
+
+function formatAuthError(error) {
+  if (!error) return "Nieznany błąd.";
+  if (error.message && typeof error.message === "string") {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      return "Musisz najpierw potwierdzić adres e-mail. Sprawdź swoją skrzynkę.";
+    }
+    return error.message;
+  }
+  return String(error);
 }
 
-// --- NISKI POZIOM: API AUTORYZACJI ---
-
-const ArcadeAuth = {
-  _client: _sb,
-
-  getMode() {
-    return localStorage.getItem("arcade_mode") || "guest";
-  },
-
-  setGuest() {
-    localStorage.setItem("arcade_mode", "guest");
-  },
-
-  async login(email, password) {
-    if (!_sb) {
-      return { error: { message: "Brak połączenia z serwerem." } };
+window.ArcadeAuth = {
+  /**
+   * Zwraca aktualnego użytkownika (lub null)
+   */
+  async getUser() {
+    if (!supabaseClient) return null;
+    try {
+      const { data, error } = await supabaseClient.auth.getUser();
+      if (error) {
+        console.warn("[ArcadeAuth] getUser error:", error);
+        return null;
+      }
+      return data.user || null;
+    } catch (e) {
+      console.error("[ArcadeAuth] getUser ERROR:", e);
+      return null;
     }
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
-    if (!error) {
-      localStorage.setItem("arcade_mode", "user");
-    }
-    return { data, error };
   },
 
-  async register(email, password) {
-    if (!_sb) {
-      return { error: { message: "Brak połączenia z serwerem." } };
-    }
-    const { data, error } = await _sb.auth.signUp({ email, password });
-    return { data, error };
+  /**
+   * Słuchacz zmian sesji
+   */
+  onAuthStateChange(callback) {
+    if (!supabaseClient) return () => {};
+    const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      callback(event, session);
+    });
+    return () => data.subscription.unsubscribe();
   },
 
-  async resetPassword(email, redirectTo) {
-    if (!_sb) {
-      return { error: { message: "Brak połączenia z serwerem." } };
+  /**
+   * Logowanie (tylko po aktywacji maila)
+   */
+  async signIn(email, password) {
+    if (!supabaseClient) {
+      throw new Error("Brak połączenia z serwerem.");
     }
-    const { data, error } = await _sb.auth.resetPasswordForEmail(email, { redirectTo });
-    return { data, error };
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      throw new Error(formatAuthError(error));
+    }
+    // dodatkowa obrona – jeśli mail niepotwierdzony:
+    if (!data.user || !data.user.email_confirmed_at) {
+      await supabaseClient.auth.signOut();
+      throw new Error(
+        "Adres e-mail nie został potwierdzony. Kliknij link aktywacyjny w wiadomości od nas."
+      );
+    }
+    return data.user;
   },
 
-  async logout() {
-    if (_sb) {
-      await _sb.auth.signOut();
+  /**
+   * Rejestracja – wymusza potwierdzenie mailowe.
+   * Po sukcesie NIE logujemy od razu – user musi kliknąć link z maila.
+   */
+  async signUp(email, password) {
+    if (!supabaseClient) {
+      throw new Error("Brak połączenia z serwerem.");
     }
-    localStorage.setItem("arcade_mode", "guest");
+    const redirectUrl = `${window.location.origin}${window.location.pathname.replace(
+      /\/[^/]*$/,
+      ""
+    )}/confirm.html`;
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
+
+    if (error) {
+      throw new Error(formatAuthError(error));
+    }
+    // tu zwykle data.user ma email_confirmed_at = null
+    return data;
   },
 
-  async getCurrentUser() {
-    if (!_sb) return null;
-    const { data } = await _sb.auth.getUser();
-    return data.user || null;
-  }
+  async signOut() {
+    if (!supabaseClient) return;
+    await supabaseClient.auth.signOut();
+  },
+
+  /**
+   * Wymuś gościa: jeśli user zalogowany → przekieruj do arcade.
+   * Używane na index.html.
+   */
+  async requireGuest({ redirectTo }) {
+    const user = await this.getUser();
+    if (user) {
+      window.location.href = redirectTo;
+    }
+  },
 };
 
-window.ArcadeAuth = ArcadeAuth;
-
-// --- WYSOKI POZIOM: WSPÓLNA LOGIKA UI ---
-
 /**
- * ArcadeAuthUI.initLoginPanel(options)
- *
- * options:
- *  - email, pass, pass2, status, error, btnLogin, btnRegister, btnGuest, btnLogout, btnForgot
- *    -> mogą być selektorami (string) albo elementami DOM
- *  - checkSignupHash: bool – czy sprawdzać #type=signup (link z maila)
- *  - onLoginSuccess: funkcja po udanym logowaniu
- *  - onGuest: funkcja po wejściu jako gość
+ * ArcadeAuthUI – prosty kontroler panelu logowania.
+ * Działa zarówno z paskiem (auth-bar.js), jak i z index.html
  */
 window.ArcadeAuthUI = {
-  initLoginPanel(options) {
-    const q = (v) =>
-      typeof v === "string" ? document.querySelector(v) : v;
+  /**
+   * @param {Object} opts
+   * @param {HTMLInputElement} opts.email
+   * @param {HTMLInputElement} opts.pass
+   * @param {HTMLInputElement} [opts.pass2]
+   * @param {HTMLElement} opts.status
+   * @param {HTMLElement} opts.error
+   * @param {HTMLButtonElement} opts.btnLogin
+   * @param {HTMLButtonElement} opts.btnRegister
+   * @param {HTMLButtonElement} [opts.btnGuest]
+   * @param {HTMLButtonElement} [opts.btnLogout]
+   * @param {HTMLElement} [opts.btnForgot]
+   * @param {Function} [opts.onLoginSuccess]
+   * @param {Function} [opts.onRegisterSuccess]
+   * @param {Function} [opts.onLogout]
+   * @param {Function} [opts.onGuest]
+   */
+  initLoginPanel(opts) {
+    const {
+      email,
+      pass,
+      pass2,
+      status,
+      error,
+      btnLogin,
+      btnRegister,
+      btnGuest,
+      btnLogout,
+      btnForgot,
+      onLoginSuccess,
+      onRegisterSuccess,
+      onLogout,
+      onGuest,
+    } = opts;
 
-    const emailInput  = q(options.email);
-    const passInput   = q(options.pass);
-    const pass2Input  = q(options.pass2);
-    const statusEl    = q(options.status);
-    const errorEl     = q(options.error);
-    const btnLogin    = q(options.btnLogin);
-    const btnRegister = q(options.btnRegister);
-    const btnGuest    = q(options.btnGuest);
-    const btnLogout   = q(options.btnLogout);
-    const btnForgot   = q(options.btnForgot);
+    if (!email || !pass || !status || !btnLogin || !btnRegister) {
+      console.error("[ArcadeAuthUI] brak wymaganych elementów w panelu");
+      return;
+    }
 
-    const checkSignupHash = !!options.checkSignupHash;
-    const onLoginSuccess  = options.onLoginSuccess || null;
-    const onGuest         = options.onGuest || null;
+    let mode = "login"; // "login" | "register"
 
-    let registerMode = false;
-
-    function showError(msg) {
-      if (errorEl) errorEl.textContent = msg || "";
+    function setError(msg) {
+      if (error) error.textContent = msg || "";
     }
 
     function setStatus(msg) {
-      if (statusEl) statusEl.textContent = msg;
+      if (status) status.textContent = msg;
     }
 
-    function setRegisterUI(isRegister) {
-      registerMode = isRegister;
-      if (pass2Input) {
-        pass2Input.style.display = isRegister ? "inline-block" : "none";
-      }
-      if (btnLogin) {
-        btnLogin.style.display = isRegister ? "none" : "inline-block";
-      }
-      if (btnRegister) {
-        btnRegister.textContent = isRegister ? "Utwórz konto" : "Załóż konto";
-      }
-      if (!isRegister) {
-        showError("");
-      }
+    function switchToLoginMode() {
+      mode = "login";
+      if (pass2) pass2.style.display = "none";
+      btnLogin.textContent = "Zaloguj";
+      btnRegister.textContent = "Załóż konto";
+      setError("");
     }
 
-    async function refreshState() {
-      const A = window.ArcadeAuth;
-      if (!A || !A.getCurrentUser) {
-        setStatus("Tryb offline / gość.");
+    function switchToRegisterMode() {
+      mode = "register";
+      if (pass2) pass2.style.display = "inline-block";
+      btnLogin.textContent = "Zarejestruj";
+      btnRegister.textContent = "Mam konto";
+      setError("");
+    }
+
+    switchToLoginMode();
+    setStatus("Ładuję status...");
+
+    // status na starcie
+    ArcadeAuth.getUser().then((user) => {
+      if (user) {
+        setStatus(`Zalogowany jako: ${user.email}`);
+        if (btnLogout) btnLogout.style.display = "inline-block";
+        if (btnGuest) btnGuest.style.display = "none";
+      } else {
+        setStatus("Gość (niezalogowany)");
+        if (btnLogout) btnLogout.style.display = "none";
+        if (btnGuest) btnGuest.style.display = "inline-block";
+      }
+    });
+
+    // zmiana stanu sesji
+    ArcadeAuth.onAuthStateChange(async (event, session) => {
+      const user = session?.user || (await ArcadeAuth.getUser());
+      if (user) {
+        setStatus(`Zalogowany jako: ${user.email}`);
+        if (btnLogout) btnLogout.style.display = "inline-block";
+        if (btnGuest) btnGuest.style.display = "none";
+      } else {
+        setStatus("Gość (niezalogowany)");
+        if (btnLogout) btnLogout.style.display = "none";
+        if (btnGuest) btnGuest.style.display = "inline-block";
+      }
+    });
+
+    // logowanie / rejestracja – ten sam przycisk
+    btnLogin.addEventListener("click", async () => {
+      setError("");
+      const mail = email.value.trim();
+      const pwd = pass.value;
+
+      if (!mail || !pwd) {
+        setError("Podaj e-mail i hasło.");
         return;
       }
 
-      const user = await A.getCurrentUser();
-      const mode = A.getMode ? A.getMode() : (localStorage.getItem("arcade_mode") || "guest");
-
-      if (user) {
-        setStatus("Zalogowany jako: " + (user.email || user.id));
-        emailInput && (emailInput.style.display = "none");
-        passInput  && (passInput.style.display  = "none");
-        pass2Input && (pass2Input.style.display = "none");
-        btnLogin   && (btnLogin.style.display   = "none");
-        btnRegister&& (btnRegister.style.display= "none");
-        btnGuest   && (btnGuest.style.display   = "none");
-        btnLogout  && (btnLogout.style.display  = "inline-block");
-        showError("");
+      if (mode === "register") {
+        if (pass2 && pass2.value !== pwd) {
+          setError("Hasła nie są takie same.");
+          return;
+        }
+        try {
+          await ArcadeAuth.signUp(mail, pwd);
+          setStatus("Sprawdź skrzynkę e-mail – wysłaliśmy link aktywacyjny.");
+          if (onRegisterSuccess) onRegisterSuccess();
+        } catch (e) {
+          console.error("[ArcadeAuthUI] register error:", e);
+          setError(e.message || "Błąd rejestracji.");
+        }
       } else {
-        if (mode === "guest") {
-          setStatus("Tryb gościa – zapis lokalny.");
-        } else {
-          setStatus("Nie zalogowany – możesz grać jako gość lub się zalogować.");
-        }
-        emailInput && (emailInput.style.display = "inline-block");
-        passInput  && (passInput.style.display  = "inline-block");
-        btnRegister&& (btnRegister.style.display= "inline-block");
-        btnGuest   && (btnGuest.style.display   = "inline-block");
-        btnLogout  && (btnLogout.style.display  = "none");
-        setRegisterUI(registerMode); // odśwież UI przycisków
-      }
-    }
-
-    // Obsługa linka aktywacji z maila: #...type=signup
-    if (checkSignupHash) {
-      const rawHash = window.location.hash || "";
-      const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
-      if (hash) {
-        const hp = new URLSearchParams(hash);
-        if (hp.get("type") === "signup") {
-          setRegisterUI(false);
-          setStatus("Konto aktywowane. Możesz się zalogować.");
-          showError("");
-          history.replaceState({}, "", window.location.pathname);
+        try {
+          await ArcadeAuth.signIn(mail, pwd);
+          setStatus("Zalogowano.");
+          if (onLoginSuccess) onLoginSuccess();
+        } catch (e) {
+          console.error("[ArcadeAuthUI] login error:", e);
+          setError(e.message || "Błąd logowania.");
         }
       }
-    }
+    });
 
-    // --- HANDLERY PRZYCISKÓW ---
+    // przełącznik trybu
+    btnRegister.addEventListener("click", () => {
+      if (mode === "login") {
+        switchToRegisterMode();
+      } else {
+        switchToLoginMode();
+      }
+    });
 
-    // Gość
-    if (btnGuest) {
-      btnGuest.addEventListener("click", async () => {
-        if (window.ArcadeAuth && ArcadeAuth.setGuest) {
-          ArcadeAuth.setGuest();
-        } else {
-          localStorage.setItem("arcade_mode", "guest");
-        }
-        showError("");
-        if (onGuest) {
-          onGuest();
-        } else {
-          await refreshState();
-        }
-      });
-    }
-
-    // Logowanie
-    if (btnLogin) {
-      btnLogin.addEventListener("click", async () => {
-        if (registerMode) return;
-        const A = window.ArcadeAuth;
-        if (!A || !A.login) {
-          showError("Brak połączenia z serwerem logowania.");
-          return;
-        }
-
-        const email = emailInput ? emailInput.value.trim() : "";
-        const pass  = passInput ? passInput.value : "";
-
-        if (!email || !pass) {
-          showError("Podaj email i hasło.");
-          return;
-        }
-
-        const { error } = await A.login(email, pass);
-        if (error) {
-          console.error("[ArcadeAuthUI] login error:", error);
-          showError("Nieprawidłowy email lub hasło.");
-          return;
-        }
-
-        showError("");
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        } else {
-          await refreshState();
-        }
-      });
-    }
-
-    // Rejestracja (dwuklik)
-    if (btnRegister) {
-      btnRegister.addEventListener("click", async () => {
-        const A = window.ArcadeAuth;
-        if (!A || !A.register) {
-          showError("Brak połączenia z serwerem rejestracji.");
-          return;
-        }
-
-        // pierwszy klik → przełącz UI
-        if (!registerMode) {
-          setRegisterUI(true);
-          return;
-        }
-
-        // drugi klik → faktyczna rejestracja
-        const email = emailInput ? emailInput.value.trim() : "";
-        const pass  = passInput ? passInput.value : "";
-        const pass2 = pass2Input ? pass2Input.value : "";
-
-        if (!email || !pass || !pass2) {
-          showError("Uzupełnij wszystkie pola.");
-          return;
-        }
-        if (pass !== pass2) {
-          showError("Hasła muszą być identyczne.");
-          return;
-        }
-        if (pass.length < 6) {
-          showError("Hasło musi mieć min. 6 znaków.");
-          return;
-        }
-
-        const { error } = await A.register(email, pass);
-        if (error) {
-          console.error("[ArcadeAuthUI] register error:", error);
-          const msg = (error.message || "").toLowerCase();
-          if (msg.includes("already")) {
-            showError("Taki użytkownik już istnieje. Spróbuj się zalogować.");
-          } else {
-            showError("Błąd rejestracji: " + error.message);
-          }
-          return;
-        }
-
-        alert("Konto utworzone. Sprawdź maila, aktywuj konto i zaloguj się.");
-        setRegisterUI(false);
-        if (passInput) passInput.value = "";
-        if (pass2Input) pass2Input.value = "";
-      });
-    }
-
-    // Wyloguj
     if (btnLogout) {
       btnLogout.addEventListener("click", async () => {
-        const A = window.ArcadeAuth;
-        if (A && A.logout) {
-          await A.logout();
-        } else {
-          localStorage.setItem("arcade_mode", "guest");
+        setError("");
+        try {
+          await ArcadeAuth.signOut();
+          setStatus("Wylogowano.");
+          if (onLogout) onLogout();
+        } catch (e) {
+          console.error("[ArcadeAuthUI] logout error:", e);
+          setError("Błąd wylogowania.");
         }
-        await refreshState();
       });
     }
 
-    // Reset hasła
+    if (btnGuest && onGuest) {
+      btnGuest.addEventListener("click", () => {
+        onGuest();
+      });
+    }
+
     if (btnForgot) {
-      btnForgot.addEventListener("click", async () => {
-        const A = window.ArcadeAuth;
-        if (!A || !A.resetPassword) {
-          showError("Reset hasła niedostępny.");
-          return;
-        }
-        const email = emailInput ? emailInput.value.trim() : "";
-        if (!email) {
-          showError("Podaj email do resetu hasła.");
-          return;
-        }
-        const redirectBase =
-          window.location.origin +
-          window.location.pathname.replace(/index\.html$/, "");
-        const { error } = await A.resetPassword(
-          email,
-          redirectBase + "index.html"
-        );
-        if (error) {
-          console.error("[ArcadeAuthUI] reset error:", error);
-          showError("Nie udało się wysłać linku resetującego.");
-          return;
-        }
-        alert("Jeśli konto istnieje, wysłaliśmy link do zmiany hasła.");
+      btnForgot.addEventListener("click", () => {
+        setError("Reset hasła jeszcze nie jest dostępny.");
       });
     }
-
-    // start
-    setRegisterUI(false);
-    refreshState();
-  }
+  },
 };
