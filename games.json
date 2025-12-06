@@ -12,7 +12,7 @@
       "name": "Gry klasyczne",
       "icon": "🎮",
       "folder": "games/classic",
-      "games": ["2048"]
+      "games": ["2048",[pong]]
     }
   ]
 }
