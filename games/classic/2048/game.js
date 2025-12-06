@@ -49,13 +49,12 @@ function boardsEqual(a, b) {
 // ----- UI planszy -----
 function initBoardDOM() {
   boardEl.innerHTML = "";
-  boardEl.classList.add("board-2048-grid");
   const frag = document.createDocumentFragment();
 
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
       const cell = document.createElement("div");
-      cell.className = "cell-2048";
+      cell.className = "tile";
       cell.dataset.row = String(r);
       cell.dataset.col = String(c);
       frag.appendChild(cell);
@@ -66,18 +65,18 @@ function initBoardDOM() {
 }
 
 function updateBoardUI() {
-  const cells = boardEl.querySelectorAll(".cell-2048");
+  const cells = boardEl.querySelectorAll(".tile");
   cells.forEach((cell) => {
     const r = parseInt(cell.dataset.row, 10);
     const c = parseInt(cell.dataset.col, 10);
     const value = board[r][c];
 
     cell.textContent = value > 0 ? String(value) : "";
-    cell.className = "cell-2048"; // reset klas
+    cell.className = "tile"; // reset klas
 
     if (value > 0) {
-      cell.classList.add("cell-2048--filled");
-      cell.classList.add("cell-2048--v" + value);
+      cell.classList.add("tile--filled");
+      cell.classList.add("tile--" + value);
     }
   });
 
@@ -235,12 +234,16 @@ function isGameOver() {
 }
 
 function handleGameOver() {
-  // prosta informacja – możesz ją zastąpić czymś ładniejszym
-  alert(
-    "Koniec gry!\nWynik: " +
-      score +
-      (score === 2048 ? "\nGratulacje, osiągnąłeś 2048!" : "")
-  );
+  const overlay = document.getElementById("overlay");
+  if (overlay) {
+    overlay.classList.remove("overlay--hidden");
+  } else {
+    alert(
+      "Koniec gry!\nWynik: " +
+        score +
+        (score === 2048 ? "\nGratulacje, osiągnąłeś 2048!" : "")
+    );
+  }
 }
 
 // ----- Zapis progresu (per użytkownik/gość) -----
@@ -319,6 +322,9 @@ function clearProgress() {
 
 // ----- Sterowanie grą -----
 function resetGame() {
+  const overlay = document.getElementById("overlay");
+  if (overlay) overlay.classList.add("overlay--hidden");
+
   board = createEmptyBoard();
   score = 0;
   totalGames += 1;
@@ -326,7 +332,13 @@ function resetGame() {
   addRandomTile();
   hasUnsavedChanges = true;
   updateBoardUI();
+
+  const gamesPlayedInfo = document.getElementById("games-played-info");
+  if (gamesPlayedInfo) {
+    gamesPlayedInfo.textContent = String(totalGames);
+  }
 }
+
 
 function handleKeyDown(e) {
   const key = e.key;
@@ -439,6 +451,15 @@ function initGame2048() {
           "Rozpocząć nową grę? Aktualny postęp tej rozgrywki nie zostanie zapisany."
         );
       if (!shouldReset) return;
+      resetGame();
+    });
+  }
+
+  const playAgainBtn = document.getElementById("play-again-btn");
+  if (playAgainBtn) {
+    playAgainBtn.addEventListener("click", function () {
+      const overlay = document.getElementById("overlay");
+      if (overlay) overlay.classList.add("overlay--hidden");
       resetGame();
     });
   }
