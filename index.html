@@ -1,63 +1,135 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
-  <meta charset="UTF-8" />
-  <title>Neon Arcade – logowanie</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neon Arcade – logowanie</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/theme.css" />
 
-  <!-- Główny motyw + styl ekranu logowania -->
-  <link rel="stylesheet" href="css/theme.css">
-  <link rel="stylesheet" href="css/login.css">
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+    <script src="js/core/auth.js" defer></script>
 
-  <!-- Supabase z CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        // jeśli user jest zalogowany → od razu do arcade
+        if (window.ArcadeAuth && ArcadeAuth.getUser) {
+          const user = await ArcadeAuth.getUser();
+          if (user) {
+            window.location.href = "arcade.html";
+            return;
+          }
+        }
 
-  <!-- Wspólna logika autoryzacji (ArcadeAuth + ArcadeAuthUI) -->
-  <script src="js/core/auth.js" defer></script>
+        const email = document.querySelector(".auth-email");
+        const pass = document.querySelector(".auth-pass");
+        const pass2 = document.querySelector(".auth-pass2");
+        const status = document.querySelector(".auth-status");
+        const error = document.querySelector(".auth-error");
+        const btnLogin = document.querySelector(".auth-login");
+        const btnRegister = document.querySelector(".auth-register");
+        const btnGuest = document.querySelector(".auth-guest");
+        const btnLogout = document.querySelector(".auth-logout");
+        const btnForgot = document.querySelector(".auth-forgot");
 
-  <!-- Logika tylko dla tej strony (konfiguracja panelu) -->
-  <script src="js/pages/index.js" defer></script>
-</head>
-<body class="arcade-body">
-  <div class="shell login-shell">
-    <div class="card login-card">
-      <div class="login-title">Neon Arcade</div>
-      <div class="login-subtitle" id="subtitle">
-        Zaloguj się albo wejdź jako gość.
-      </div>
+        if (window.ArcadeAuthUI && ArcadeAuthUI.initLoginPanel) {
+          ArcadeAuthUI.initLoginPanel({
+            email,
+            pass,
+            pass2,
+            status,
+            error,
+            btnLogin,
+            btnRegister,
+            btnGuest,
+            btnLogout,
+            btnForgot,
+            onLoginSuccess() {
+              window.location.href = "arcade.html";
+            },
+            onRegisterSuccess() {
+              // zostajemy tu, user musi kliknąć link aktywacyjny z maila
+            },
+            onLogout() {
+              window.location.reload();
+            },
+            onGuest() {
+              window.location.href = "arcade.html";
+            },
+          });
+        }
+      });
 
-      <div class="login-label">Email</div>
-      <input id="email" type="email" class="login-input" placeholder="twoj@mail.com">
+      // obsługa powrotu strzałką – przy wejściu z cache też sprawdź
+      window.addEventListener("pageshow", async (event) => {
+        if (event.persisted) {
+          if (window.ArcadeAuth && ArcadeAuth.getUser) {
+            const user = await ArcadeAuth.getUser();
+            if (user) {
+              window.location.href = "arcade.html";
+            }
+          }
+        }
+      });
+    </script>
+  </head>
+  <body class="arcade-body">
+    <div class="shell">
+      <div class="card">
+        <header class="header">
+          <div>
+            <div class="title">NEON ARCADE</div>
+            <div class="subtitle">Zaloguj się, aby grać.</div>
+          </div>
+        </header>
 
-      <div class="login-label">Hasło</div>
-      <input id="pass" type="password" class="login-input" placeholder="••••••••">
+        <div class="auth-status" style="margin-bottom: 12px">
+          Ładuję status...
+        </div>
 
-      <div class="login-label" id="label-pass2">
-        Powtórz hasło
-      </div>
-      <input id="pass2" type="password" class="login-input" placeholder="••••••••">
+        <div class="auth-controls">
+          <input
+            type="email"
+            class="auth-email arcade-input"
+            placeholder="Email"
+          />
+          <input
+            type="password"
+            class="auth-pass arcade-input"
+            placeholder="Hasło"
+          />
+          <input
+            type="password"
+            class="auth-pass2 arcade-input"
+            placeholder="Powtórz hasło"
+            style="display: none"
+          />
 
-      <div class="login-row">
-        <button id="btn-login" class="btn btn-main" type="button">Zaloguj</button>
-        <button id="btn-register" class="btn btn-secondary" type="button">Załóż konto</button>
-      </div>
+          <div style="margin-top: 12px">
+            <button class="arcade-btn auth-login">Zaloguj</button>
+            <button class="arcade-btn auth-register">Załóż konto</button>
+            <button class="arcade-btn auth-guest">Gość</button>
+            <button class="arcade-btn auth-logout" style="display: none">
+              Wyloguj
+            </button>
+          </div>
 
-      <button id="btn-forgot" class="btn btn-link" type="button">
-        Przypomnij hasło
-      </button>
-
-      <button id="btn-guest" class="btn btn-ghost" type="button" style="width:100%;margin-top:8px;">
-        Graj jako gość
-      </button>
-
-      <div id="error" class="login-error"></div>
-
-      <div class="login-hint">
-        Gość zapisuje wyniki tylko na tym urządzeniu. <br>
-        Konto pozwala przechowywać progres w chmurze.
+          <div style="margin-top: 8px">
+            <span
+              class="auth-forgot"
+              style="cursor:pointer;font-size:11px;opacity:0.8;"
+            >
+              Przypomnij hasło
+            </span>
+            <span
+              class="auth-error"
+              style="margin-left:8px;font-size:11px;color:#fca5a5;"
+            ></span>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
