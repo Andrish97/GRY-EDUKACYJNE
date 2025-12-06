@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Neon 2048 (smooth)</title>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #1f2933, #020617);
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      padding: 16px 20px 18px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(148, 163, 184, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(8px);
+      max-width: 360px;
+      width: 100%;
+    }
+
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #cbd5f5;
+    }
+
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+    }
+
+    .value {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    #status {
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #9ca3af;
+      min-height: 18px;
+      text-align: center;
+    }
+
+    /* BOARD LAYERED: tło + kafelki */
+    #board {
+      position: relative;
+      width: 296px;   /* 8 + 4*64 + 3*8 + 8 */
+      height: 296px;
+      background: #020617;
+      border-radius: 12px;
+      padding: 8px;
+      box-sizing: border-box;
+      box-shadow:
+        inset 0 0 0 1px rgba(30, 64, 175, 0.4),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    #grid-bg {
+      position: absolute;
+      inset: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 64px);
+      grid-template-rows: repeat(4, 64px);
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .cell-bg {
+      border-radius: 10px;
+      background: #020617;
+      border: 1px solid rgba(15, 23, 42, 0.95);
+    }
+
+    #tiles-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .tile {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 22px;
+      color: #e5e7eb;
+      box-sizing: border-box;
+      border: 1px solid rgba(30, 41, 59, 0.9);
+      background: #020617;
+      transition:
+        transform 0.13s ease-out,
+        background 0.1s ease,
+        border-color 0.1s ease,
+        color 0.1s ease;
+    }
+
+    .tile.new {
+      animation: pop 0.18s ease-out;
+    }
+
+    .tile.merged {
+      animation: bump 0.15s ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.2); opacity: 0; }
+      60% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes bump {
+      0% { transform: scale(1); }
+      60% { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    /* Kolory kafelków (neon 2048) */
+    .v2    { background: #0f172a; color:#e5e7eb; border-color:#1e293b; }
+    .v4    { background: #1f2937; color:#e5e7eb; border-color:#4b5563; }
+    .v8    { background: #f97316; color:#1f2933; border-color:#fb923c; }
+    .v16   { background: #facc15; color:#422006; border-color:#fde047; }
+    .v32   { background: #22c55e; color:#022c22; border-color:#4ade80; }
+    .v64   { background: #34d399; color:#022c22; border-color:#6ee7b7; }
+    .v128  { background: #38bdf8; color:#0b1120; border-color:#7dd3fc; font-size:20px; }
+    .v256  { background: #6366f1; color:#e0f2fe; border-color:#818cf8; font-size:20px; }
+    .v512  { background: #a855f7; color:#fdf2ff; border-color:#c4b5fd; font-size:20px; }
+    .v1024 { background: #ec4899; color:#fdf2ff; border-color:#f472b6; font-size:20px; }
+    .v2048 {
+      background: linear-gradient(135deg,#eab308,#f97316,#22c55e);
+      color:#022c22;
+      border-color:#facc15;
+      font-size:20px;
+    }
+
+    #info {
+      margin-top: 2px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    #info b {
+      color: #e5e7eb;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #052e16;
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.45);
+      transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.08s;
+      width: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(22, 163, 74, 0.6);
+      filter: brightness(1.05);
+    }
+
+    button:active {
+      transform: translateY(0px) scale(0.98);
+      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.45);
+      filter: brightness(0.97);
+    }
+  </style>
+</head>
+<body>
+	<script>
+	(function() {
+	  // jeśli gra została otwarta jako fullscreen (z index.html)
+	  const params = new URLSearchParams(window.location.search);
+	  const isFullscreen = params.get("fullscreen") === "1";
+
+	  if (!isFullscreen) return;
+
+	  const btn = document.createElement("button");
+	  btn.textContent = "Powrót do Arcade";
+	  btn.style.position = "fixed";
+	  btn.style.top = "20px";
+	  btn.style.left = "20px";
+	  btn.style.padding = "8px 16px";
+	  btn.style.border = "none";
+	  btn.style.borderRadius = "999px";
+	  btn.style.cursor = "pointer";
+	  btn.style.zIndex = "9999";
+	  btn.style.fontSize = "14px";
+	  btn.style.fontWeight = "600";
+	  btn.style.background = "linear-gradient(135deg,#22c55e,#16a34a)";
+	  btn.style.color = "#052e16";
+	  btn.style.boxShadow = "0 8px 18px rgba(22,163,74,0.45)";
+	  btn.style.transition = "transform 0.06s ease, box-shadow 0.06s ease";
+
+	  btn.onmouseover = () => {
+		btn.style.transform = "translateY(-1px)";
+		btn.style.boxShadow = "0 12px 26px rgba(22,163,74,0.6)";
+	  };
+	  btn.onmouseout = () => {
+		btn.style.transform = "translateY(0)";
+		btn.style.boxShadow = "0 8px 18px rgba(22,163,74,0.45)";
+	  };
+
+	  btn.onclick = () => {
+		// wraca do index.html niezależnie co to za gra i skąd
+		window.location.href = "../index.html";
+	  };
+
+	  document.body.appendChild(btn);
+	})();
+	</script>
+
+	<script>
+	  // jeśli otwarta przez index.html, ArcadeBackend już istnieje
+	  // jeśli ktoś odpali samą 2048.html bez backendu – fallback do lokalnego storage
+	  if (!window.ArcadeBackend) {
+		window.ArcadeBackend = {
+		  async saveProgress(gameId, data) {
+			localStorage.setItem("progress_local_" + gameId, JSON.stringify(data));
+		  },
+		  async loadProgress(gameId) {
+			const raw = localStorage.getItem("progress_local_" + gameId);
+			return raw ? JSON.parse(raw) : null;
+		  }
+		};
+	  }
+	</script>
+
+  <div class="card">
+    <div class="top-bar">
+      <div>
+        <div class="label">Score</div>
+        <div class="value" id="score">0</div>
+      </div>
+      <div>
+        <div class="label">Best</div>
+        <div class="value" id="best">0</div>
+      </div>
+    </div>
+
+    <div id="status">Połącz płytki, aby dojść do 2048!</div>
+
+    <div id="board">
+      <div id="grid-bg"></div>
+      <div id="tiles-layer"></div>
+    </div>
+
+    <div id="info">
+      Sterowanie: <b>← → ↑ ↓</b> lub <b>WASD</b>. <br />
+      Brak możliwych ruchów = koniec gry.
+    </div>
+
+    <button id="restart">Restart</button>
+  </div>
+
+  <script>
+    const boardSize = 4;
+    const cellSize = 64;
+    const gap = 8;
+    const padding = 8;
+
+    const boardEl = document.getElementById("board");
+    const gridBgEl = document.getElementById("grid-bg");
+    const tilesLayerEl = document.getElementById("tiles-layer");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const statusEl = document.getElementById("status");
+    const restartBtn = document.getElementById("restart");
+
+    let board = []; // 2D: tile object lub null
+    let score = 0;
+	let best = 0;
+	let totalGames = 0;
+
+	async function initProgress2048() {
+	  const saved = await ArcadeBackend.loadProgress("2048");
+	  if (saved) {
+		best = saved.bestScore || 0;
+		totalGames = saved.totalGames || 0;
+	  } else {
+		best = 0;
+		totalGames = 0;
+	  }
+	  bestEl.textContent = best;
+	}
+
+	initProgress2048();
+
+    let gameOver = false;
+
+    function tilePosition(row, col) {
+      const x = padding + col * (cellSize + gap);
+      const y = padding + row * (cellSize + gap);
+      return { x, y };
+    }
+
+    function setupBackground() {
+      gridBgEl.innerHTML = "";
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          const bg = document.createElement("div");
+          bg.className = "cell-bg";
+          gridBgEl.appendChild(bg);
+        }
+      }
+    }
+
+    function createEmptyBoard() {
+      board = [];
+      for (let r = 0; r < boardSize; r++) {
+        const row = [];
+        for (let c = 0; c < boardSize; c++) {
+          row.push(null);
+        }
+        board.push(row);
+      }
+      tilesLayerEl.innerHTML = ""; // usuń wszystkie kafelki z DOM
+    }
+
+    function updateScore(add) {
+      score += add;
+      scoreEl.textContent = score;
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+      }
+    }
+
+    function newTile(row, col, value) {
+      const el = document.createElement("div");
+      el.className = "tile new v" + value;
+      el.textContent = value;
+      const pos = tilePosition(row, col);
+      el.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+      tilesLayerEl.appendChild(el);
+      return { row, col, value, el };
+    }
+
+    function addRandomTile() {
+      const empty = [];
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          if (!board[r][c]) empty.push({ r, c });
+        }
+      }
+      if (!empty.length) return;
+      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
+      const value = Math.random() < 0.9 ? 2 : 4;
+      const tile = newTile(r, c, value);
+      board[r][c] = tile;
+    }
+
+    function updateTilesView() {
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          const tile = board[r][c];
+          if (!tile) continue;
+          tile.row = r;
+          tile.col = c;
+
+          // odśwież klasę pod wartość
+          tile.el.className = "tile v" + tile.value;
+          const pos = tilePosition(r, c);
+          tile.el.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+          tile.el.textContent = tile.value;
+        }
+      }
+    }
+
+    function resetGame() {
+      score = 0;
+      scoreEl.textContent = score;
+      statusEl.textContent = "Połącz płytki, aby dojść do 2048!";
+      gameOver = false;
+      createEmptyBoard();
+      addRandomTile();
+      addRandomTile();
+      updateTilesView();
+    }
+
+    function arraysEqual(a, b) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    function moveLeft() {
+      let changed = false;
+      let gained = 0;
+
+      for (let r = 0; r < boardSize; r++) {
+        const currentRow = board[r];
+        const tilesLine = currentRow.filter(t => t !== null);
+        if (!tilesLine.length) continue;
+
+        board[r] = new Array(boardSize).fill(null);
+        let targetCol = 0;
+        let i = 0;
+
+        while (i < tilesLine.length) {
+          let tile = tilesLine[i];
+
+          if (i + 1 < tilesLine.length && tilesLine[i + 1].value === tile.value) {
+            // merge
+            let tile2 = tilesLine[i + 1];
+            tile.value *= 2;
+            gained += tile.value;
+
+            tile2.el.remove();
+
+            if (tile.col !== targetCol || tile.row !== r) changed = true;
+
+            board[r][targetCol] = tile;
+            tile.col = targetCol;
+            tile.row = r;
+            tile.el.classList.add("merged");
+
+            targetCol++;
+            i += 2;
+          } else {
+            if (tile.col !== targetCol || tile.row !== r) changed = true;
+            board[r][targetCol] = tile;
+            tile.col = targetCol;
+            tile.row = r;
+            targetCol++;
+            i++;
+          }
+        }
+      }
+
+      if (gained > 0) updateScore(gained);
+      return changed;
+    }
+
+    function moveRight() {
+      let changed = false;
+      let gained = 0;
+
+      for (let r = 0; r < boardSize; r++) {
+        const currentRow = board[r];
+        const tilesLine = [];
+        for (let c = boardSize - 1; c >= 0; c--) {
+          if (currentRow[c]) tilesLine.push(currentRow[c]);
+        }
+        if (!tilesLine.length) continue;
+
+        board[r] = new Array(boardSize).fill(null);
+        let targetCol = boardSize - 1;
+        let i = 0;
+
+        while (i < tilesLine.length) {
+          let tile = tilesLine[i];
+
+          if (i + 1 < tilesLine.length && tilesLine[i + 1].value === tile.value) {
+            let tile2 = tilesLine[i + 1];
+            tile.value *= 2;
+            gained += tile.value;
+
+            tile2.el.remove();
+
+            if (tile.col !== targetCol || tile.row !== r) changed = true;
+
+            board[r][targetCol] = tile;
+            tile.col = targetCol;
+            tile.row = r;
+            tile.el.classList.add("merged");
+
+            targetCol--;
+            i += 2;
+          } else {
+            if (tile.col !== targetCol || tile.row !== r) changed = true;
+            board[r][targetCol] = tile;
+            tile.col = targetCol;
+            tile.row = r;
+            targetCol--;
+            i++;
+          }
+        }
+      }
+
+      if (gained > 0) updateScore(gained);
+      return changed;
+    }
+
+    function moveUp() {
+      let changed = false;
+      let gained = 0;
+
+      for (let c = 0; c < boardSize; c++) {
+        const colTiles = [];
+        for (let r = 0; r < boardSize; r++) {
+          if (board[r][c]) colTiles.push(board[r][c]);
+        }
+        if (!colTiles.length) continue;
+
+        let targetRow = 0;
+        let i = 0;
+        const newCol = new Array(boardSize).fill(null);
+
+        while (i < colTiles.length) {
+          let tile = colTiles[i];
+
+          if (i + 1 < colTiles.length && colTiles[i + 1].value === tile.value) {
+            let tile2 = colTiles[i + 1];
+            tile.value *= 2;
+            gained += tile.value;
+
+            tile2.el.remove();
+
+            if (tile.row !== targetRow || tile.col !== c) changed = true;
+
+            newCol[targetRow] = tile;
+            tile.row = targetRow;
+            tile.col = c;
+            tile.el.classList.add("merged");
+
+            targetRow++;
+            i += 2;
+          } else {
+            if (tile.row !== targetRow || tile.col !== c) changed = true;
+
+            newCol[targetRow] = tile;
+            tile.row = targetRow;
+            tile.col = c;
+            targetRow++;
+            i++;
+          }
+        }
+
+        for (let r = 0; r < boardSize; r++) {
+          board[r][c] = newCol[r];
+        }
+      }
+
+      if (gained > 0) updateScore(gained);
+      return changed;
+    }
+
+    function moveDown() {
+      let changed = false;
+      let gained = 0;
+
+      for (let c = 0; c < boardSize; c++) {
+        const colTiles = [];
+        for (let r = boardSize - 1; r >= 0; r--) {
+          if (board[r][c]) colTiles.push(board[r][c]);
+        }
+        if (!colTiles.length) continue;
+
+        let targetRow = boardSize - 1;
+        let i = 0;
+        const newCol = new Array(boardSize).fill(null);
+
+        while (i < colTiles.length) {
+          let tile = colTiles[i];
+
+          if (i + 1 < colTiles.length && colTiles[i + 1].value === tile.value) {
+            let tile2 = colTiles[i + 1];
+            tile.value *= 2;
+            gained += tile.value;
+
+            tile2.el.remove();
+
+            if (tile.row !== targetRow || tile.col !== c) changed = true;
+
+            newCol[targetRow] = tile;
+            tile.row = targetRow;
+            tile.col = c;
+            tile.el.classList.add("merged");
+
+            targetRow--;
+            i += 2;
+          } else {
+            if (tile.row !== targetRow || tile.col !== c) changed = true;
+
+            newCol[targetRow] = tile;
+            tile.row = targetRow;
+            tile.col = c;
+            targetRow--;
+            i++;
+          }
+        }
+
+        for (let r = 0; r < boardSize; r++) {
+          board[r][c] = newCol[r];
+        }
+      }
+
+      if (gained > 0) updateScore(gained);
+      return changed;
+    }
+
+    function hasMoves() {
+      // wolne pola
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          if (!board[r][c]) return true;
+        }
+      }
+      // możliwe łączenia
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          const tile = board[r][c];
+          if (!tile) continue;
+          const v = tile.value;
+          if (r + 1 < boardSize && board[r + 1][c] && board[r + 1][c].value === v) return true;
+          if (c + 1 < boardSize && board[r][c + 1] && board[r][c + 1].value === v) return true;
+        }
+      }
+      return false;
+    }
+
+    function checkWinTile() {
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          const tile = board[r][c];
+          if (tile && tile.value === 2048) return true;
+        }
+      }
+      return false;
+    }
+
+    function handleMove(dir) {
+      if (gameOver) return;
+
+      // usuń flagę merged z poprzedniej tury
+      document.querySelectorAll(".tile.merged").forEach(el =>
+        el.classList.remove("merged")
+      );
+
+      let changed = false;
+      if (dir === "left") changed = moveLeft();
+      else if (dir === "right") changed = moveRight();
+      else if (dir === "up") changed = moveUp();
+      else if (dir === "down") changed = moveDown();
+
+      if (changed) {
+        updateTilesView();
+        // po krótkiej chwili dobierz nowy kafelek, żeby animacja miała czas
+        setTimeout(() => {
+          addRandomTile();
+          updateTilesView();
+
+          if (checkWinTile()) {
+            statusEl.textContent = "Masz 2048! Możesz grać dalej 🙂";
+          }
+          if (!hasMoves()) {
+            statusEl.textContent = "Koniec gry! Brak możliwych ruchów.";
+            gameOver = true;
+			onGameOver2048();
+          }
+        }, 130);
+      }
+    }
+	
+	async function onGameOver2048() {
+	  totalGames++;
+	  await ArcadeBackend.saveProgress("2048", {
+		bestScore: best,
+		totalGames: totalGames
+	  });
+	}
+
+
+    document.addEventListener("keydown", (e) => {
+      const key = e.key;
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(key)) {
+        e.preventDefault();
+      }
+      if (key === "ArrowLeft" || key === "a" || key === "A") handleMove("left");
+      else if (key === "ArrowRight" || key === "d" || key === "D") handleMove("right");
+      else if (key === "ArrowUp" || key === "w" || key === "W") handleMove("up");
+      else if (key === "ArrowDown" || key === "s" || key === "S") handleMove("down");
+    });
+
+    restartBtn.addEventListener("click", resetGame);
+
+    // start
+    setupBackground();
+    resetGame();
+  </script>
+</body>
+</html>
