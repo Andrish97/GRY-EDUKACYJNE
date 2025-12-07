@@ -35,36 +35,79 @@
     <div class="shell">
       <div class="card game-root pong-root">
         <header class="game-header">
-          <div>
+          <div class="game-header-main">
             <h1 class="game-title">Neon Pong</h1>
             <p class="game-subtitle">
-              Sterowanie: <strong>A/D</strong>,
-              <strong>strzałki lewo/prawo</strong>,
-              myszą lub dotykiem (przeciągnij paletkę).
+              Sterowanie: <strong>A/D</strong>, <strong>strzałki lewo/prawo</strong>,
+              myszą lub dotykiem – <strong>złap paletkę i przeciągnij</strong>.
             </p>
+
+            <!-- Ładny przełącznik trybów (slider) -->
+            <div class="mode-toggle" id="mode-toggle">
+              <div class="mode-toggle__slider" id="mode-toggle-slider"></div>
+              <button
+                type="button"
+                class="mode-toggle__option mode-toggle__option--active"
+                data-mode="wall"
+              >
+                Ściana
+              </button>
+              <button
+                type="button"
+                class="mode-toggle__option"
+                data-mode="ai"
+              >
+                Pojedynek z AI
+              </button>
+            </div>
           </div>
 
-          <div class="mode-switch">
-            <button
-              id="mode-wall-btn"
-              class="btn-primary mode-btn mode-btn--active"
-            >
-              Trening: Ściana
-            </button>
-            <button id="mode-ai-btn" class="btn-primary mode-btn">
-              Pojedynek z AI
-            </button>
+          <div class="game-header-side">
+            <div class="stats-panel">
+              <div class="stat-box">
+                <span class="stat-label">Wynik</span>
+                <span id="current-score" class="stat-value">0</span>
+              </div>
+              <div class="stat-box">
+                <span id="record-label" class="stat-label">Rekord – Ściana</span>
+                <span id="best-score" class="stat-value">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Rozegrane gry</span>
+                <span id="games-played" class="stat-value">0</span>
+              </div>
+            </div>
+
+            <div class="controls-panel">
+              <button id="new-game-btn" class="btn-primary btn-sm">
+                Nowa gra
+              </button>
+              <button id="save-game-btn" class="btn-primary btn-sm">
+                Zapisz
+              </button>
+              <button id="reset-record-btn" class="btn-primary btn-sm">
+                Wyzeruj rekord
+              </button>
+              <button
+                id="pause-btn"
+                class="btn-primary btn-sm btn-secondary"
+              >
+                Pauza
+              </button>
+            </div>
           </div>
         </header>
 
         <div class="pong-layout">
           <canvas id="game"></canvas>
+          <!-- Wynik Gracz : Straty / Gracz : AI -->
           <div id="score" class="pong-score">0 : 0</div>
         </div>
 
         <p class="pong-hint">
-          Trening: odbicia (Gracz) i straty.  
-          Pojedynek: klasyczny wynik Gracz : AI.
+          <strong>Ściana:</strong> lewa wartość to odbicia, prawa – straty.  
+          <strong>Pojedynek z AI:</strong> wynik Gracz : AI. Rekord zapisywany
+          osobno dla każdego trybu.
         </p>
       </div>
     </div>
