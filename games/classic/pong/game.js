@@ -7,13 +7,13 @@ let currentMode = MODE_WALL;
 
 let canvas, ctx;
 
-// Paletki (pionowe kloce)
+// Paletki
 let bottomPaddle, topPaddle;
 
 // Piłka
 let ball;
 
-// Wyniki bieżącej rozgrywki
+// Wyniki bieżącej rozgrywki (aktualnego meczu)
 let playerScore = 0;
 let enemyScore = 0;
 
@@ -47,13 +47,16 @@ const keys = {
   ArrowDown: false
 };
 
-// Progres / guardy
+// Progres / guardy / pauza
 let hasUnsavedChanges = false;
 let LAST_SAVE_DATA = null;
 let isPaused = false;
 
+// Wczytana sesja (stan gry) — używamy po resize canvas
+let loadedSession = null;
+
 /* ============================
-   Helpers
+   Helpery
 ============================ */
 
 function W() {
@@ -81,17 +84,18 @@ function loadProgress() {
     .then(raw => {
       let data = raw;
 
-      // Jeśli z jakiegoś powodu dostajemy string, spróbujmy go sparsować
+      // Jeśli coś zwróci string (np. JSON w tekście) – spróbuj sparsować
       if (typeof data === "string") {
         try {
           data = JSON.parse(data);
         } catch (e) {
-          console.warn("[GAME]", GAME_ID, "Nie udało się sparsować JSONa progresu:", e);
+          console.warn("[GAME]", GAME_ID, "Nieudany JSON w progresie:", e);
           data = null;
         }
       }
 
       if (data && typeof data === "object") {
+        // Statystyki
         if (data.wall && typeof data.wall === "object") {
           stats[MODE_WALL].bestScore = Number(data.wall.bestScore || 0);
           stats[MODE_WALL].gamesPlayed = Number(data.wall.gamesPlayed || 0);
@@ -100,12 +104,21 @@ function loadProgress() {
           stats[MODE_AI].bestScore = Number(data.ai.bestScore || 0);
           stats[MODE_AI].gamesPlayed = Number(data.ai.gamesPlayed || 0);
         }
+
+        // Stan gry (sesja)
+        if (data.session && typeof data.session === "object") {
+          loadedSession = data.session;
+        } else {
+          loadedSession = null;
+        }
+      } else {
+        loadedSession = null;
       }
 
       LAST_SAVE_DATA = data || null;
       hasUnsavedChanges = false;
 
-      // Po wczytaniu – od razu odśwież UI statystyk
+      // uaktualnij UI statystyk (na razie bez trybu – ustawimy tryb później)
       updateStatsUI();
     })
     .catch(err => {
@@ -114,7 +127,8 @@ function loadProgress() {
 }
 
 function buildSavePayload() {
-  return {
+  // Zapisujemy statystyki + aktualny stan gry (sesję)
+  const payload = {
     wall: {
       bestScore: stats[MODE_WALL].bestScore,
       gamesPlayed: stats[MODE_WALL].gamesPlayed
@@ -122,19 +136,48 @@ function buildSavePayload() {
     ai: {
       bestScore: stats[MODE_AI].bestScore,
       gamesPlayed: stats[MODE_AI].gamesPlayed
-    }
+    },
+    session: null
   };
+
+  // Jeśli gra już jest zainicjalizowana, zapisujemy stan
+  if (canvas && bottomPaddle && ball) {
+    payload.session = {
+      mode: currentMode,
+      playerScore,
+      enemyScore,
+      // przechowujemy współczynniki zamiast surowych pikseli,
+      // dzięki czemu dopasujemy się do innego rozmiaru okna
+      ball: {
+        xRatio: ball.x / W(),
+        yRatio: ball.y / H(),
+        dx: ball.dx,
+        dy: ball.dy
+      },
+      paddles: {
+        bottomXRatio: bottomPaddle.x / W()
+        // top: dla AI możemy odtworzyć sensownie z piłki,
+        // ale jak chcemy – możemy też zapisać:
+        // topXRatio: topPaddle ? topPaddle.x / W() : 0.5
+      },
+      isPaused: true
+    };
+  }
+
+  return payload;
 }
 
 function saveCurrentSession() {
   const payload = buildSavePayload();
 
+  // Po kliknięciu ZAPISZ — zawsze pauza
+  isPaused = true;
+  updatePauseButton();
+
   if (!window.ArcadeProgress || !ArcadeProgress.save) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save – zapis lokalny tylko w sesji");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save – zapis tylko w RAM");
     LAST_SAVE_DATA = payload;
     hasUnsavedChanges = false;
-    isPaused = true;
-    updatePauseButton();
     return Promise.resolve();
   }
 
@@ -142,9 +185,6 @@ function saveCurrentSession() {
     .then(() => {
       LAST_SAVE_DATA = payload;
       hasUnsavedChanges = false;
-      // po zapisie – pauza z automatu
-      isPaused = true;
-      updatePauseButton();
       console.log("[GAME]", GAME_ID, "zapisano:", payload);
     })
     .catch(err => {
@@ -185,7 +225,7 @@ function setupClickGuard() {
 
     if (isBack) {
       const ok = window.confirm(
-        "Masz niezapisane statystyki. Wyjść bez zapisywania?"
+        "Masz niezapisane statystyki / stan gry. Wyjść bez zapisywania?"
       );
       if (!ok) {
         e.preventDefault();
@@ -196,7 +236,7 @@ function setupClickGuard() {
 }
 
 /* ============================
-   Rozmiar canvas i obiekty
+   Canvas i obiekty
 ============================ */
 
 function resizeCanvas() {
@@ -233,10 +273,57 @@ function resetBall(startDown = true) {
 }
 
 /* ============================
+   Przywracanie zapisanej sesji
+============================ */
+
+function restoreSessionIfAvailable() {
+  if (!loadedSession) return;
+
+  // Przywracamy tryb, ale NIE resetujemy wyniku / piłki
+  setMode(loadedSession.mode || MODE_WALL, { skipReset: true });
+
+  // Wyniki meczu
+  playerScore = Number(loadedSession.playerScore || 0);
+  enemyScore = Number(loadedSession.enemyScore || 0);
+
+  // Piłka
+  if (loadedSession.ball) {
+    const b = loadedSession.ball;
+    ball.x = (b.xRatio || 0.5) * W();
+    ball.y = (b.yRatio || 0.5) * H();
+    ball.dx = typeof b.dx === "number" ? b.dx : ball.dx;
+    ball.dy = typeof b.dy === "number" ? b.dy : ball.dy;
+  }
+
+  // Paletka gracza
+  if (loadedSession.paddles && typeof loadedSession.paddles.bottomXRatio === "number") {
+    bottomPaddle.x =
+      loadedSession.paddles.bottomXRatio * W() - 0; // używamy lewego brzegu
+    bottomPaddle.x = Math.max(
+      0,
+      Math.min(W() - bottomPaddle.width, bottomPaddle.x)
+    );
+  }
+
+  // Pauza – zawsze true, dopóki gracz nie kliknie Wznów
+  isPaused =
+    typeof loadedSession.isPaused === "boolean"
+      ? loadedSession.isPaused
+      : true;
+
+  updatePauseButton();
+  updateScoreUI();
+  updateStatsUI();
+
+  // Po jednym przywróceniu nie potrzebujemy tego drugi raz
+  loadedSession = null;
+}
+
+/* ============================
    Tryby gry
 ============================ */
 
-function setMode(newMode) {
+function setMode(newMode, options = {}) {
   if (newMode !== MODE_WALL && newMode !== MODE_AI) return;
   currentMode = newMode;
 
@@ -264,16 +351,23 @@ function setMode(newMode) {
         : "Rekord – Pojedynek z AI";
   }
 
-  // wyczyść bieżącą rozgrywkę
-  playerScore = 0;
-  enemyScore = 0;
-  updateScoreUI();
-  updateStatsUI();
-  resetBall(true);
+  // Normalnie resetujemy wynik i piłkę, ale jeśli np. przywracamy sesję,
+  // to możemy to wyłączyć przez options.skipReset
+  if (!options.skipReset) {
+    playerScore = 0;
+    enemyScore = 0;
+    resetBall(true);
+  }
+
+  // UI aktualizujemy zawsze, chyba że ktoś chce to pominąć
+  if (!options.skipUI) {
+    updateScoreUI();
+    updateStatsUI();
+  }
 }
 
 /* ============================
-   UI – wyniki / statystyki / pauza
+   UI – wyniki, statystyki, pauza
 ============================ */
 
 function updateScoreUI() {
@@ -632,6 +726,8 @@ function setupModeToggle() {
     if (!btn) return;
     const mode = btn.getAttribute("data-mode");
     if (!mode) return;
+
+    // przy zmianie trybu normalnie resetujemy grę
     setMode(mode);
   });
 }
@@ -650,9 +746,9 @@ function initGame() {
 
   setupKeyboard();
 
-  // 1) Wczytaj progres
+  // 1) Wczytaj progres (statystyki + ewentualny stan sesji)
   loadProgress().then(() => {
-    // 2) Ustaw layout i obiekty
+    // 2) Ustaw canvas + obiekty
     resizeCanvas();
     setupPaddles();
     resetBall(true);
@@ -660,7 +756,7 @@ function initGame() {
     // 3) Sterowanie myszą/palcem
     setupGrabControls();
 
-    // 4) Guardy i UI
+    // 4) Guardy, przyciski, tryby
     setupBeforeUnloadGuard();
     setupClickGuard();
     setupControlButtons();
@@ -673,13 +769,22 @@ function initGame() {
       });
     }
 
-    // Startowy tryb – Ściana (UI opiera się już na wczytanych stats)
+    // Startowy tryb – jeśli sesja ma tryb, przywrócimy go w restoreSessionIfAvailable
     setMode(MODE_WALL);
-    updatePauseButton();
+
+    // Jeżeli mamy zapisany stan gry – przywróć go
+    restoreSessionIfAvailable();
+
+    // Jeśli nie było sesji – startujemy od pauzy = false
+    if (!isPaused) {
+      isPaused = false;
+      updatePauseButton();
+    }
 
     window.addEventListener("resize", () => {
       resizeCanvas();
       setupPaddles();
+      // Nie przywracamy tu sesji – przywracamy tylko raz na starcie
     });
 
     loop();
