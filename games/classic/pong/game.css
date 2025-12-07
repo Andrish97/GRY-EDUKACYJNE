@@ -14,41 +14,127 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.75rem;
-  align-items: flex-end;
+  gap: 1rem;
+  align-items: flex-start;
   margin-bottom: 0.9rem;
 }
 
+.game-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .game-title {
-  font-size: 1.7rem;
+  font-size: 1.8rem;
   margin: 0;
 }
 
 .game-subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0;
   opacity: 0.85;
   font-size: 0.9rem;
 }
 
-/* TRYBY */
+/* Ładny slider trybów */
 
-.mode-switch {
+.mode-toggle {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 999px;
+  padding: 3px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.mode-toggle__slider {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 22px rgba(34, 197, 94, 0.8);
+  transition: transform 0.18s ease-out;
+  z-index: 0;
+}
+
+.mode-toggle__option {
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.mode-toggle__option--active {
+  color: #022c22;
+}
+
+/* PANEL STATYSTYK / PRZYCISKÓW */
+
+.game-header-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.stats-panel {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.stat-box {
+  min-width: 100px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.12rem;
+}
+
+.controls-panel {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  justify-content: flex-end;
 }
 
-.mode-btn {
-  padding-inline: 0.9rem;
-  padding-block: 0.35rem;
+.btn-sm {
+  padding: 0.32rem 0.75rem;
   font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
-.mode-btn--active {
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6),
-    0 0 18px rgba(34, 197, 94, 0.6);
+.btn-secondary {
+  background: rgba(30, 64, 175, 0.85);
 }
 
 /* OBSZAR GRY */
@@ -68,7 +154,7 @@
   background: radial-gradient(circle at center, #0b1120, #020617 70%);
 }
 
-/* Wynik wewnątrz obszaru gry */
+/* Wynik na środku planszy */
 
 .pong-score {
   position: absolute;
@@ -82,6 +168,8 @@
   pointer-events: none;
 }
 
+/* Podpowiedź pod planszą */
+
 .pong-hint {
   margin-top: 0.9rem;
   font-size: 0.8rem;
@@ -90,33 +178,55 @@
 
 /* RWD */
 
-@media (max-width: 640px) {
-  .game-root.pong-root {
-    padding: 1rem 1rem 1.1rem;
-  }
-
+@media (max-width: 768px) {
   .game-header {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .game-header-side {
     align-items: flex-start;
   }
 
+  .stats-panel {
+    justify-content: flex-start;
+  }
+
+  .controls-panel {
+    justify-content: flex-start;
+  }
+
   .game-title {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .pong-score {
     font-size: 2rem;
-    top: 1rem;
+    top: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .game-root.pong-root {
+    padding: 0.9rem 0.9rem 1rem;
+  }
+
+  .game-subtitle {
+    font-size: 0.8rem;
   }
 }
 
 @media (max-height: 720px) {
   .game-root.pong-root {
-    padding: 0.8rem 1rem 0.9rem;
+    padding: 0.7rem 0.9rem 0.9rem;
   }
 
   .pong-score {
     font-size: 1.9rem;
     top: 0.8rem;
+  }
+
+  .pong-hint {
+    font-size: 0.75rem;
   }
 }
