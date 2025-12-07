@@ -1,1 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neon Minesweeper – Neon Arcade</title>
+
+    <!-- Motyw globalny -->
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <!-- Styl gry -->
+    <link rel="stylesheet" href="game.css" />
+
+    <!-- Supabase – przed auth.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+
+    <!-- Core -->
+    <script src="../../../js/core/auth.js" defer></script>
+    <script src="../../../js/core/auth-bar.js" defer></script>
+    <script src="../../../js/core/progress.js" defer></script>
+    <script src="../../../js/core/ui.js" defer></script>
+
+    <!-- Logika gry -->
+    <script src="game.js" defer></script>
+  </head>
+  <body class="arcade-body arcade-game-page">
+    <!-- Pasek logowania -->
+    <div
+      data-arcade-auth-bar
+      data-after-login="../../../arcade.html"
+      data-after-guest="../../../arcade.html"
+    ></div>
+
+    <div class="shell">
+      <div class="card game-root">
+        <header class="game-header">
+          <div class="game-heading">
+            <h1 class="game-title">Neon Minesweeper</h1>
+            <p class="game-subtitle">
+              Odkrywaj pola, unikaj min, bij swoje rekordy czasu i zapisuj stan gry.
+            </p>
+          </div>
+
+          <div class="top-panel">
+            <div class="stat-box">
+              <div class="label">Mines</div>
+              <div class="value" id="mines-count">10</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Flags left</div>
+              <div class="value" id="flags-left">10</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Time</div>
+              <div class="value" id="time">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Rekord (s)</div>
+              <div class="value" id="best-time">–</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Gry</div>
+              <div class="value" id="total-games">0</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <div class="label">Board size</div>
+            <select id="size-select" class="ms-select">
+              <option value="small">Small 9×9</option>
+              <option value="medium" selected>Medium 16×16</option>
+              <option value="large">Large 30×16</option>
+            </select>
+          </div>
+
+          <div class="control-buttons">
+            <button id="new-game-btn" class="ms-button">Nowa gra</button>
+            <button id="save-game-btn" class="ms-button">Zapisz</button>
+            <button id="reset-record-btn" class="ms-button">
+              Resetuj rekord
+            </button>
+          </div>
+        </div>
+
+        <!-- canvas rozmiar ustawiany w JS -->
+        <div class="board-wrapper">
+          <canvas id="game" width="320" height="320"></canvas>
+        </div>
+
+        <div id="info" class="game-info">
+          <div><b>Left click</b> – odkryj, <b>Right click</b> – flaga.</div>
+          <div>Pierwsze kliknięcie jest zawsze bezpieczne.</div>
+          <div>
+            Zmień rozmiar planszy powyżej, a potem użyj <b>Nowa gra</b>. Użyj
+            <b>Zapisz</b>, żeby zachować aktualny stan rozgrywki.
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
 
