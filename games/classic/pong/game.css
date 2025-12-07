@@ -3,9 +3,19 @@
 .game-root.pong-root {
   border-radius: 1rem;
   background: radial-gradient(circle at center, #020617, #000000 70%);
-  padding: 1.2rem 1.4rem 1.4rem;
+  padding: 0.9rem 1rem 1rem;
   position: relative;
   overflow: hidden;
+
+  /* Kluczowe: karta nie wyższa niż okno */
+  max-height: calc(100vh - 4.5rem); /* trochę miejsca na pasek auth-bar */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Trochę pomagamy layoutowi strony gier */
+.arcade-game-page .shell {
+  align-items: stretch; /* zamiast sztywnego centrowania w pionie */
 }
 
 /* NAGŁÓWEK */
@@ -14,26 +24,26 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.7rem;
   align-items: flex-start;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.6rem;
 }
 
 .game-header-main {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.45rem;
 }
 
 .game-title {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   margin: 0;
 }
 
 .game-subtitle {
   margin: 0;
   opacity: 0.85;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* Ładny slider trybów */
@@ -69,10 +79,10 @@
   border: none;
   background: transparent;
   color: #e5e7eb;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 0.35rem 0.9rem;
+  padding: 0.32rem 0.8rem;
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.15s ease;
@@ -87,20 +97,20 @@
 .game-header-side {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.45rem;
   align-items: flex-end;
 }
 
 .stats-panel {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .stat-box {
-  min-width: 100px;
-  padding: 0.45rem 0.7rem;
+  min-width: 96px;
+  padding: 0.4rem 0.65rem;
   border-radius: 0.75rem;
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -108,7 +118,7 @@
 
 .stat-label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   opacity: 0.7;
@@ -116,41 +126,45 @@
 
 .stat-value {
   display: block;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin-top: 0.12rem;
+  margin-top: 0.08rem;
 }
 
 .controls-panel {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.35rem;
   justify-content: flex-end;
 }
 
 .btn-sm {
-  padding: 0.32rem 0.75rem;
-  font-size: 0.78rem;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.76rem;
 }
 
 .btn-secondary {
   background: rgba(30, 64, 175, 0.85);
 }
 
-/* OBSZAR GRY */
+/* OBSZAR GRY – KLUCZOWE ZMIANY */
 
 .pong-layout {
   position: relative;
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  aspect-ratio: 9 / 16;
+
+  /* Zamiast sztywnego aspect-ratio, kontrolujemy wysokość */
+  flex: 1 1 auto;
+  min-height: 220px;
+  max-height: calc(100% - 2.3rem); /* zostawiamy trochę miejsca na hint pod spodem */
 }
 
 .pong-layout canvas {
   display: block;
   width: 100%;
-  height: 100%;
+  height: 100%;           /* pełne wypełnienie dostępnej wysokości */
   background: radial-gradient(circle at center, #0b1120, #020617 70%);
 }
 
@@ -158,12 +172,12 @@
 
 .pong-score {
   position: absolute;
-  top: 1.4rem;
+  top: 0.9rem;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 2.4rem;
+  font-size: 2.1rem;
   text-shadow: 0 0 10px #22c55e, 0 0 18px #22c55e;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.3em;
   white-space: nowrap;
   pointer-events: none;
 }
@@ -171,12 +185,12 @@
 /* Podpowiedź pod planszą */
 
 .pong-hint {
-  margin-top: 0.9rem;
-  font-size: 0.8rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
   opacity: 0.7;
 }
 
-/* RWD */
+/* RWD – małe szerokości */
 
 @media (max-width: 768px) {
   .game-header {
@@ -188,45 +202,70 @@
     align-items: flex-start;
   }
 
-  .stats-panel {
-    justify-content: flex-start;
-  }
-
+  .stats-panel,
   .controls-panel {
     justify-content: flex-start;
   }
 
   .game-title {
-    font-size: 1.6rem;
-  }
-
-  .pong-score {
-    font-size: 2rem;
-    top: 1.1rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .game-root.pong-root {
-    padding: 0.9rem 0.9rem 1rem;
-  }
-
-  .game-subtitle {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-height: 720px) {
-  .game-root.pong-root {
-    padding: 0.7rem 0.9rem 0.9rem;
+    font-size: 1.45rem;
   }
 
   .pong-score {
     font-size: 1.9rem;
     top: 0.8rem;
   }
+}
+
+@media (max-width: 640px) {
+  .game-root.pong-root {
+    padding: 0.7rem 0.7rem 0.8rem;
+  }
+
+  .game-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .mode-toggle__option {
+    font-size: 0.72rem;
+  }
+}
+
+/* RWD – niskie ekrany */
+
+@media (max-height: 720px) {
+  .game-root.pong-root {
+    padding: 0.6rem 0.7rem 0.7rem;
+    max-height: calc(100vh - 3.8rem);
+  }
+
+  .game-title {
+    font-size: 1.35rem;
+  }
+
+  .game-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .stat-box {
+    padding: 0.32rem 0.55rem;
+  }
+
+  .stat-value {
+    font-size: 0.95rem;
+  }
+
+  .pong-layout {
+    min-height: 200px;
+  }
+
+  .pong-score {
+    font-size: 1.7rem;
+    top: 0.7rem;
+    letter-spacing: 0.24em;
+  }
 
   .pong-hint {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 }
