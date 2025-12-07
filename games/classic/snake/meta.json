@@ -1,0 +1,8 @@
+{
+  "id": "snake",
+  "name": "Classic Snake+",
+  "description": "Klasyczny wąż w neonowej oprawie. Zbieraj jedzenie i bij rekordy!",
+  "icon": "🐍",
+  "thumb": null,
+  "entry": "index.html"
+}
