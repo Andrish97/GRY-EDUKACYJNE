@@ -1,1 +1,229 @@
+/* Tło i karta gry (w obrębie strony gier Arcade) */
+
+.arcade-game-page {
+  background: radial-gradient(circle at top, #1f2933, #020617);
+  color: #e5e7eb;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* Główna karta gry */
+.game-root {
+  padding: 16px 20px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(148, 163, 184, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  backdrop-filter: blur(8px);
+  max-width: 880px;
+}
+
+/* Nagłówek gry */
+
+.game-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.game-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.game-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.game-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+/* Górny panel statystyk */
+
+.top-panel {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 14px;
+  color: #cbd5f5;
+}
+
+.stat-box {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  min-width: 90px;
+}
+
+.stat-box .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+}
+
+.stat-box .value {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Kontrolki nad planszą */
+
+.controls-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.control-group .label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+}
+
+/* Styl przycisków gry (nie globalny, tylko w obrębie game-root) */
+
+.game-root .ms-button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #052e16;
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.45);
+  transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.08s;
+  white-space: nowrap;
+}
+
+.game-root .ms-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.6);
+  filter: brightness(1.05);
+}
+
+.game-root .ms-button:active {
+  transform: translateY(0px) scale(0.98);
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.45);
+  filter: brightness(0.97);
+}
+
+.control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Select */
+
+.ms-select {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 13px;
+  outline: none;
+}
+
+.ms-select:focus {
+  box-shadow: 0 0 0 1px #22c55e;
+  border-color: #22c55e;
+}
+
+/* Canvas */
+
+.board-wrapper {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #020617;
+  max-width: 90vw;
+  max-height: 70vh;
+  align-self: center;
+}
+
+#game {
+  display: block;
+  border-radius: 12px;
+  image-rendering: pixelated;
+}
+
+/* Info */
+
+.game-info {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.game-info b {
+  color: #e5e7eb;
+}
+
+/* RWD po szerokości */
+
+@media (max-width: 720px) {
+  .game-root {
+    padding: 1rem 1.2rem 0.9rem;
+  }
+
+  .top-panel {
+    gap: 0.5rem;
+  }
+
+  .controls-row {
+    align-items: stretch;
+  }
+
+  .control-buttons {
+    justify-content: flex-start;
+  }
+}
+
+/* RWD po wysokości */
+
+@media (max-height: 720px) {
+  .game-root {
+    padding: 1rem 1.1rem 0.8rem;
+  }
+
+  .board-wrapper {
+    max-height: 60vh;
+  }
+
+  .game-title {
+    font-size: 1.3rem;
+  }
+
+  .game-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .game-info {
+    font-size: 0.8rem;
+  }
+}
 
