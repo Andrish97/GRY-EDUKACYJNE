@@ -18,8 +18,8 @@ let playerScore = 0;
 let enemyScore = 0;
 
 // Paletka: węższa w poziomie, wyższa w pionie
-const paddleWidth = 80;
-const paddleHeight = 30;
+const paddleWidth = 140;
+const paddleHeight = 14;
 const paddleMargin = 40;
 const ballRadius = 10;
 
