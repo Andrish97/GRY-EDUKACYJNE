@@ -60,11 +60,13 @@ const numberColors = {
    ======================= */
 
 function updateStatsUI() {
-  if (!bestTimeEl || !totalGamesEl) return;
-
-  bestTimeEl.textContent =
-    typeof bestTime === "number" ? bestTime.toString() : "–";
-  totalGamesEl.textContent = totalGames.toString();
+  if (bestTimeEl) {
+    bestTimeEl.textContent =
+      typeof bestTime === "number" ? bestTime.toString() : "–";
+  }
+  if (totalGamesEl) {
+    totalGamesEl.textContent = totalGames.toString();
+  }
 }
 
 // zapisujemy TYLKO rekord
@@ -134,7 +136,13 @@ function clearProgress() {
    ======================= */
 
 function applyBoardSizeFromSelect() {
-  const key = sizeSelect.value;
+  if (!canvas) return;
+
+  let key = "medium";
+  if (sizeSelect && sizeSelect.value) {
+    key = sizeSelect.value;
+  }
+
   const cfg = SIZES[key] || SIZES.medium;
   cols = cfg.cols;
   rows = cfg.rows;
@@ -145,8 +153,8 @@ function applyBoardSizeFromSelect() {
   canvas.width = cols * tileSize;
   canvas.height = rows * tileSize;
 
-  minesEl.textContent = numMines;
-  flagsLeftEl.textContent = flagsLeft;
+  if (minesEl) minesEl.textContent = numMines;
+  if (flagsLeftEl) flagsLeftEl.textContent = flagsLeft;
 }
 
 function createEmptyGrid() {
@@ -217,6 +225,8 @@ function placeMines(excludeX, excludeY) {
    ======================= */
 
 function startTimer(startFrom = 0) {
+  if (!timeEl) return;
+
   if (timerInterval) clearInterval(timerInterval);
   seconds = startFrom;
   timeEl.textContent = seconds;
@@ -244,7 +254,7 @@ function resetGame() {
   isFirstClick = true;
   revealedCount = 0;
   seconds = 0;
-  timeEl.textContent = seconds;
+  if (timeEl) timeEl.textContent = seconds;
 
   applyBoardSizeFromSelect();
   grid = createEmptyGrid();
@@ -290,7 +300,7 @@ function toggleFlag(x, y) {
     cell.flagged = true;
     flagsLeft--;
   }
-  flagsLeftEl.textContent = flagsLeft;
+  if (flagsLeftEl) flagsLeftEl.textContent = flagsLeft;
 }
 
 function checkWin() {
@@ -330,6 +340,8 @@ function gameOver(win) {
    ======================= */
 
 function drawBackground() {
+  if (!ctx || !canvas) return;
+
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
   grad.addColorStop(0, "#020617");
   grad.addColorStop(1, "#020617");
@@ -464,6 +476,8 @@ function drawNumber(x, y, n) {
 }
 
 function draw() {
+  if (!ctx || !canvas) return;
+
   drawBackground();
 
   for (let y = 0; y < rows; y++) {
@@ -495,6 +509,8 @@ function draw() {
 }
 
 function drawOverlay() {
+  if (!ctx || !canvas) return;
+
   ctx.fillStyle = "rgba(15,23,42,0.85)";
   ctx.fillRect(20, canvas.height / 2 - 55, canvas.width - 40, 110);
 
@@ -532,6 +548,8 @@ function getCellFromEvent(e) {
 }
 
 function setupCanvasEvents() {
+  if (!canvas) return;
+
   canvas.addEventListener("contextmenu", (e) => {
     e.preventDefault();
   });
@@ -585,9 +603,11 @@ function setupButtons() {
     });
   }
 
-  sizeSelect.addEventListener("change", () => {
-    resetGame();
-  });
+  if (sizeSelect) {
+    sizeSelect.addEventListener("change", () => {
+      resetGame();
+    });
+  }
 }
 
 /* =======================
@@ -596,6 +616,11 @@ function setupButtons() {
 
 function initGame() {
   canvas = document.getElementById("game");
+  if (!canvas) {
+    console.error("[GAME]", GAME_ID, "Brak elementu <canvas id=\"game\">");
+    return;
+  }
+
   ctx = canvas.getContext("2d");
   minesEl = document.getElementById("mines-count");
   flagsLeftEl = document.getElementById("flags-left");
@@ -607,7 +632,10 @@ function initGame() {
   newGameBtn = document.getElementById("new-game-btn");
   resetRecordBtn = document.getElementById("reset-record-btn");
 
-  sizeSelect.value = "medium";
+  if (sizeSelect && !sizeSelect.value) {
+    sizeSelect.value = "medium";
+  }
+
   resetGame();
   updateStatsUI();
 
