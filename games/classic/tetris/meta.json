@@ -1,0 +1,8 @@
+{
+  "id": "neon-tetris",
+  "name": "Neon Tetris",
+  "description": "Układaj spadające klocki, twórz pełne linie i zdobywaj jak najwyższy wynik.",
+  "icon": "🧱",
+  "thumb": null,
+  "entry": "index.html"
+}
