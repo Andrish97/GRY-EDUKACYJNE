@@ -1,4 +1,4 @@
-const GAME_ID = "neon-minesweeper";
+const GAME_ID = "saper";
 
 // rozmiar kafelka (stały)
 const tileSize = 28;
