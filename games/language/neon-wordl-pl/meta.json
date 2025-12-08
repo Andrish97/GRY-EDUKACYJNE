@@ -1,0 +1,8 @@
+{
+  "id": "neon-wordl-pl",
+  "name": "Neon Wordl PL",
+  "description": "Zgaduj polskie słowa o różnej długości. Klasyczne wordle z neonowym twistem.",
+  "icon": "📝",
+  "thumb": null,
+  "entry": "index.html"
+}
