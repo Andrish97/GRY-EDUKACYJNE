@@ -1,0 +1,278 @@
+/* Karta gry */
+
+.game-root {
+  position: relative; /* dla overlay */
+  padding: 1.4rem 1.7rem 1.3rem;
+  border-radius: 1rem;
+  background: radial-gradient(circle at top, #111827, #020617);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(148, 163, 184, 0.14);
+  color: #e5e7eb;
+  backdrop-filter: blur(10px);
+}
+
+/* Nagłówek */
+
+.game-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.2rem;
+}
+
+.game-title {
+  font-size: 1.9rem;
+  margin: 0;
+}
+
+.game-subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  color: #9ca3af;
+}
+
+/* Panel wyników */
+
+.score-panel {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.score-panel--buttons {
+  align-self: flex-end;
+}
+
+.score-box {
+  min-width: 90px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.8rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  text-align: right;
+}
+
+.score-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+}
+
+.score-value {
+  display: block;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+/* Układ gry */
+
+.game-layout {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 220px);
+  gap: 1.2rem;
+  align-items: flex-start;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Canvas */
+
+#game {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #020617;
+  image-rendering: pixelated;
+}
+
+/* Panel boczny */
+
+.game-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  font-size: 0.9rem;
+}
+
+.mini-stats {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.mini-stat {
+  flex: 1 1 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.7rem;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.mini-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+}
+
+.mini-value {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.controls-info {
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.8rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.controls-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #9ca3af;
+  margin-bottom: 0.35rem;
+}
+
+.controls-keys {
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.controls-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.games-played-info {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* Overlay Game Over */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.overlay--hidden {
+  display: none;
+}
+
+.overlay-content {
+  pointer-events: auto;
+  padding: 1.2rem 1.4rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.9);
+  text-align: center;
+}
+
+.overlay-content h2 {
+  margin: 0 0 0.4rem;
+}
+
+.overlay-content p {
+  margin: 0 0 0.75rem;
+  font-size: 0.86rem;
+  color: #cbd5f5;
+}
+
+/* Sterowanie dotykowe */
+
+.touch-controls {
+  margin-top: 0.6rem;
+  display: none; /* domyślnie ukryte, pokażemy na urządzeniach dotykowych */
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.touch-btn {
+  font-size: 1.1rem;
+  padding-inline: 0.7rem;
+}
+
+/* Pokaż tylko na urządzeniach z „grubym” wskaźnikiem (palec) */
+
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+}
+
+/* RWD – szerokość */
+
+@media (max-width: 720px) {
+  .game-root {
+    padding: 1.1rem 1.1rem 1rem;
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .game-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .controls-info {
+    flex: 1 1 100%;
+  }
+
+  .mini-stats {
+    flex: 1 1 auto;
+  }
+}
+
+/* RWD – wysokość: dostosowanie do niższych ekranów */
+
+@media (max-height: 720px) {
+  .game-root {
+    padding: 1rem 1.2rem 0.9rem;
+  }
+
+  .game-title {
+    font-size: 1.6rem;
+  }
+
+  .game-subtitle {
+    font-size: 0.85rem;
+  }
+
+  #game {
+    transform: scale(0.95);
+    transform-origin: top center;
+  }
+
+  .controls-info {
+    font-size: 0.8rem;
+  }
+
+  .score-value {
+    font-size: 1rem;
+  }
+}
