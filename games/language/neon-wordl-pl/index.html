@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neon Wordl PL – Neon Arcade</title>
+
+    <!-- Motyw globalny -->
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <!-- Styl gry -->
+    <link rel="stylesheet" href="game.css" />
+
+    <!-- Supabase – przed auth.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+
+    <!-- Core -->
+    <script src="../../../js/core/auth.js" defer></script>
+    <script src="../../../js/core/auth-bar.js" defer></script>
+    <script src="../../../js/core/progress.js" defer></script>
+    <script src="../../../js/core/ui.js" defer></script>
+
+    <!-- Logika gry -->
+    <script src="game.js" defer></script>
+  </head>
+  <body class="arcade-body arcade-game-page">
+    <!-- Pasek logowania -->
+    <div
+      data-arcade-auth-bar
+      data-after-login="../../../arcade.html"
+      data-after-guest="../../../arcade.html"
+    ></div>
+
+    <div class="shell">
+      <div class="card game-root">
+        <header class="game-header">
+          <div>
+            <h1 class="game-title">Neon Wordl PL</h1>
+            <p class="game-subtitle">
+              Zgadnij polskie słowo w maksymalnie 6 próbach. Litery: zielone – na
+              właściwym miejscu, żółte – w słowie, ale gdzie indziej.
+            </p>
+          </div>
+
+          <div class="score-panel">
+            <div class="score-box">
+              <span class="score-label">Gry</span>
+              <span id="total-games" class="score-value">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Wygrane</span>
+              <span id="wins" class="score-value">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Seria</span>
+              <span id="current-streak" class="score-value">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Najlepsza seria</span>
+              <span id="best-streak" class="score-value">0</span>
+            </div>
+          </div>
+
+          <div class="controls-panel">
+            <button id="new-game-btn" class="btn-primary">Nowe słowo</button>
+            <button id="save-game-btn" class="btn-primary">Zapisz postęp</button>
+            <button id="reset-record-btn" class="btn-primary">
+              Resetuj statystyki
+            </button>
+          </div>
+        </header>
+
+        <main class="game-main">
+          <div class="game-top-row">
+            <div class="game-options">
+              <label for="word-len" class="field-label">Długość słowa</label>
+              <select id="word-len" class="select">
+                <option value="5">Słowo 5-literowe (klasyczne)</option>
+                <option value="4">4 litery</option>
+                <option value="6">6 liter</option>
+                <option value="7">7 liter</option>
+              </select>
+            </div>
+
+            <div id="status" class="game-status">
+              Ładowanie słownika...
+            </div>
+          </div>
+
+          <div class="board-wrapper">
+            <div id="board" class="board"></div>
+          </div>
+
+          <p class="game-info">
+            Sterowanie: wpisuj litery z klawiatury. Enter – zatwierdzenie słowa,
+            Backspace – kasowanie litery.
+          </p>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
