@@ -88,7 +88,7 @@ function chooseSecret() {
 
 function initBoardStructure() {
   boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 44px)`;
+  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 42px)`;
   board = [];
 
   for (let r = 0; r < MAX_ROWS; r++) {
@@ -122,7 +122,7 @@ const KEYBOARD_LAYOUT = [
   ["w", "e", "r", "t", "y", "u", "i", "o", "p"],
   // rząd 2
   ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-  // rząd 3 – część łacińska + Backspace
+  // rząd 3 – część łacińska + Backspace (po prawej)
   ["z", "c", "b", "n", "m", "backspace"],
   // rząd 4 – polskie ogonki + Enter na końcu
   ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ż", "ź", "enter"],
@@ -160,7 +160,7 @@ function buildKeyboard() {
     keyboardInnerEl.appendChild(rowDiv);
   });
 
-  // wyczyść stan kolorów klawiszy
+  // czyścimy stan kolorów
   Object.keys(keyboardState).forEach((k) => delete keyboardState[k]);
 }
 
