@@ -27,6 +27,7 @@ let LAST_SAVE_DATA = null;
 
 // Klawiatura
 let keyboardEl;
+let keyboardInnerEl;
 const keyboardState = {}; // litera -> "absent" | "present" | "correct"
 
 // DOM
@@ -87,7 +88,7 @@ function chooseSecret() {
 
 function initBoardStructure() {
   boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 40px)`;
+  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 44px)`;
   board = [];
 
   for (let r = 0; r < MAX_ROWS; r++) {
@@ -115,16 +116,24 @@ function resetBoard() {
 }
 
 // ===== KLAWIATURA DOTYKOWA =====
-
+// Bez Q, V, X. Backspace wyżej, Enter niżej po prawej.
 const KEYBOARD_LAYOUT = [
-  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  // rząd 1 – główne spółgłoski
+  ["w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  // rząd 2
   ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-  ["enter", "z", "x", "c", "v", "b", "n", "m", "backspace"],
-  ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ż", "ź"],
+  // rząd 3 – część łacińska + Backspace
+  ["z", "c", "b", "n", "m", "backspace"],
+  // rząd 4 – polskie ogonki + Enter na końcu
+  ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ż", "ź", "enter"],
 ];
 
 function buildKeyboard() {
   keyboardEl.innerHTML = "";
+  keyboardInnerEl = document.createElement("div");
+  keyboardInnerEl.className = "keyboard-inner";
+  keyboardEl.appendChild(keyboardInnerEl);
+
   KEYBOARD_LAYOUT.forEach((rowKeys) => {
     const rowDiv = document.createElement("div");
     rowDiv.className = "keyboard-row";
@@ -145,12 +154,10 @@ function buildKeyboard() {
       }
 
       btn.addEventListener("click", () => handleVirtualKey(key));
-
-      keyboardEl.appendChild(rowDiv);
       rowDiv.appendChild(btn);
     });
 
-    keyboardEl.appendChild(rowDiv);
+    keyboardInnerEl.appendChild(rowDiv);
   });
 
   // wyczyść stan kolorów klawiszy
@@ -373,45 +380,7 @@ function erase() {
   }
 }
 
-function colorRow(r) {
-  const guess = [];
-  for (let c = 0; c < wordLength; c++) {
-    guess[c] = board[r][c].textContent.toLowerCase();
-  }
-
-  const secretArr = secret.split("");
-  const used = Array(wordLength).fill(false);
-
-  // Zielone (dokładne trafienia)
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    if (guess[c] === secret[c]) {
-      tile.classList.add("correct");
-      used[c] = true;
-      updateKeyColor(guess[c], "correct");
-    }
-  }
-
-  // Żółte / szare
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    if (tile.classList.contains("correct")) continue;
-
-    const ch = guess[c];
-    const idx = secretArr.findIndex((x, i) => x === ch && !used[i]);
-    if (idx !== -1) {
-      tile.classList.add("present");
-      used[idx] = true;
-      updateKeyColor(ch, "present");
-    } else {
-      tile.classList.add("absent");
-      updateKeyColor(ch, "absent");
-    }
-  }
-}
-
-// Aktualizacja klawiatury (priorytet: correct > present > absent)
-
+// Priorytety kolorów klawiatury (nie psujemy zielonego)
 const KEY_STATE_PRIORITY = {
   absent: 0,
   present: 1,
@@ -439,6 +408,43 @@ function updateKeyColor(letter, newState) {
     if (newState === "present") btn.classList.add("key-present");
     if (newState === "absent") btn.classList.add("key-absent");
   });
+}
+
+function colorRow(r) {
+  const guess = [];
+  for (let c = 0; c < wordLength; c++) {
+    guess[c] = board[r][c].textContent.toLowerCase();
+  }
+
+  const secretArr = secret.split("");
+  const used = Array(wordLength).fill(false);
+
+  // 1. Zielone (dokładne trafienia)
+  for (let c = 0; c < wordLength; c++) {
+    const tile = board[r][c];
+    if (guess[c] === secret[c]) {
+      tile.classList.add("correct");
+      used[c] = true;
+      updateKeyColor(guess[c], "correct");
+    }
+  }
+
+  // 2. Żółte / szare – liczymy pozostałe litery
+  for (let c = 0; c < wordLength; c++) {
+    const tile = board[r][c];
+    if (tile.classList.contains("correct")) continue;
+
+    const ch = guess[c];
+    const idx = secretArr.findIndex((x, i) => x === ch && !used[i]);
+    if (idx !== -1) {
+      tile.classList.add("present");
+      used[idx] = true;
+      updateKeyColor(ch, "present");
+    } else {
+      tile.classList.add("absent");
+      updateKeyColor(ch, "absent");
+    }
+  }
 }
 
 function submitRow() {
@@ -498,8 +504,6 @@ function startNewGame() {
 
 function setupKeyboardListener() {
   document.addEventListener("keydown", (e) => {
-    // nie psujemy np. focusów na polach loginu, ale tutaj gra jest w karcie,
-    // więc uproszczamy i zawsze obsługujemy
     statusEl.textContent = "";
 
     if (e.key === "Enter") {
