@@ -417,28 +417,36 @@ function colorRow(r) {
   }
 
   const secretArr = secret.split("");
-  const used = Array(wordLength).fill(false);
 
-  // 1. Zielone (dokładne trafienia)
+  // Mapa: litera -> ile razy występuje w tajnym słowie
+  const counts = {};
+  for (let i = 0; i < wordLength; i++) {
+    const ch = secretArr[i];
+    counts[ch] = (counts[ch] || 0) + 1;
+  }
+
+  // 1. Zielone (dokładne trafienia) – zmniejszamy licznik tej litery
   for (let c = 0; c < wordLength; c++) {
     const tile = board[r][c];
-    if (guess[c] === secret[c]) {
+    const ch = guess[c];
+
+    if (ch === secretArr[c]) {
       tile.classList.add("correct");
-      used[c] = true;
-      updateKeyColor(guess[c], "correct");
+      counts[ch]--;
+      updateKeyColor(ch, "correct");
     }
   }
 
-  // 2. Żółte / szare – liczymy pozostałe litery
+  // 2. Żółte / szare – używamy pozostałych liczników
   for (let c = 0; c < wordLength; c++) {
     const tile = board[r][c];
     if (tile.classList.contains("correct")) continue;
 
     const ch = guess[c];
-    const idx = secretArr.findIndex((x, i) => x === ch && !used[i]);
-    if (idx !== -1) {
+
+    if (counts[ch] > 0) {
       tile.classList.add("present");
-      used[idx] = true;
+      counts[ch]--;
       updateKeyColor(ch, "present");
     } else {
       tile.classList.add("absent");
