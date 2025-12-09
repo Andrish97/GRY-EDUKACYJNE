@@ -1,0 +1,8 @@
+{
+  "id": "neon-wordl",
+  "name": "Neon Wordl PL",
+  "description": "Polski Wordle z generowanym AI słownikiem i klawiaturą ekranową.",
+  "icon": "🔤",
+  "thumb": null,
+  "entry": "index.html"
+}
