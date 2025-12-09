@@ -1,251 +1,52 @@
-/* KARTA GRY */
-
 .game-root {
-  border-radius: 1rem;
-  background: radial-gradient(circle at top, #020617, #020617);
-  background-color: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  padding: 1.4rem 1.7rem 1.2rem;
-}
-
-/* NAGŁÓWEK */
-
-.game-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 1.25rem;
-  align-items: flex-start;
-  margin-bottom: 1.3rem;
-}
-
-.game-title {
-  font-size: 1.9rem;
-  margin: 0;
-}
-
-.game-subtitle {
-  margin: 0.35rem 0 0;
-  opacity: 0.85;
-  font-size: 0.92rem;
-  max-width: 30rem;
-}
-
-/* PANEL STATYSTYK */
-
-.score-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-.score-box {
-  min-width: 4.2rem;
-  padding: 0.4rem 0.7rem;
-  border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  text-align: center;
-}
-
-.score-label {
-  display: block;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  opacity: 0.75;
-  margin-bottom: 0.1rem;
-}
-
-.score-value {
-  display: block;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-/* PRZYCISKI */
-
-.controls-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-
-.controls-panel .btn-primary {
-  flex: 1 1 auto;
-  min-width: 7rem;
-}
-
-/* GŁÓWNA CZĘŚĆ GRY */
-
-.game-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.game-top-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.game-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.field-label {
-  font-size: 0.8rem;
-  opacity: 0.85;
-}
-
-.select {
-  min-width: 11rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.95);
-  color: #e5e7eb;
-  font-size: 0.9rem;
-}
-
-/* STATUS */
-
-.game-status {
-  min-height: 1.25rem;
-  font-size: 0.85rem;
-  color: #9ca3af;
-  text-align: right;
-}
-
-/* PLANSZA */
-
-.board-wrapper {
-  display: flex;
-  justify-content: center;
+  padding: 1.5rem;
 }
 
 .board {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
-  align-content: center;
-  padding: 0.4rem;
-  border-radius: 0.9rem;
-  background: rgba(15, 23, 42, 0.7);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(30, 64, 175, 0.35);
+  margin-top: 20px;
 }
 
-/* KAFELKI */
-
 .tile {
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148,163,184,0.4);
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 22px;
+  align-items: center;
   font-weight: 600;
-  text-transform: uppercase;
-  background: #020617;
-  color: #e5e7eb;
-  box-sizing: border-box;
-  transition: transform 0.09s ease, background-color 0.09s ease,
-    border-color 0.09s ease, color 0.09s ease;
+  background: rgba(15,23,42,0.8);
+  font-size: 28px;
 }
 
 .tile.filled {
-  transform: scale(1.06);
-  border-color: rgba(148, 163, 184, 0.7);
+  border-color: #e2e8f0;
 }
 
-.tile.correct {
-  background: #22c55e;
-  color: #022c22;
-  border-color: #22c55e;
+.tile.correct { background: #22c55e; color: #052e16; }
+.tile.present { background: #facc15; color: #422006; }
+.tile.absent  { background: #1e293b; color: #64748b; }
+
+.keyboard {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  margin-top: 20px;
 }
 
-.tile.present {
-  background: #facc15;
-  color: #422006;
-  border-color: #facc15;
-}
-
-.tile.absent {
+.key {
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
   background: #1e293b;
-  border-color: #475569;
-  color: #64748b;
+  font-weight: 600;
+  user-select: none;
 }
 
-/* INFO DOLNE */
-
-.game-info {
-  margin: 0.1rem 0 0;
-  font-size: 0.82rem;
-  opacity: 0.85;
-}
-
-/* RWD – szerokość */
-
-@media (max-width: 640px) {
-  .game-root {
-    padding: 1.1rem 1.1rem 1rem;
-  }
-
-  .game-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .score-panel {
-    justify-content: flex-start;
-  }
-
-  .game-status {
-    text-align: left;
-  }
-
-  .board {
-    max-width: 100%;
-  }
-}
-
-/* RWD – wysokość, dopasowanie do okna */
-
-@media (max-height: 720px) {
-  .game-root {
-    padding: 1rem 1.2rem 0.9rem;
-  }
-
-  .game-title {
-    font-size: 1.7rem;
-  }
-
-  .game-subtitle {
-    font-size: 0.85rem;
-  }
-
-  .board {
-    gap: 3px;
-    padding: 0.35rem;
-  }
-
-  .tile {
-    width: 38px;
-    height: 38px;
-    font-size: 20px;
-  }
-
-  .game-info {
-    font-size: 0.78rem;
-  }
-}
+.key.correct { background: #22c55e; }
+.key.present { background: #facc15; }
+.key.absent  { background: #475569; }
