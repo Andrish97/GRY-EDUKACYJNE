@@ -5,7 +5,7 @@
       "name": "Gry językowe",
       "icon": "📝",
       "folder": "games/language",
-      "games": ["znajdz_slowo","neon-wordl-pl"]
+      "games": ["znajdz_slowo","neon-wordl"]
     },
     {
       "id": "classic",
