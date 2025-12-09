@@ -2,7 +2,7 @@
       NEON WORDL – GRA LOGICZNA
    =============================== */
 
-const EDGE_URL = "https://YOUR_PROJECT.supabase.co/functions/v1/wordgen";
+const EDGE_URL = "https://zbcpqwugthvizqzkvurw.supabase.co/functions/v1/wordgen";
 const MAX_ROWS = 6;
 
 let boardEl, statusEl, lenSel;
