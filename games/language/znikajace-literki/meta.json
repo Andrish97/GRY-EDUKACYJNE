@@ -1,0 +1,8 @@
+{
+  "id": "znikajace-literki",
+  "name": "Znikające literki",
+  "description": "Zapamiętaj słówko, a potem uzupełnij znikające literki z klawiatury na dole.",
+  "icon": "🔤",
+  "thumb": null,
+  "entry": "index.html"
+}
