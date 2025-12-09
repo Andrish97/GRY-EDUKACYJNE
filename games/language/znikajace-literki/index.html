@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Znikające literki – Neon Arcade</title>
+
+    <!-- Motyw globalny -->
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <!-- Styl gry -->
+    <link rel="stylesheet" href="game.css" />
+
+    <!-- Supabase – musi być PRZED auth.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+
+    <!-- Core -->
+    <script src="../../../js/core/auth.js" defer></script>
+    <script src="../../../js/core/auth-bar.js" defer></script>
+    <script src="../../../js/core/progress.js" defer></script>
+    <script src="../../../js/core/ui.js" defer></script>
+
+    <!-- Logika gry -->
+    <script src="game.js" defer></script>
+  </head>
+  <body class="arcade-body arcade-game-page">
+    <!-- Pasek logowania -->
+    <div
+      data-arcade-auth-bar
+      data-after-login="../../../arcade.html"
+      data-after-guest="../../../arcade.html"
+    ></div>
+
+    <div class="shell">
+      <div class="card game-root">
+        <header class="game-header">
+          <div>
+            <h1 class="game-title">Znikające literki</h1>
+            <p class="game-subtitle">
+              Zapamiętaj słówko, a potem uzupełnij znikające literki z klawiatury
+              na dole. Kolejne światy odblokowują się, gdy zrobisz postęp.
+            </p>
+          </div>
+
+          <div class="score-panel">
+            <div class="score-box">
+              <span class="score-label">Najwyższy świat</span>
+              <span id="highest-level" class="score-value">1</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Słówka razem</span>
+              <span id="total-solved" class="score-value">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">Najlepsza seria</span>
+              <span id="best-streak" class="score-value">0</span>
+            </div>
+          </div>
+
+          <div class="score-panel">
+            <button id="new-game-btn" class="btn-primary">Nowa gra</button>
+            <button id="save-game-btn" class="btn-primary">Zapisz</button>
+            <button id="reset-record-btn" class="btn-primary">
+              Resetuj rekord
+            </button>
+          </div>
+        </header>
+
+        <main class="game-main">
+          <section class="levels-section">
+            <h2 class="section-title">Światy</h2>
+            <p class="section-subtitle">
+              Kliknij kółko, aby wybrać świat. Z czasem pojawiają się nowe.
+            </p>
+            <div id="level-list" class="level-list"></div>
+          </section>
+
+          <section class="play-section">
+            <h2 class="section-title">Runda</h2>
+
+            <div class="round-info">
+              <span>Wybrany świat: <strong id="current-level-label">1</strong></span>
+              <span>
+                Ukończone w tym świecie:
+                <strong id="level-solved">0</strong>/<span
+                  id="level-target"
+                  >0</span
+                >
+              </span>
+            </div>
+
+            <div class="word-area">
+              <div class="word-display">
+                <div class="word-label">Zapamiętaj słowo:</div>
+                <div id="word-original" class="word-original">---</div>
+                <div class="word-label word-label--after">
+                  Uzupełnij brakujące literki:
+                </div>
+                <div id="word-masked" class="word-masked">---</div>
+              </div>
+
+              <div class="hint-area">
+                <div id="timer-bar" class="timer-bar timer-bar--hidden"></div>
+              </div>
+
+              <div id="keyboard" class="keyboard"></div>
+
+              <div id="message" class="game-message"></div>
+            </div>
+          </section>
+        </main>
+
+        <footer class="game-info">
+          Wskazówka: na niższych światach znikają pojedyncze literki, a klawiatura
+          pokazuje tylko poprawne odpowiedzi. Na wyższych światach pojawiają się
+          mylące literki i dłuższe słowa.
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
