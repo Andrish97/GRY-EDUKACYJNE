@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Neon Wordl PL – Neon Arcade</title>
+
+  <link rel="stylesheet" href="../../../css/theme.css">
+  <link rel="stylesheet" href="game.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../../../js/core/auth.js" defer></script>
+  <script src="../../../js/core/auth-bar.js" defer></script>
+  <script src="../../../js/core/progress.js" defer></script>
+  <script src="../../../js/core/ui.js" defer></script>
+
+  <script src="game.js" defer></script>
+</head>
+<body class="arcade-body arcade-game-page">
+  
+  <div data-arcade-auth-bar
+       data-after-login="../../../arcade.html"
+       data-after-guest="../../../arcade.html"></div>
+
+  <div class="shell">
+    <div class="card game-root">
+
+      <header class="game-header">
+        <div>
+          <h1 class="game-title">Neon Wordl PL</h1>
+          <p class="game-subtitle">Zgadnij słowo wygenerowane przez AI.</p>
+        </div>
+
+        <div class="score-panel">
+          <button id="new-game-btn" class="btn-primary">Nowa gra</button>
+          <button id="reset-dict-btn" class="btn-primary">Wyczyść słownik</button>
+        </div>
+      </header>
+
+      <div class="controls">
+        <select id="word-len" class="select-primary">
+          <option value="4">4 litery</option>
+          <option value="5" selected>5 liter</option>
+          <option value="6">6 liter</option>
+          <option value="7">7 liter</option>
+        </select>
+      </div>
+
+      <div class="board-wrapper">
+        <div id="status" class="status">Ładuję...</div>
+        <div id="board" class="board"></div>
+      </div>
+
+      <div id="keyboard" class="keyboard"></div>
+
+    </div>
+  </div>
+
+</body>
+</html>
