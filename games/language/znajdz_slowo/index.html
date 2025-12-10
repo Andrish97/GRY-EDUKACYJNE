@@ -36,7 +36,6 @@
     <div class="shell">
       <div class="card game-root">
         <div class="znajdz-slowo-screen">
-          <!-- TU wraca wewnętrzna karta -->
           <div class="znajdz-slowo-card">
             <div class="title">Znajdź słowo</div>
 
@@ -66,19 +65,19 @@
 
             <div id="message"></div>
 
-          <div class="bottom-row">
-            <div id="score">Punkty: 0</div>
-          
-            <button id="hintBtn" class="btn-hint">Podpowiedź (5💎)</button>
-            <button id="next">Następne</button>
-          
-            <button id="resetProgress" class="reset-progress-btn">
-              Wyczyść postęp
-            </button>
-          </div>
+            <div class="bottom-row">
+              <div id="score">Punkty: 0</div>
+              <button id="hintBtn" class="btn-hint">Podpowiedź (5💎)</button>
+              <button id="next">Następne</button>
+            </div>
 
+            <!-- reset postępu odsunięty, mniejszy, mniej „pod ręką” -->
+            <div class="reset-row">
+              <button id="resetProgress" class="reset-progress-btn">
+                Wyczyść postęp
+              </button>
+            </div>
           </div>
-          <!-- /znajdz-slowo-card -->
         </div>
       </div>
     </div>
