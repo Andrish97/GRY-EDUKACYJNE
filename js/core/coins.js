@@ -15,6 +15,8 @@
 //   ArcadeCoins.load(): Promise<number|null>
 //   ArcadeCoins.getBalance(): number|null
 //   ArcadeCoins.addForGame(gameId, amount, meta?): Promise<number|null>
+//
+// Uwaga: amount może być dodatni (nagroda) lub ujemny (wydanie monet).
 
 (function () {
   const globalObj =
@@ -145,13 +147,20 @@
 
   // -----------------------------
   // Public: addForGame(gameId, amount, meta?)
+  // amount > 0  -> nagroda
+  // amount < 0  -> wydanie monet (np. podpowiedź)
+  // amount === 0 -> brak zmian
   // -----------------------------
   ArcadeCoins.addForGame = function (gameId, amount, meta) {
     const c = getClient();
     if (!c) return Promise.resolve(_balance);
 
     const n = Math.floor(Number(amount) || 0);
-    if (n <= 0) return Promise.resolve(_balance);
+
+    // ignorujemy tylko 0, ale dopuszczamy zarówno dodatnie, jak i ujemne
+    if (n === 0) {
+      return Promise.resolve(_balance);
+    }
 
     return ArcadeCoins.load().then((currentBalance) => {
       if (_isGuest || !_userId) {
@@ -161,7 +170,21 @@
         return currentBalance;
       }
 
-      const newBalance = (currentBalance || 0) + n;
+      const startBalance = (typeof currentBalance === "number"
+        ? currentBalance
+        : 0);
+
+      // jeśli próbujemy wydać więcej niż mamy – odrzucamy operację
+      if (n < 0 && startBalance + n < 0) {
+        console.warn(
+          "[ArcadeCoins] Za mało monet na operację:",
+          "saldo=" + startBalance,
+          "zmiana=" + n
+        );
+        return startBalance;
+      }
+
+      const newBalance = startBalance + n;
       _balance = newBalance;
 
       return c
@@ -180,11 +203,13 @@
             console.error("[ArcadeCoins] upsert error:", error);
             return _balance;
           }
+
           if (data && typeof data.coins === "number") {
             _balance = data.coins;
           }
 
-          // tutaj można kiedyś dopisać log zdarzeń do osobnej tabeli
+          // TODO: kiedyś można dopisać log zdarzeń do osobnej tabeli
+          // np. arcade_wallet_events: { user_id, game_id, amount, meta }
 
           return _balance;
         })
