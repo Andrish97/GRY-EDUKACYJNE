@@ -2,10 +2,9 @@
 // Prosty system monet Neon Arcade (Supabase + tabela arcade_wallets)
 //
 // Wymagania:
+// - globalny klient Supabase w window.supabaseClient (tworzony w auth.js)
 //
-// - globalny klient Supabase w window.supabase (konfigurowany w auth.js)
-// - tabela w Supabase:
-//
+// Tabela (Supabase):
 //   create table arcade_wallets (
 //     user_id uuid primary key references auth.users(id),
 //     coins integer not null default 0,
@@ -23,7 +22,7 @@
   const ArcadeCoins = {};
   globalObj.ArcadeCoins = ArcadeCoins;
 
-  let supabase = null;
+  let client = null;
   let _userId = null;
   let _balance = null;
   let _isGuest = false;
@@ -31,20 +30,22 @@
   let _loadPromise = null;
 
   function getClient() {
-    if (supabase) return supabase;
-    if (globalObj.supabase) {
-      supabase = globalObj.supabase;
-      return supabase;
+    if (client) return client;
+    if (globalObj.supabaseClient) {
+      client = globalObj.supabaseClient;
+      return client;
     }
-    console.warn("[ArcadeCoins] Brak klienta Supabase (window.supabase).");
+    console.warn(
+      "[ArcadeCoins] Brak klienta Supabase (window.supabaseClient)."
+    );
     return null;
   }
 
   function ensureUser() {
-    const client = getClient();
-    if (!client) return Promise.resolve(null);
+    const c = getClient();
+    if (!c) return Promise.resolve(null);
 
-    return client.auth
+    return c.auth
       .getUser()
       .then(({ data, error }) => {
         if (error) {
@@ -74,8 +75,8 @@
   // Public: load()
   // -----------------------------
   ArcadeCoins.load = function () {
-    const client = getClient();
-    if (!client) return Promise.resolve(null);
+    const c = getClient();
+    if (!c) return Promise.resolve(null);
 
     if (_hasLoaded && _loadPromise === null) {
       return Promise.resolve(_balance);
@@ -86,25 +87,23 @@
     _loadPromise = ensureUser()
       .then((userId) => {
         if (!userId) {
-          // gość – brak monet na serwerze
-          _balance = null;
+          _balance = null; // gość – brak serwerowego portfela
           _hasLoaded = true;
           return null;
         }
 
-        return client
+        return c
           .from("arcade_wallets")
           .select("coins")
           .eq("user_id", userId)
           .single()
           .then(({ data, error }) => {
             if (error) {
-              // PGRST116 = brak wiersza (no rows)
+              // PGRST116 = brak wiersza
               if (error.code === "PGRST116") {
                 _balance = 0;
-                // spróbuj założyć portfel w tle
-                client
-                  .from("arcade_wallets")
+                // próbujemy założyć portfel w tle
+                c.from("arcade_wallets")
                   .insert({ user_id: userId, coins: 0 })
                   .then(() => {})
                   .catch((e) => {
@@ -148,8 +147,8 @@
   // Public: addForGame(gameId, amount, meta?)
   // -----------------------------
   ArcadeCoins.addForGame = function (gameId, amount, meta) {
-    const client = getClient();
-    if (!client) return Promise.resolve(_balance);
+    const c = getClient();
+    if (!c) return Promise.resolve(_balance);
 
     const n = Math.floor(Number(amount) || 0);
     if (n <= 0) return Promise.resolve(_balance);
@@ -165,7 +164,7 @@
       const newBalance = (currentBalance || 0) + n;
       _balance = newBalance;
 
-      return client
+      return c
         .from("arcade_wallets")
         .upsert(
           {
@@ -185,8 +184,7 @@
             _balance = data.coins;
           }
 
-          // tu można kiedyś dopisać logowanie eventów do
-          // arcade_coin_events (user_id, game_id, delta, meta, created_at)
+          // tutaj można kiedyś dopisać log zdarzeń do osobnej tabeli
 
           return _balance;
         })
