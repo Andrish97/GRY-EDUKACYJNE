@@ -9,7 +9,7 @@
     <!-- Styl gry -->
     <link rel="stylesheet" href="game.css" />
 
-    <!-- Supabase – musi być PRZED auth.js -->
+    <!-- Supabase (jeśli używasz CDN; jeśli masz inaczej, możesz to usunąć) -->
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
       defer
@@ -17,8 +17,9 @@
 
     <!-- Core -->
     <script src="../../../js/core/auth.js" defer></script>
-    <script src="../../../js/core/auth-bar.js" defer></script>
     <script src="../../../js/core/progress.js" defer></script>
+    <script src="../../../js/core/coins.js" defer></script>
+    <script src="../../../js/core/auth-bar.js" defer></script>
     <script src="../../../js/core/ui.js" defer></script>
 
     <!-- Logika gry -->
@@ -38,15 +39,15 @@
           <div>
             <h1 class="game-title">Znikające literki</h1>
             <p class="game-subtitle">
-              Zapamiętaj słówko, poczekaj aż znikną literki i uzupełnij je z
-              klawiatury na dole. Odblokowuj kolejne światy.
+              Zapamiętaj słowo, poczekaj aż znikną literki i uzupełnij je z
+              klawiatury na dole. Zdobywaj diaxy i odblokowuj kolejne poziomy.
             </p>
           </div>
 
           <div class="top-stats">
             <div class="score-panel">
               <div class="score-box">
-                <span class="score-label">Najwyższy świat</span>
+                <span class="score-label">Najwyższy poziom</span>
                 <span id="highest-level" class="score-value">1</span>
               </div>
               <div class="score-box">
@@ -60,15 +61,24 @@
             </div>
 
             <div class="controls-panel">
-              <button id="new-game-btn" class="btn-primary arcade-btn">
+              <button
+                id="new-game-btn"
+                class="arcade-btn btn-primary"
+                type="button"
+              >
                 Nowa gra
               </button>
-              <button id="save-game-btn" class="btn-primary arcade-btn">
+              <button
+                id="save-game-btn"
+                class="arcade-btn btn-primary"
+                type="button"
+              >
                 Zapisz
               </button>
               <button
                 id="reset-record-btn"
-                class="btn-primary arcade-btn btn-ghost"
+                class="arcade-btn arcade-btn--ghost"
+                type="button"
               >
                 Resetuj rekord
               </button>
@@ -76,12 +86,12 @@
           </div>
         </header>
 
-        <!-- ŚWIATY NAD GRĄ -->
+        <!-- POZIOMY NAD GRĄ -->
         <section class="levels-strip">
           <div class="levels-strip-header">
-            <h2 class="section-title">Światy</h2>
+            <h2 class="section-title">Poziomy</h2>
             <p class="section-subtitle">
-              Kliknij kółko, żeby zmienić świat. Kolejne odblokujesz, gdy
+              Kliknij kółko, żeby zmienić poziom. Kolejne odblokujesz, gdy
               zrobisz postęp.
             </p>
           </div>
@@ -93,11 +103,11 @@
           <section class="play-section">
             <div class="round-info">
               <span>
-                Świat:
+                Poziom:
                 <strong id="current-level-label">1</strong>
               </span>
               <span>
-                Ukończone w tym świecie:
+                Ukończone na tym poziomie:
                 <strong id="level-solved">0</strong>/<span
                   id="level-target"
                   >0</span
@@ -107,11 +117,16 @@
 
             <div class="word-area">
               <div class="word-display">
-                <div class="word-label">Zapamiętaj słowo:</div>
+                <div
+                  id="word-phase-label"
+                  class="word-label word-label--phase"
+                >
+                  Zapamiętaj słowo:
+                </div>
                 <div id="word-original" class="word-original">---</div>
 
                 <div class="word-label word-label--after">
-                  Uzupełnij brakujące literki:
+                  <span id="fill-label">Uzupełnij literki:</span>
                 </div>
                 <div id="word-masked" class="word-masked">---</div>
               </div>
@@ -122,15 +137,52 @@
 
               <div id="keyboard" class="keyboard"></div>
 
+              <div class="secondary-actions">
+                <div class="secondary-actions-left">
+                  <button
+                    id="backspace-btn"
+                    class="arcade-btn arcade-btn--ghost secondary-btn"
+                    type="button"
+                  >
+                    ⌫ Cofnij literę
+                  </button>
+                </div>
+                <div class="secondary-actions-right">
+                  <button
+                    id="skip-btn"
+                    class="arcade-btn arcade-btn--ghost secondary-btn"
+                    type="button"
+                  >
+                    Pomiń
+                  </button>
+                  <button
+                    id="refresh-btn"
+                    class="arcade-btn arcade-btn--ghost secondary-btn"
+                    type="button"
+                    title="Nowe słowo"
+                  >
+                    ⟳
+                  </button>
+                  <button
+                    id="hint-btn"
+                    class="arcade-btn btn-primary secondary-btn"
+                    type="button"
+                  >
+                    Podpowiedź (-1 💎)
+                  </button>
+                </div>
+              </div>
+
               <div id="message" class="game-message"></div>
             </div>
           </section>
         </main>
 
         <footer class="game-info">
-          Na niższych światach słowo jest proste i widać je dłużej. Na wyższych:
-          znikają więcej literki, jest więcej mylących klawiszy i dłuższe
-          słowa.
+          Na niższych poziomach słowo jest prostsze i widać je dłużej. Na
+          wyższych: więcej znikających literek, więcej mylących klawiszy,
+          dłuższe słowa i więcej słówek do zaliczenia poziomu. Podpowiedzi
+          kosztują diaxy 💎.
         </footer>
       </div>
     </div>
