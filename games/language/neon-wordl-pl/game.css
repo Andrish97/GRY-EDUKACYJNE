@@ -1,5 +1,12 @@
-/* ===== KARTA GRY ===== */
+/* ===== LAYOUT KARTY ===== */
 
+/* Wycentrowanie karty w arcade */
+.shell {
+  display: flex;
+  justify-content: center;
+}
+
+/* Główna karta gry */
 .game-root {
   border-radius: 1rem;
   background: rgba(15, 23, 42, 0.9);
@@ -9,10 +16,20 @@
   flex-direction: column;
   gap: 0.9rem;
 
-  /* zamiast wewnętrznego scrolla */
+  /* pełna wysokość, ale bez wewnętrznego scrolla */
   min-height: calc(100vh - 60px);
-  max-width: 980px;
+
+  /* szerokość karty */
+  width: 100%;
+  max-width: 960px;
   margin: 0 auto;
+}
+
+/* na bardzo szerokich ekranach trochę węższa karta */
+@media (min-width: 1200px) {
+  .game-root {
+    max-width: 900px;
+  }
 }
 
 /* ===== NAGŁÓWEK ===== */
