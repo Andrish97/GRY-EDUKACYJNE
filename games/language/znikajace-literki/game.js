@@ -16,27 +16,28 @@ let frequentWords = [];
 let usedWords = new Set(); // unikalność w ramach sesji
 
 // Konfiguracja światów (poziomów)
+// Więcej światów, brak 3-literowych słów, więcej mylących liter na klawiaturze
 const LEVELS = [
   {
     id: 1,
     label: "1",
-    minLen: 3,
-    maxLen: 4,
-    showMs: 3000,
+    minLen: 4,
+    maxLen: 6,
+    showMs: 4500,
     missingMin: 1,
-    missingMax: 1,
-    extraLetters: 0,
-    targetSolved: 5
+    missingMax: 2,
+    extraLetters: 3,
+    targetSolved: 6
   },
   {
     id: 2,
     label: "2",
     minLen: 4,
-    maxLen: 6,
-    showMs: 2600,
+    maxLen: 7,
+    showMs: 4200,
     missingMin: 1,
-    missingMax: 1,
-    extraLetters: 2,
+    missingMax: 2,
+    extraLetters: 4,
     targetSolved: 7
   },
   {
@@ -44,31 +45,55 @@ const LEVELS = [
     label: "3",
     minLen: 5,
     maxLen: 8,
-    showMs: 2300,
-    missingMin: 1,
-    missingMax: 2,
-    extraLetters: 3,
+    showMs: 3800,
+    missingMin: 2,
+    missingMax: 3,
+    extraLetters: 5,
     targetSolved: 8
   },
   {
     id: 4,
     label: "4",
     minLen: 5,
-    maxLen: 10,
-    showMs: 2000,
+    maxLen: 9,
+    showMs: 3500,
     missingMin: 2,
     missingMax: 3,
-    extraLetters: 4,
+    extraLetters: 6,
+    targetSolved: 9
+  },
+  {
+    id: 5,
+    label: "5",
+    minLen: 6,
+    maxLen: 10,
+    showMs: 3200,
+    missingMin: 2,
+    missingMax: 4,
+    extraLetters: 7,
     targetSolved: 10
+  },
+  {
+    id: 6,
+    label: "6",
+    minLen: 6,
+    maxLen: 12,
+    showMs: 3000,
+    missingMin: 3,
+    missingMax: 4,
+    extraLetters: 8,
+    targetSolved: 12
   }
 ];
 
 // Mapowanie poziomu na zakres częstotliwości (im wyżej, tym trudniej)
 const LEVEL_WORD_RANGES = {
-  1: [0, 600],      // tylko bardzo częste, krótkie słowa
-  2: [0, 2000],
-  3: [500, 5000],
-  4: [1000, 10000]
+  1: [0, 600],
+  2: [0, 1500],
+  3: [500, 3000],
+  4: [1000, 5000],
+  5: [2000, 8000],
+  6: [4000, 12000]
 };
 
 // Progres / statystyki
@@ -106,7 +131,6 @@ let timerBarEl;
 // ============================
 
 function initGame() {
-  // DOM
   levelListEl = document.getElementById("level-list");
   highestLevelEl = document.getElementById("highest-level");
   totalSolvedEl = document.getElementById("total-solved");
@@ -122,9 +146,6 @@ function initGame() {
 
   attachEvents();
 
-  // 1) Pobranie słów z zewnętrznego źródła
-  // 2) Wczytanie progresu
-  // 3) Start gry
   loadWords()
     .then(loadProgress)
     .then(function () {
@@ -133,7 +154,7 @@ function initGame() {
       selectLevel(currentLevel.id);
 
       showMessage(
-        "Wybierz świat i zapamiętaj słówko, zanim znikną literki.",
+        "Wybierz świat i zapamiętaj słowo, zanim znikną literki.",
         "info"
       );
 
@@ -172,7 +193,6 @@ function loadWords() {
             .toLowerCase();
         })
         .filter(function (w) {
-          // tylko „normalne” polskie słowa, bez spacji, liczb itp.
           return /^[a-ząćęłńóśźż]+$/.test(w);
         });
 
@@ -357,7 +377,7 @@ function renderLevels() {
 
   LEVELS.forEach(function (lvl) {
     const btn = document.createElement("button");
-    btn.className = "level-btn";
+    btn.className = "arcade-btn level-btn";
     btn.textContent = lvl.label;
 
     const isLocked = lvl.id > highestUnlockedLevel;
@@ -392,7 +412,6 @@ function selectLevel(levelId) {
   currentLevel = lvl;
   currentStreak = 0;
 
-  // odśwież klasy active
   Array.from(levelListEl.children).forEach(function (btn, idx) {
     const levelCfg = LEVELS[idx];
     btn.classList.remove("level-btn--active");
@@ -444,6 +463,7 @@ function startNewRound() {
 
   currentWord = word;
   wordOriginalEl.textContent = word.toUpperCase();
+  wordMaskedEl.textContent = "…";
 
   showTimer(currentLevel.showMs);
 
@@ -478,7 +498,6 @@ function pickWordForLevel(level) {
   let pool = candidates;
 
   if (!pool.length) {
-    // jeśli skończyły się unikalne słowa – resetujemy unikalność tylko na potrzeby wyboru
     usedWords.clear();
     const fallback = slice.filter(function (w) {
       const len = w.length;
@@ -529,6 +548,10 @@ function hideLettersAndBuildKeyboard() {
     currentMaskedChars[idx] = "_";
   });
 
+  // TU słowo „znika” – ukrywamy wersję do zapamiętywania,
+  // zostawiamy tylko wersję z lukami
+  wordOriginalEl.textContent = "";
+
   renderMaskedWord();
   buildKeyboard(chars, positions);
 
@@ -575,7 +598,7 @@ function buildKeyboard(chars, missingPos) {
 
   lettersArray.forEach(function (letter) {
     const btn = document.createElement("button");
-    btn.className = "key-btn";
+    btn.className = "arcade-btn key-btn";
     btn.textContent = letter.toUpperCase();
     btn.addEventListener("click", function () {
       onLetterClick(letter);
@@ -709,11 +732,9 @@ function showTimer(durationMs) {
   inner.className = "timer-inner";
   timerBarEl.appendChild(inner);
 
-  // reset
   inner.style.transform = "scaleX(1)";
   inner.style.transition = "transform " + durationMs + "ms linear";
 
-  // pozwól przeglądarce zrenderować początkowy stan
   requestAnimationFrame(function () {
     inner.style.transform = "scaleX(0)";
   });
@@ -776,7 +797,6 @@ function clamp(value, min, max) {
 }
 
 function randomInt(min, max) {
-  // całkowita z [min, max]
   const a = Math.ceil(min);
   const b = Math.floor(max);
   return Math.floor(Math.random() * (b - a + 1)) + a;
