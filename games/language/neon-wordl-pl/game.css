@@ -16,13 +16,11 @@
   flex-direction: column;
   gap: 0.9rem;
 
-  /* pełna wysokość, ale bez wewnętrznego scrolla */
-  min-height: calc(100vh - 60px);
-
-  /* szerokość karty */
+  /* wysokość: tyle, ile potrzeba – resztę przewija cała strona */
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
+  overflow: visible;
 }
 
 /* na bardzo szerokich ekranach trochę węższa karta */
