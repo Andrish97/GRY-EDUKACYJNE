@@ -246,3 +246,31 @@ body.arcade-body {
   overflow: hidden;
   padding: 0;
 }
+/* ======================================
+   Ghost / secondary button (globalne)
+   ====================================== */
+
+/* wariant ghost dla przycisków arcade */
+.arcade-btn--ghost,
+.btn-ghost {
+  background: transparent;
+  border-style: dashed;
+  border-width: 1px;
+  border-color: rgba(148, 163, 184, 0.8);
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* hover / focus – leciutkie podświetlenie */
+.arcade-btn--ghost:hover,
+.btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.75);
+  opacity: 1;
+}
+
+/* active – lekkie „wciśnięcie” */
+.arcade-btn--ghost:active,
+.btn-ghost:active {
+  transform: translateY(1px);
+  opacity: 0.85;
+}
