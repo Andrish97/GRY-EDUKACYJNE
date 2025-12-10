@@ -37,13 +37,15 @@ const initialSpeed = 220;
 const minSpeed = 60;
 const speedStep = 10;
 
-// Sterowanie dotykowe (swipe)
+// Sterowanie dotykowe
 let touchStartX = null;
 let touchStartY = null;
 let touchStartTime = 0;
 
-const SWIPE_THRESHOLD = 24; // minimalna odległość w px
-const SWIPE_TIME_MAX = 600; // ms
+const SWIPE_THRESHOLD = 24;
+const SWIPE_TIME_MAX = 600;
+
+document.addEventListener("DOMContentLoaded", initGame);
 
 async function initGame() {
   canvas = document.getElementById("game-canvas");
@@ -64,7 +66,7 @@ async function initGame() {
   attachEvents();
   setupTouchControls();
 
-  // Załaduj stan monet (o ile system istnieje)
+  // Monety – jeśli system jest dostępny
   if (window.ArcadeCoins && ArcadeCoins.load) {
     try {
       await ArcadeCoins.load();
@@ -300,7 +302,6 @@ function setupTouchControls() {
   canvas.addEventListener(
     "touchmove",
     function (e) {
-      // blokujemy przewijanie strony, gdy gramy
       e.preventDefault();
     },
     { passive: false }
@@ -413,13 +414,11 @@ function tick() {
     y: snake[0].y + direction.y,
   };
 
-  // Wrap-around
   if (head.x < 0) head.x = tilesX - 1;
   if (head.x >= tilesX) head.x = 0;
   if (head.y < 0) head.y = tilesY - 1;
   if (head.y >= tilesY) head.y = 0;
 
-  // Kolizja z samym sobą
   if (snake.some((seg) => seg.x === head.x && seg.y === head.y)) {
     endGame();
     return;
@@ -589,7 +588,7 @@ function drawGameOverOverlay() {
   ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(40, canvas.height / 2 - 40, canvas.width - 80, 80);
 
   ctx.fillStyle = "#f9fafb";
@@ -629,10 +628,10 @@ function endGame() {
   updatePauseButtonLabel();
   draw();
 
-  // === DIAMENTY 💎 ===
-  // Niech nie będzie zbyt łatwo:
-  // - 1 diament za każde 7 punktów
-  // - +3 diamenty jeśli nowy rekord
+  // Diamenty – nie za darmo:
+  // - minimalny sensowny wynik: 5 punktów
+  // - 1 💎 za każde 7 punktów
+  // - +3 💎 za nowy rekord
   const newRecord = score > prevBest;
   let reward = 0;
 
@@ -659,7 +658,7 @@ function endGame() {
           score
         );
 
-        // Odśwież licznik monet w pasku, jeśli jest taki helper
+        // Odśwież pasek monet (jeśli taki helper istnieje)
         if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
           ArcadeAuthUI.refreshCoins().catch(function (err) {
             console.warn("[GAME]", GAME_ID, "refreshCoins error:", err);
@@ -733,9 +732,3 @@ function setupClickGuard() {
     }
   });
 }
-
-/* ======================
-   START
-   ====================== */
-
-document.addEventListener("DOMContentLoaded", initGame);
