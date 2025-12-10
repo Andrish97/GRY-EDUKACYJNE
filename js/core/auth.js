@@ -341,6 +341,11 @@ window.ArcadeAuthUI = {
       }
     }
 
+    // udostępniamy prostą funkcję do odświeżenia salda monet z zewnątrz
+    if (!window.ArcadeAuthUI) window.ArcadeAuthUI = {};
+    window.ArcadeAuthUI.refreshCoins = function () {
+      loadCoinsForUser();
+    };
 
     
     // startowo: tryb logowania
