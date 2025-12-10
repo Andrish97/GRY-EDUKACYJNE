@@ -1,656 +1,725 @@
-// ===== KONFIGURACJA GRY =====
-const GAME_ID = "neon-wordl-pl";
-const DICT_URL =
-  "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/pl/pl_full.txt";
-const MAX_ROWS = 6;
-const HINT_COST = 5; // koszt jednej podpowiedzi w 💎
+const GAME_ID = "znajdz-slowo";
+const QUESTIONS_PER_LEVEL = 6;
 
-let allWords = [];
-let validWords = [];
-let usedWords = new Set();
-let secret = "";
-let wordLength = 5;
+// =========================
+// ŚWIATY / PYTANIA
+// =========================
 
-// Stan planszy
-let board = []; // 2D: [row][col] -> tile element
-let row = 0;
-let col = 0;
-
-// Stan podpowiedzi
-let usedHintPositions = new Set();
-
-// Statystyki (ArcadeProgress)
-let gamesPlayed = 0;
-let wins = 0;
-let currentStreak = 0;
-let maxStreak = 0;
-let LAST_SAVE_DATA = null;
-
-// Klawiatura
-let keyboardEl;
-let keyboardInnerEl;
-const keyboardState = {}; // litera -> "absent" | "present" | "correct"
-
-// DOM
-let statusEl;
-let boardEl;
-let wordLenSel;
-let newGameBtn;
-let resetRecordBtn;
-let statGamesEl;
-let statWinsEl;
-let statStreakEl;
-let statMaxStreakEl;
-
-// Podpowiedzi / monety
-let hintBtn;
-let hintTextEl;
-let coinsLoaded = false;
-
-// ===== POMOCNICZE =====
-
-function normalizeWord(w) {
-  return w
-    .toLowerCase()
-    .replace(/[^a-ząćęłńóśżź]/g, ""); // tylko litery PL
-}
-
-function canUseCoins() {
-  return (
-    typeof window !== "undefined" &&
-    window.ArcadeCoins &&
-    typeof ArcadeCoins.load === "function" &&
-    typeof ArcadeCoins.getBalance === "function" &&
-    typeof ArcadeCoins.addForGame === "function"
-  );
-}
-
-// ===== SŁOWNIK =====
-
-async function loadDictionary() {
-  statusEl.textContent = "Pobieram słownik...";
-  try {
-    const resp = await fetch(DICT_URL);
-    const text = await resp.text();
-    const lines = text.split("\n").map((x) => normalizeWord(x.split(" ")[0]));
-    allWords = [...new Set(lines)].filter(
-      (w) => w.length >= 4 && w.length <= 7
-    );
-    statusEl.textContent = "Słownik gotowy. Zgaduj!";
-  } catch (err) {
-    console.error("[WORDL] Błąd przy pobieraniu słownika:", err);
-    statusEl.textContent =
-      "Błąd ładowania słownika. Sprawdź połączenie z internetem.";
+const WORLDS = [
+  {
+    id: "animals",
+    name: "Zwierzęta",
+    icon: "🐾",
+    hint: "Czytaj nazwy zwierząt i znajdź właściwą.",
+    rounds: [
+      { emoji: "🐱", correct: "kot", others: ["pies", "mysz"] },
+      { emoji: "🐶", correct: "pies", others: ["kot", "ryba"] },
+      { emoji: "🐭", correct: "mysz", others: ["kot", "żaba"] },
+      { emoji: "🐰", correct: "królik", others: ["pies", "koń"] },
+      { emoji: "🐹", correct: "chomik", others: ["mysz", "kot"] },
+      { emoji: "🐷", correct: "świnia", others: ["koza", "krowa"] },
+      { emoji: "🐮", correct: "krowa", others: ["koza", "owca"] },
+      { emoji: "🐴", correct: "koń", others: ["pies", "krowa"] },
+      { emoji: "🐑", correct: "owca", others: ["koza", "kura"] },
+      { emoji: "🐐", correct: "koza", others: ["owca", "świnia"] },
+      { emoji: "🐔", correct: "kura", others: ["kaczka", "gęś"] },
+      { emoji: "🦆", correct: "kaczka", others: ["kura", "gęś"] },
+      { emoji: "🦢", correct: "łabędź", others: ["kaczka", "gęś"] },
+      { emoji: "🦊", correct: "lis", others: ["pies", "kot"] },
+      { emoji: "🐻", correct: "miś", others: ["pies", "kot"] },
+      { emoji: "🐸", correct: "żaba", others: ["ryba", "mysz"] },
+      { emoji: "🐟", correct: "ryba", others: ["pies", "kot"] },
+      { emoji: "🐢", correct: "żółw", others: ["żaba", "ryba"] },
+      { emoji: "🐝", correct: "pszczoła", others: ["motyl", "biedronka"] },
+      { emoji: "🦋", correct: "motyl", others: ["pszczoła", "biedronka"] },
+      { emoji: "🐞", correct: "biedronka", others: ["pszczoła", "mrówka"] },
+      { emoji: "🐜", correct: "mrówka", others: ["pszczoła", "komar"] }
+    ]
+  },
+  {
+    id: "food",
+    name: "Jedzenie",
+    icon: "🍎",
+    hint: "Znajdź nazwę owocu lub jedzenia.",
+    rounds: [
+      { emoji: "🍎", correct: "jabłko", others: ["gruszka", "banan"] },
+      { emoji: "🍌", correct: "banan", others: ["jabłko", "pomidor"] },
+      { emoji: "🍐", correct: "gruszka", others: ["jabłko", "marchewka"] },
+      { emoji: "🍊", correct: "pomarańcza", others: ["cytryna", "jabłko"] },
+      { emoji: "🍋", correct: "cytryna", others: ["pomarańcza", "truskawka"] },
+      { emoji: "🍓", correct: "truskawka", others: ["jabłko", "malina"] },
+      { emoji: "🍇", correct: "winogrono", others: ["jabłko", "banan"] },
+      { emoji: "🍒", correct: "wiśnia", others: ["truskawka", "śliwka"] },
+      { emoji: "🥕", correct: "marchewka", others: ["ogórek", "ziemniak"] },
+      { emoji: "🥒", correct: "ogórek", others: ["marchewka", "sałata"] },
+      { emoji: "🥔", correct: "ziemniak", others: ["marchewka", "ryż"] },
+      { emoji: "🍅", correct: "pomidor", others: ["jabłko", "marchewka"] },
+      { emoji: "🥬", correct: "sałata", others: ["kapusta", "pomidor"] },
+      { emoji: "🍞", correct: "chleb", others: ["ciasto", "lody"] },
+      { emoji: "🥐", correct: "rogalik", others: ["chleb", "bułka"] },
+      { emoji: "🥖", correct: "bagietka", others: ["bułka", "chleb"] },
+      { emoji: "🧀", correct: "ser", others: ["chleb", "masło"] },
+      { emoji: "🥚", correct: "jajko", others: ["ser", "masło"] },
+      { emoji: "🍕", correct: "pizza", others: ["makaron", "ryż"] },
+      { emoji: "🍝", correct: "makaron", others: ["ryż", "zupa"] },
+      { emoji: "🍚", correct: "ryż", others: ["makaron", "ziemniak"] },
+      { emoji: "🍰", correct: "ciasto", others: ["chleb", "lody"] },
+      { emoji: "🧁", correct: "babeczka", others: ["ciasto", "lody"] },
+      { emoji: "🍦", correct: "lody", others: ["ciasto", "pizza"] },
+      { emoji: "🥛", correct: "mleko", others: ["woda", "sok"] },
+      { emoji: "🥤", correct: "sok", others: ["woda", "mleko"] },
+      { emoji: "💧", correct: "woda", others: ["sok", "mleko"] }
+    ]
+  },
+  {
+    id: "home",
+    name: "Dom",
+    icon: "🏠",
+    hint: "To rzeczy w domu. Jak się nazywają?",
+    rounds: [
+      { emoji: "🏠", correct: "dom", others: ["szkoła", "sklep"] },
+      { emoji: "🛏️", correct: "łóżko", others: ["stół", "krzesło"] },
+      { emoji: "🛋️", correct: "sofa", others: ["łóżko", "krzesło"] },
+      { emoji: "🪑", correct: "krzesło", others: ["stół", "łóżko"] },
+      { emoji: "🪟", correct: "okno", others: ["drzwi", "zegar"] },
+      { emoji: "🚪", correct: "drzwi", others: ["okno", "stół"] },
+      { emoji: "🧸", correct: "zabawka", others: ["książka", "telefon"] },
+      { emoji: "📺", correct: "telewizor", others: ["telefon", "komputer"] },
+      { emoji: "📱", correct: "telefon", others: ["telewizor", "zegar"] },
+      { emoji: "🕰️", correct: "zegar", others: ["lampa", "okno"] },
+      { emoji: "💡", correct: "lampa", others: ["zegar", "okno"] },
+      { emoji: "📦", correct: "pudełko", others: ["książka", "plecak"] },
+      { emoji: "🧹", correct: "miotła", others: ["zmiotka", "szufelka"] },
+      { emoji: "🪣", correct: "wiadro", others: ["pudełko", "krzesło"] }
+    ]
+  },
+  {
+    id: "school",
+    name: "Szkoła",
+    icon: "🏫",
+    hint: "Przedmioty i osoby w szkole.",
+    rounds: [
+      { emoji: "🏫", correct: "szkoła", others: ["dom", "sklep"] },
+      { emoji: "📚", correct: "książka", others: ["zeszyt", "zabawka"] },
+      { emoji: "📓", correct: "zeszyt", others: ["książka", "gazeta"] },
+      { emoji: "✏️", correct: "ołówek", others: ["długopis", "nożyczki"] },
+      { emoji: "🖊️", correct: "długopis", others: ["ołówek", "klej"] },
+      { emoji: "✂️", correct: "nożyczki", others: ["klej", "linijka"] },
+      { emoji: "📐", correct: "linijka", others: ["ołówek", "zeszyt"] },
+      { emoji: "🧴", correct: "klej", others: ["nożyczki", "długopis"] },
+      { emoji: "🎒", correct: "plecak", others: ["pudełko", "książka"] },
+      { emoji: "🧑‍🏫", correct: "nauczyciel", others: ["tata", "kolega"] },
+      { emoji: "👩‍🏫", correct: "nauczycielka", others: ["mama", "koleżanka"] },
+      { emoji: "🧑‍🎓", correct: "uczeń", others: ["nauczyciel", "brat"] },
+      { emoji: "🔤", correct: "litery", others: ["cyfry", "obrazki"] },
+      { emoji: "🔢", correct: "cyfry", others: ["litery", "książki"] }
+    ]
+  },
+  {
+    id: "actions",
+    name: "Czynności",
+    icon: "🏃",
+    hint: "Co robi dziecko na obrazku?",
+    rounds: [
+      { emoji: "🏃‍♂️", correct: "biega", others: ["śpi", "siedzi"] },
+      { emoji: "😴", correct: "śpi", others: ["biega", "czyta"] },
+      { emoji: "📖", correct: "czyta", others: ["pisze", "rysuje"] },
+      { emoji: "✍️", correct: "pisze", others: ["czyta", "biega"] },
+      { emoji: "🎨", correct: "rysuje", others: ["czyta", "gra"] },
+      { emoji: "⚽", correct: "gra", others: ["śpi", "czyta"] },
+      { emoji: "🥤", correct: "pije", others: ["je", "śpi"] },
+      { emoji: "🍽️", correct: "je", others: ["pije", "rysuje"] },
+      { emoji: "👂", correct: "słucha", others: ["czyta", "pisze"] },
+      { emoji: "👀", correct: "patrzy", others: ["biega", "śpi"] },
+      { emoji: "🧼", correct: "myje ręce", others: ["je", "śpi"] },
+      { emoji: "🪥", correct: "myje zęby", others: ["pisze", "je"] }
+    ]
+  },
+  {
+    id: "clothes",
+    name: "Ubrania",
+    icon: "👗",
+    hint: "Jak nazywają się części ubrania?",
+    rounds: [
+      { emoji: "👕", correct: "koszulka", others: ["spodnie", "sukienka"] },
+      { emoji: "👖", correct: "spodnie", others: ["buty", "koszulka"] },
+      { emoji: "👗", correct: "sukienka", others: ["koszulka", "spódnica"] },
+      { emoji: "👟", correct: "buty", others: ["skarpetki", "czapka"] },
+      { emoji: "🧦", correct: "skarpetki", others: ["buty", "spodnie"] },
+      { emoji: "🧥", correct: "kurtka", others: ["koszulka", "czapka"] },
+      { emoji: "🧢", correct: "czapka", others: ["kurtka", "szalik"] },
+      { emoji: "🧣", correct: "szalik", others: ["czapka", "koszulka"] },
+      { emoji: "🧤", correct: "rękawiczki", others: ["skarpetki", "buty"] }
+    ]
+  },
+  {
+    id: "nature",
+    name: "Przyroda",
+    icon: "🌿",
+    hint: "Elementy przyrody i pogody.",
+    rounds: [
+      { emoji: "☀️", correct: "słońce", others: ["księżyc", "gwiazda"] },
+      { emoji: "🌙", correct: "księżyc", others: ["słońce", "gwiazda"] },
+      { emoji: "⭐", correct: "gwiazda", others: ["słońce", "chmura"] },
+      { emoji: "☁️", correct: "chmura", others: ["słońce", "śnieg"] },
+      { emoji: "🌧️", correct: "deszcz", others: ["słońce", "śnieg"] },
+      { emoji: "❄️", correct: "śnieg", others: ["deszcz", "słońce"] },
+      { emoji: "🌈", correct: "tęcza", others: ["deszcz", "słońce"] },
+      { emoji: "🌳", correct: "drzewo", others: ["kwiat", "trawa"] },
+      { emoji: "🌸", correct: "kwiat", others: ["drzewo", "liść"] },
+      { emoji: "🍂", correct: "liść", others: ["kwiat", "trawa"] },
+      { emoji: "🌊", correct: "rzeka", others: ["góra", "drzewo"] },
+      { emoji: "⛰️", correct: "góra", others: ["rzeka", "dom"] }
+    ]
+  },
+  {
+    id: "transport",
+    name: "Pojazdy",
+    icon: "🚗",
+    hint: "Jakim pojazdem jedziemy lub lecimy?",
+    rounds: [
+      { emoji: "🚗", correct: "samochód", others: ["rower", "autobus"] },
+      { emoji: "🚌", correct: "autobus", others: ["samochód", "tramwaj"] },
+      { emoji: "🚋", correct: "tramwaj", others: ["autobus", "pociąg"] },
+      { emoji: "🚆", correct: "pociąg", others: ["tramwaj", "samochód"] },
+      { emoji: "🚲", correct: "rower", others: ["hulajnoga", "samochód"] },
+      { emoji: "🛴", correct: "hulajnoga", others: ["rower", "samochód"] },
+      { emoji: "✈️", correct: "samolot", others: ["statek", "samochód"] },
+      { emoji: "🚢", correct: "statek", others: ["samolot", "rower"] },
+      { emoji: "🚀", correct: "rakieta", others: ["samolot", "statek"] }
+    ]
+  },
+  {
+    id: "family",
+    name: "Rodzina",
+    icon: "👨‍👩‍👧‍👦",
+    hint: "Kto jest kim w rodzinie?",
+    rounds: [
+      { emoji: "👩", correct: "mama", others: ["pani", "siostra"] },
+      { emoji: "👨", correct: "tata", others: ["pan", "brat"] },
+      { emoji: "👵", correct: "babcia", others: ["mama", "pani"] },
+      { emoji: "👴", correct: "dziadek", others: ["tata", "pan"] },
+      { emoji: "👦", correct: "brat", others: ["kolega", "chłopiec"] },
+      { emoji: "👧", correct: "siostra", others: ["koleżanka", "dziewczynka"] },
+      { emoji: "👶", correct: "dziecko", others: ["brat", "siostra"] },
+      { emoji: "👨‍👩‍👧‍👦", correct: "rodzina", others: ["klasa", "grupa"] }
+    ]
   }
-}
-
-function chooseSecret() {
-  validWords = allWords.filter((w) => w.length === wordLength);
-  if (!validWords.length) return "";
-
-  let w;
-  let safety = 0;
-  do {
-    w = validWords[Math.floor(Math.random() * validWords.length)];
-    safety++;
-  } while (usedWords.has(w) && safety < 1000);
-
-  usedWords.add(w);
-  return w;
-}
-
-// ===== PLANSZA =====
-
-function initBoardStructure() {
-  boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 42px)`;
-  board = [];
-
-  for (let r = 0; r < MAX_ROWS; r++) {
-    const rowArr = [];
-    for (let c = 0; c < wordLength; c++) {
-      const div = document.createElement("div");
-      div.className = "tile";
-      boardEl.appendChild(div);
-      rowArr.push(div);
-    }
-    board.push(rowArr);
-  }
-}
-
-function resetBoard() {
-  row = 0;
-  col = 0;
-  for (let r = 0; r < MAX_ROWS; r++) {
-    for (let c = 0; c < wordLength; c++) {
-      const tile = board[r][c];
-      tile.textContent = "";
-      tile.className = "tile";
-    }
-  }
-}
-
-// ===== KLAWIATURA DOTYKOWA =====
-const KEYBOARD_LAYOUT = [
-  ["w", "e", "r", "t", "y", "u", "i", "o", "p"],
-  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-  ["z", "ź", "ż", "c", "b", "n", "m", "backspace"],
-  ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "enter"],
 ];
 
-function buildKeyboard() {
-  keyboardEl.innerHTML = "";
-  keyboardInnerEl = document.createElement("div");
-  keyboardInnerEl.className = "keyboard-inner";
-  keyboardEl.appendChild(keyboardInnerEl);
+const goodMessages = [
+  "Brawo! Czytasz jak mistrz.",
+  "Super! Twoje oczy są szybkie jak laser.",
+  "Tak jest! Świetnie dopasowane słowo.",
+  "Pięknie! Litery chyba cię lubią. 😊",
+  "Ekstra! Kolejny dobry wybór.",
+  "Świetnie! Ten świat coraz łatwiejszy."
+];
 
-  KEYBOARD_LAYOUT.forEach((rowKeys) => {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "keyboard-row";
+const wrongMessages = [
+  "Prawie! Zwróć uwagę na pierwszą literę.",
+  "Spróbuj inaczej: popatrz na koniec słowa.",
+  "Nie szkodzi. Przeczytaj powoli wszystkie wyrazy.",
+  "Litery czasem mylą – spróbuj jeszcze raz."
+];
 
-    rowKeys.forEach((key) => {
-      const btn = document.createElement("button");
-      btn.className = "key-btn";
-      btn.dataset.key = key;
+const levelCompleteMessages = [
+  "Poziom ukończony! Odblokowujesz nowy świat!",
+  "Świetnie! Ten świat jest twój.",
+  "Brawo! Czas na kolejny poziom."
+];
 
-      if (key === "enter") {
-        btn.textContent = "Enter";
-        btn.classList.add("key-wide");
-      } else if (key === "backspace") {
-        btn.textContent = "⌫";
-        btn.classList.add("key-wide");
-      } else {
-        btn.textContent = key;
-      }
+// =========================
+// DOM REFERENCJE
+// =========================
 
-      btn.addEventListener("click", () => handleVirtualKey(key));
-      rowDiv.appendChild(btn);
-    });
+let worldsRow;
+let emojiEl;
+let choicesEl;
+let scoreEl;
+let messageEl;
+let nextBtn;
+let cardEl;
+let streakEl;
+let progressBar;
+let worldNameLabel;
+let hintEl;
+let resetProgressBtn;
+let hintBtn;
 
-    keyboardInnerEl.appendChild(rowDiv);
-  });
+// =========================
+// STAN GRY
+// =========================
 
-  // czyścimy stan kolorów
-  Object.keys(keyboardState).forEach((k) => delete keyboardState[k]);
-}
+let unlockedWorlds = 1; // na start tylko Zwierzęta
+let currentWorldIndex = 0;
+let currentRound = null;
+let answered = false;
+let score = 0;
+let streak = 0;
+let bestStreakCurrentWorld = 0;
+let questionInWorld = 0;
 
-function handleVirtualKey(k) {
-  statusEl.textContent = "";
+// =========================
+// HELPERY
+// =========================
 
-  if (k === "enter") {
-    submitRow();
-    return;
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
-  if (k === "backspace") {
-    erase();
-    return;
-  }
-  pressLetter(k);
+  return array;
 }
 
-// ===== STATYSTYKI + AUTO-SAVE =====
-
-function updateStatsUI() {
-  if (statGamesEl) statGamesEl.textContent = gamesPlayed.toString();
-  if (statWinsEl) statWinsEl.textContent = wins.toString();
-  if (statStreakEl) statStreakEl.textContent = currentStreak.toString();
-  if (statMaxStreakEl) statMaxStreakEl.textContent = maxStreak.toString();
+function randomItem(array) {
+  return array[Math.floor(Math.random() * array.length)];
 }
 
-function autoSave() {
-  if (!window.ArcadeProgress || !ArcadeProgress.save) return;
-
-  const payload = {
-    gamesPlayed,
-    wins,
-    currentStreak,
-    maxStreak,
-  };
-
-  ArcadeProgress.save(GAME_ID, payload)
-    .then(() => {
-      LAST_SAVE_DATA = payload;
-      console.log("[WORDL] auto-zapis:", payload);
-    })
-    .catch((err) => {
-      console.error("[WORDL] błąd zapisu:", err);
-    });
+function clampWorldIndex(idx) {
+  if (idx < 0) return 0;
+  if (idx >= WORLDS.length) return WORLDS.length - 1;
+  return idx;
 }
 
-function rewardCoinsForGame(win) {
-  if (!canUseCoins()) return;
-
-  const amount = win ? 5 : 1;
-
-  ArcadeCoins.addForGame(GAME_ID, amount, {
-    reason: win ? "win" : "loss",
-    wordLength,
-    secret,
-  })
-    .then(() => {
-      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
-        ArcadeAuthUI.refreshCoins();
-      }
-      console.log("[WORDL] przyznano monety:", amount);
-    })
-    .catch((err) => {
-      console.warn("[WORDL] błąd przyznawania monet:", err);
-    });
+function getCurrentUserLikeThing() {
+  if (!window.ArcadeAuth) return null;
+  if (typeof ArcadeAuth.getUser === "function") return ArcadeAuth.getUser();
+  if (typeof ArcadeAuth.getCurrentUser === "function")
+    return ArcadeAuth.getCurrentUser();
+  return null;
 }
 
-function registerGameFinished(win) {
-  gamesPlayed++;
-  if (win) {
-    wins++;
-    currentStreak++;
-    if (currentStreak > maxStreak) {
-      maxStreak = currentStreak;
-    }
-  } else {
-    currentStreak = 0;
-  }
-  updateStatsUI();
-  autoSave();
-  rewardCoinsForGame(win);
-}
-
-// ===== ArcadeProgress – load / clear =====
+// =========================
+// ARCADE PROGRESS (minimalny)
+// =========================
 
 function loadProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.load) {
-    console.warn("[WORDL]", GAME_ID, "Brak ArcadeProgress.load");
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.load");
     return Promise.resolve();
   }
 
   return ArcadeProgress.load(GAME_ID)
-    .then(function (data) {
-      if (!data) {
-        updateStatsUI();
-        return;
+    .then((data) => {
+      if (!data) return;
+
+      if (typeof data.unlockedWorlds === "number") {
+        unlockedWorlds = Math.max(1, Math.min(WORLDS.length, data.unlockedWorlds));
       }
-
-      if (typeof data.gamesPlayed === "number") gamesPlayed = data.gamesPlayed;
-      if (typeof data.wins === "number") wins = data.wins;
-      if (typeof data.currentStreak === "number")
-        currentStreak = data.currentStreak;
-      if (typeof data.maxStreak === "number") maxStreak = data.maxStreak;
-
-      LAST_SAVE_DATA = data;
-      updateStatsUI();
-    })
-    .catch(function (err) {
-      console.error("[WORDL]", GAME_ID, "Błąd load:", err);
-    });
-}
-
-function clearProgress() {
-  if (!window.ArcadeProgress || !ArcadeProgress.clear) {
-    console.warn("[WORDL]", GAME_ID, "Brak ArcadeProgress.clear");
-    return Promise.resolve();
-  }
-
-  return ArcadeProgress.clear(GAME_ID)
-    .then(function () {
-      LAST_SAVE_DATA = null;
-
-      gamesPlayed = 0;
-      wins = 0;
-      currentStreak = 0;
-      maxStreak = 0;
-      updateStatsUI();
-
-      console.log("[WORDL]", GAME_ID, "progress wyczyszczony");
-      statusEl.textContent = "Rekordy wyczyszczone.";
-    })
-    .catch(function (err) {
-      console.error("[WORDL]", GAME_ID, "Błąd clear:", err);
-      statusEl.textContent = "Błąd czyszczenia rekordów.";
-    });
-}
-
-// ===== MONETY / PODPOWIEDZI =====
-
-function initCoins() {
-  if (!canUseCoins()) return;
-
-  ArcadeCoins.load()
-    .then(() => {
-      coinsLoaded = true;
+      if (typeof data.currentWorldIndex === "number") {
+        currentWorldIndex = clampWorldIndex(data.currentWorldIndex);
+      }
+      if (typeof data.score === "number") {
+        score = data.score;
+      }
     })
     .catch((err) => {
-      console.warn("[WORDL] błąd ArcadeCoins.load:", err);
+      console.error("[ZnajdzSlowo] Błąd load:", err);
     });
 }
 
-async function useHint() {
-  if (!hintBtn) return;
-
-  if (row >= MAX_ROWS || !secret) {
-    statusEl.textContent = "Najpierw rozpocznij nową grę.";
+function saveProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.save) {
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.save");
     return;
   }
 
-  if (!canUseCoins()) {
-    statusEl.textContent =
-      "Podpowiedzi za diamenty są dostępne tylko dla zalogowanych.";
+  const payload = {
+    unlockedWorlds,
+    currentWorldIndex,
+    score
+  };
+
+  ArcadeProgress.save(GAME_ID, payload).catch((err) => {
+    console.error("[ZnajdzSlowo] Błąd save:", err);
+  });
+}
+
+// =========================
+// MONETY (ArcadeCoins)
+// =========================
+
+function awardCoins(amount, reason) {
+  const delta = Math.floor(amount);
+  if (!Number.isFinite(delta) || delta === 0) return;
+
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) {
+    // brak systemu monet – nic nie robimy, ale gra działa
     return;
   }
 
-  hintBtn.disabled = true;
-  statusEl.textContent = "";
+  ArcadeCoins.addForGame(GAME_ID, delta, { reason })
+    .then(() => {
+      if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
+        ArcadeAuthUI.refreshCoins();
+      }
+    })
+    .catch((err) => {
+      console.warn("[ZnajdzSlowo] Nie udało się zmienić monet:", err);
+    });
+}
+
+async function spendCoins(cost, meta) {
+  if (!window.ArcadeCoins || !ArcadeCoins.getBalance || !ArcadeCoins.addForGame) {
+    messageEl.textContent = "System monet chwilowo niedostępny.";
+    return false;
+  }
 
   try {
     const balance = await ArcadeCoins.getBalance();
-    if (typeof balance !== "number" || balance < HINT_COST) {
-      statusEl.textContent =
-        "Za mało diamentów na podpowiedź (koszt: 5💎). Zdobądź je, wygrywając gry.";
-      hintBtn.disabled = false;
-      return;
+    if (typeof balance !== "number" || balance < cost) {
+      messageEl.textContent = "Masz za mało diamentów (5💎).";
+      return false;
     }
 
-    // znajdź pozycję, której jeszcze nie podpowiadaliśmy
-    const candidates = [];
-    for (let i = 0; i < wordLength; i++) {
-      if (!usedHintPositions.has(i)) {
-        candidates.push(i);
-      }
-    }
+    await ArcadeCoins.addForGame(GAME_ID, -cost, meta);
 
-    if (!candidates.length) {
-      statusEl.textContent =
-        "Wykorzystałeś wszystkie podpowiedzi dla tego słowa.";
-      hintBtn.disabled = false;
-      return;
-    }
-
-    const pos =
-      candidates[Math.floor(Math.random() * candidates.length)];
-    usedHintPositions.add(pos);
-
-    const letter = secret[pos].toUpperCase();
-
-    // >>> tu próbujemy ODJĄĆ 5 diamentów <<<
-    await ArcadeCoins.addForGame(GAME_ID, -HINT_COST, {
-      reason: "hint",
-      position: pos,
-      letter: secret[pos],
-    });
-
-    if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+    if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
       ArcadeAuthUI.refreshCoins();
     }
 
-    if (hintTextEl) {
-      hintTextEl.textContent = `Podpowiedź: na pozycji ${
-        pos + 1
-      } jest litera ${letter}. (-5💎)`;
-    }
+    return true;
   } catch (err) {
-    console.error("[WORDL] błąd podpowiedzi:", err);
-    statusEl.textContent =
-      "Nie udało się użyć podpowiedzi. Sprawdź połączenie lub stan konta.";
-  } finally {
-    hintBtn.disabled = false;
+    console.warn("[ZnajdzSlowo] Błąd przy wydawaniu monet:", err);
+    messageEl.textContent = "Nie udało się pobrać diamentów.";
+    return false;
   }
 }
 
-// ===== OBSŁUGA PRZYCISKÓW =====
+// =========================
+// UI UPDATE
+// =========================
 
-function attachButtonEvents() {
-  if (newGameBtn) {
-    newGameBtn.addEventListener("click", function () {
-      const ok =
-        row === 0 ||
-        row >= MAX_ROWS ||
-        window.confirm(
-          "Rozpocząć nowe słowo? Aktualna próba zostanie przerwana."
-        );
-      if (!ok) return;
-      startNewGame();
-    });
-  }
-
-  if (resetRecordBtn) {
-    resetRecordBtn.addEventListener("click", function () {
-      const ok = window.confirm(
-        "Na pewno chcesz zresetować rekordy i statystyki dla tej gry?"
-      );
-      if (!ok) return;
-      clearProgress();
-    });
-  }
-
-  if (wordLenSel) {
-    wordLenSel.addEventListener("change", function () {
-      wordLength = parseInt(wordLenSel.value, 10) || 5;
-      startNewGame();
-    });
-  }
-
-  if (hintBtn) {
-    hintBtn.addEventListener("click", () => {
-      useHint();
-    });
+function updateScoreUI() {
+  if (scoreEl) {
+    scoreEl.textContent = "Punkty: " + score;
   }
 }
 
-// ===== MECHANIKA WORDLE =====
-
-function pressLetter(ch) {
-  if (row >= MAX_ROWS) return;
-  if (col >= wordLength) return;
-  const tile = board[row][col];
-  tile.textContent = ch.toUpperCase();
-  tile.classList.add("filled");
-  col++;
-}
-
-function erase() {
-  if (col > 0) {
-    col--;
-    const tile = board[row][col];
-    tile.textContent = "";
-    tile.classList.remove("filled");
-  }
-}
-
-// Priorytety kolorów klawiatury (nie psujemy zielonego)
-const KEY_STATE_PRIORITY = {
-  absent: 0,
-  present: 1,
-  correct: 2,
-};
-
-function updateKeyColor(letter, newState) {
-  const current = keyboardState[letter];
-  if (
-    current &&
-    KEY_STATE_PRIORITY[newState] <= KEY_STATE_PRIORITY[current]
-  ) {
-    return;
-  }
-
-  keyboardState[letter] = newState;
-
-  const buttons = keyboardEl.querySelectorAll(".key-btn");
-  buttons.forEach((btn) => {
-    const k = btn.dataset.key;
-    if (k !== letter) return;
-
-    btn.classList.remove("key-correct", "key-present", "key-absent");
-    if (newState === "correct") btn.classList.add("key-correct");
-    if (newState === "present") btn.classList.add("key-present");
-    if (newState === "absent") btn.classList.add("key-absent");
-  });
-}
-
-// pełna logika Wordle dla duplikatów
-function colorRow(r) {
-  const guess = [];
-  for (let c = 0; c < wordLength; c++) {
-    guess[c] = board[r][c].textContent.toLowerCase();
-  }
-
-  const secretArr = secret.split("");
-
-  const counts = {};
-  for (let i = 0; i < wordLength; i++) {
-    const ch = secretArr[i];
-    counts[ch] = (counts[ch] || 0) + 1;
-  }
-
-  // KROK 1 — zielone
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    const ch = guess[c];
-
-    if (ch === secretArr[c]) {
-      tile.classList.add("correct");
-      counts[ch]--;
-      updateKeyColor(ch, "correct");
-    }
-  }
-
-  // KROK 2 — żółte / szare
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    if (tile.classList.contains("correct")) continue;
-
-    const ch = guess[c];
-
-    if (counts[ch] > 0) {
-      tile.classList.add("present");
-      counts[ch]--;
-      updateKeyColor(ch, "present");
-    } else {
-      tile.classList.add("absent");
-      updateKeyColor(ch, "absent");
-    }
-  }
-}
-
-function submitRow() {
-  if (row >= MAX_ROWS) return;
-  if (col < wordLength) {
-    statusEl.textContent = "Wpisz pełne słowo.";
-    return;
-  }
-
-  let guess = "";
-  for (let c = 0; c < wordLength; c++) {
-    guess += board[row][c].textContent.toLowerCase();
-  }
-
-  if (!validWords.includes(guess)) {
-    statusEl.textContent = "Nie ma takiego słowa!";
-    return;
-  }
-
-  colorRow(row);
-
-  if (guess === secret) {
-    statusEl.textContent = "Brawo! Trafione!";
-    registerGameFinished(true);
-    row = MAX_ROWS; // blokada dalszej gry
-    return;
-  }
-
-  row++;
-  col = 0;
-
-  if (row >= MAX_ROWS) {
-    statusEl.textContent = "Koniec! Słowo: " + secret.toUpperCase();
-    registerGameFinished(false);
+function updateStreakDisplay() {
+  streakEl.textContent = streak;
+  const streakInfo = document.querySelector(".streak-info");
+  if (!streakInfo) return;
+  if (streak >= 3) {
+    streakInfo.classList.add("streak-highlight");
   } else {
-    statusEl.textContent = "";
+    streakInfo.classList.remove("streak-highlight");
   }
 }
 
-// ===== NOWA GRA =====
+function updateProgress() {
+  const progress = (questionInWorld / QUESTIONS_PER_LEVEL) * 100;
+  progressBar.style.width = progress + "%";
+}
 
-function startNewGame() {
-  secret = chooseSecret();
-  usedHintPositions = new Set();
-  if (hintTextEl) hintTextEl.textContent = "";
+function loadWorldInfo() {
+  const world = WORLDS[currentWorldIndex];
+  worldNameLabel.textContent = "Świat: " + world.name;
+  hintEl.textContent = world.hint;
+  updateProgress();
+}
 
-  if (!secret) {
-    statusEl.textContent =
-      "Brak słów o tej długości w słowniku. Zmień długość słowa.";
+// =========================
+// ŚWIATY
+// =========================
+
+function buildWorldButtons() {
+  worldsRow.innerHTML = "";
+  WORLDS.forEach((world, index) => {
+    const btn = document.createElement("button");
+    btn.className = "world-btn";
+    if (index === currentWorldIndex) {
+      btn.classList.add("active");
+    }
+    if (index >= unlockedWorlds) {
+      btn.classList.add("locked");
+    }
+    btn.dataset.index = index;
+
+    btn.textContent = world.icon;
+
+    btn.addEventListener("click", () => {
+      if (index >= unlockedWorlds) {
+        messageEl.textContent =
+          "Ten świat jest jeszcze zamknięty. Ukończ najpierw poprzedni.";
+        return;
+      }
+      if (currentWorldIndex !== index) {
+        currentWorldIndex = index;
+        streak = 0;
+        bestStreakCurrentWorld = 0;
+        questionInWorld = 0;
+        updateStreakDisplay();
+        loadWorldInfo();
+        loadRound();
+        buildWorldButtons();
+        saveProgress();
+      }
+    });
+
+    worldsRow.appendChild(btn);
+  });
+}
+
+// =========================
+// RUNDA
+// =========================
+
+function pickRandomRoundFromWorld(world) {
+  return world.rounds[Math.floor(Math.random() * world.rounds.length)];
+}
+
+function loadRound() {
+  answered = false;
+  messageEl.textContent = "";
+  const world = WORLDS[currentWorldIndex];
+
+  currentRound = pickRandomRoundFromWorld(world);
+  emojiEl.textContent = currentRound.emoji;
+
+  const options = shuffle([currentRound.correct, ...currentRound.others]);
+  choicesEl.innerHTML = "";
+
+  options.forEach((word) => {
+    const btn = document.createElement("button");
+    btn.textContent = word;
+    btn.className = "choice-btn";
+    btn.addEventListener("click", () =>
+      handleChoice(btn, word === currentRound.correct)
+    );
+    choicesEl.appendChild(btn);
+  });
+
+  updateProgress();
+  updateStreakDisplay();
+}
+
+function handleChoice(button, isCorrect) {
+  if (answered) return;
+  answered = true;
+
+  const allButtons = document.querySelectorAll(".choice-btn");
+  allButtons.forEach((b) => b.classList.add("disabled"));
+
+  if (isCorrect) {
+    button.classList.add("correct");
+    const msg = randomItem(goodMessages);
+    messageEl.textContent = msg;
+
+    streak++;
+    bestStreakCurrentWorld = Math.max(bestStreakCurrentWorld, streak);
+
+    const bonus = streak >= 3 ? 1 : 0;
+    score += 1 + bonus;
+    updateScoreUI();
+    updateStreakDisplay();
+
+    // +1 za poprawną odpowiedź (+bonus nie daje ekstra monet)
+    awardCoins(1, "correct-answer");
+
+    saveProgress();
+  } else {
+    button.classList.add("wrong");
+    const msg = randomItem(wrongMessages);
+    messageEl.textContent = msg;
+    streak = 0;
+    updateStreakDisplay();
+
+    cardEl.classList.remove("shake");
+    void cardEl.offsetWidth;
+    cardEl.classList.add("shake");
+
+    allButtons.forEach((b) => {
+      if (b.textContent === currentRound.correct) {
+        b.classList.add("correct");
+      }
+    });
+  }
+}
+
+// =========================
+// POZIOM / ŚWIAT
+// =========================
+
+function completeWorldIfNeeded() {
+  if (questionInWorld >= QUESTIONS_PER_LEVEL) {
+    const msg = randomItem(levelCompleteMessages);
+    messageEl.textContent =
+      msg + " (Najlepsza seria w tym świecie: " + bestStreakCurrentWorld + ")";
+    questionInWorld = 0;
+    bestStreakCurrentWorld = 0;
+    streak = 0;
+    updateStreakDisplay();
+
+    // +5 za ukończenie poziomu
+    awardCoins(5, "level-complete");
+
+    if (unlockedWorlds < WORLDS.length && currentWorldIndex === unlockedWorlds - 1) {
+      unlockedWorlds++;
+      messageEl.textContent += " Nowy świat odblokowany!";
+
+      // +10 za odblokowanie świata
+      awardCoins(10, "world-unlock");
+    }
+
+    saveProgress();
+    buildWorldButtons();
+  }
+}
+
+// =========================
+// NAVIGACJA RUND
+// =========================
+
+function nextRound() {
+  if (!answered) {
+    messageEl.textContent =
+      "Najpierw wybierz słowo, potem przejdź dalej. 🙂";
     return;
   }
 
-  initBoardStructure();
-  resetBoard();
-  buildKeyboard();
-  statusEl.textContent = "Zgadnij słowo!";
+  questionInWorld++;
+  completeWorldIfNeeded();
 
-  if (hintBtn) {
-    hintBtn.disabled = !canUseCoins();
-  }
+  const allButtons = document.querySelectorAll(".choice-btn");
+  allButtons.forEach((b) =>
+    b.classList.remove("correct", "wrong", "disabled")
+  );
+  cardEl.classList.remove("shake");
+  loadRound();
 }
 
-// ===== KLAWIATURA FIZYCZNA =====
+// =========================
+// RESET PROGRESU
+// =========================
 
-function setupKeyboardListener() {
-  document.addEventListener("keydown", (e) => {
-    statusEl.textContent = "";
+function attachResetProgress() {
+  if (!resetProgressBtn) return;
+  resetProgressBtn.addEventListener("click", () => {
+    const ok = window.confirm(
+      "Na pewno chcesz wyczyścić postęp w tej grze? Odblokowane światy i punkty zostaną zresetowane, monety zostają."
+    );
+    if (!ok) return;
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      submitRow();
-      return;
-    }
-    if (e.key === "Backspace") {
-      e.preventDefault();
-      erase();
-      return;
-    }
-    if (/^[a-ząćęłńóśżź]$/i.test(e.key)) {
-      e.preventDefault();
-      pressLetter(e.key.toLowerCase());
+    unlockedWorlds = 1;
+    currentWorldIndex = 0;
+    score = 0;
+    streak = 0;
+    bestStreakCurrentWorld = 0;
+    questionInWorld = 0;
+
+    updateScoreUI();
+    updateStreakDisplay();
+    loadWorldInfo();
+    buildWorldButtons();
+    loadRound();
+
+    if (window.ArcadeProgress && ArcadeProgress.clear) {
+      ArcadeProgress.clear(GAME_ID).catch((err) => {
+        console.error("[ZnajdzSlowo] Błąd clear:", err);
+      });
     }
   });
 }
 
-// ===== INICJALIZACJA =====
+// =========================
+// PODPOWIEDŹ ZA 5 DIAMENTÓW
+// =========================
 
-function cacheDom() {
-  statusEl = document.getElementById("status");
-  boardEl = document.getElementById("board");
-  wordLenSel = document.getElementById("word-len");
-  keyboardEl = document.getElementById("keyboard");
+function attachHintHandler() {
+  if (!hintBtn) return;
 
-  newGameBtn = document.getElementById("new-game-btn");
-  resetRecordBtn = document.getElementById("reset-record-btn");
+  hintBtn.addEventListener("click", async () => {
+    // blokada dla gościa – jeśli da się wykryć
+    const user = getCurrentUserLikeThing();
+    if (!user) {
+      messageEl.textContent =
+        "Tylko zalogowani gracze mogą korzystać z podpowiedzi.";
+      return;
+    }
 
-  statGamesEl = document.getElementById("stat-games");
-  statWinsEl = document.getElementById("stat-wins");
-  statStreakEl = document.getElementById("stat-streak");
-  statMaxStreakEl = document.getElementById("stat-max-streak");
+    if (!currentRound) {
+      messageEl.textContent = "Brak rundy do podpowiedzi.";
+      return;
+    }
 
-  hintBtn = document.getElementById("hint-btn");
-  hintTextEl = document.getElementById("hint-text");
+    const ok = await spendCoins(5, {
+      reason: "hint",
+      game: GAME_ID,
+      correct: currentRound.correct
+    });
+
+    if (!ok) return;
+
+    // wyróżnij poprawną odpowiedź
+    const buttons = document.querySelectorAll(".choice-btn");
+    buttons.forEach((btn) => {
+      if (btn.textContent === currentRound.correct) {
+        btn.classList.add("correct");
+      }
+    });
+
+    messageEl.textContent = "Podpowiedź: to właściwy wyraz. 🙂";
+  });
 }
 
-function initGame() {
-  cacheDom();
-  updateStatsUI();
+// =========================
+// INIT
+// =========================
 
-  setupKeyboardListener();
-  attachButtonEvents();
+async function initZnajdzSlowo() {
+  // DOM
+  worldsRow = document.getElementById("worldsRow");
+  emojiEl = document.getElementById("emoji");
+  choicesEl = document.getElementById("choices");
+  scoreEl = document.getElementById("score");
+  messageEl = document.getElementById("message");
+  nextBtn = document.getElementById("next");
+  cardEl = document.querySelector(".znajdz-slowo-card");
+  streakEl = document.getElementById("streak");
+  progressBar = document.getElementById("progressBar");
+  worldNameLabel = document.getElementById("worldNameLabel");
+  hintEl = document.getElementById("hint");
+  resetProgressBtn = document.getElementById("resetProgress");
+  hintBtn = document.getElementById("hintBtn");
+
+  if (
+    !worldsRow ||
+    !emojiEl ||
+    !choicesEl ||
+    !scoreEl ||
+    !messageEl ||
+    !nextBtn ||
+    !cardEl ||
+    !streakEl ||
+    !progressBar ||
+    !worldNameLabel ||
+    !hintEl
+  ) {
+    console.error(
+      "[ZnajdzSlowo] Brak wymaganych elementów DOM – sprawdź index.html gry."
+    );
+    return;
+  }
+
+  await loadProgress();
+
+  updateScoreUI();
+  updateStreakDisplay();
+  buildWorldButtons();
+  loadWorldInfo();
+  loadRound();
+
+  nextBtn.addEventListener("click", nextRound);
+  attachResetProgress();
+  attachHintHandler();
 
   if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
     ArcadeUI.addBackToArcadeButton({
-      backUrl: "../../../arcade.html",
+      backUrl: "../../../arcade.html"
     });
   }
-
-  Promise.all([loadProgress(), loadDictionary()]).then(() => {
-    wordLength = parseInt(wordLenSel.value, 10) || 5;
-    startNewGame();
-  });
-
-  initCoins();
 }
 
-document.addEventListener("DOMContentLoaded", initGame);
+document.addEventListener("DOMContentLoaded", initZnajdzSlowo);
