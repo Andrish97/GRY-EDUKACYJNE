@@ -15,85 +15,85 @@ const WORDS_URL =
 let frequentWords = [];
 let usedWords = new Set(); // unikalność w ramach sesji
 
-// Konfiguracja światów (poziomów)
-// Więcej światów, brak 3-literowych słów, więcej mylących liter na klawiaturze
+// Konfiguracja poziomów
+// Więcej poziomów, brak 3-literowych słów, więcej słów na poziom
 const LEVELS = [
   {
     id: 1,
     label: "1",
     minLen: 4,
     maxLen: 6,
-    showMs: 4500,
+    showMs: 6000,
     missingMin: 1,
     missingMax: 2,
-    extraLetters: 3,
-    targetSolved: 6
+    extraLetters: 4,
+    targetSolved: 10
   },
   {
     id: 2,
     label: "2",
     minLen: 4,
     maxLen: 7,
-    showMs: 4200,
+    showMs: 5800,
     missingMin: 1,
     missingMax: 2,
-    extraLetters: 4,
-    targetSolved: 7
+    extraLetters: 5,
+    targetSolved: 12
   },
   {
     id: 3,
     label: "3",
     minLen: 5,
     maxLen: 8,
-    showMs: 3800,
+    showMs: 5500,
     missingMin: 2,
     missingMax: 3,
-    extraLetters: 5,
-    targetSolved: 8
+    extraLetters: 6,
+    targetSolved: 14
   },
   {
     id: 4,
     label: "4",
     minLen: 5,
     maxLen: 9,
-    showMs: 3500,
+    showMs: 5200,
     missingMin: 2,
     missingMax: 3,
-    extraLetters: 6,
-    targetSolved: 9
+    extraLetters: 7,
+    targetSolved: 16
   },
   {
     id: 5,
     label: "5",
     minLen: 6,
     maxLen: 10,
-    showMs: 3200,
+    showMs: 5000,
     missingMin: 2,
     missingMax: 4,
-    extraLetters: 7,
-    targetSolved: 10
+    extraLetters: 8,
+    targetSolved: 18
   },
   {
     id: 6,
     label: "6",
     minLen: 6,
     maxLen: 12,
-    showMs: 3000,
+    showMs: 4800,
     missingMin: 3,
     missingMax: 4,
-    extraLetters: 8,
-    targetSolved: 12
+    extraLetters: 9,
+    targetSolved: 20
   }
 ];
 
 // Mapowanie poziomu na zakres częstotliwości (im wyżej, tym trudniej)
 const LEVEL_WORD_RANGES = {
-  1: [0, 600],
-  2: [0, 1500],
-  3: [500, 3000],
-  4: [1000, 5000],
-  5: [2000, 8000],
-  6: [4000, 12000]
+  1: [0, 800],
+  2: [0, 2000],
+  3: [500, 3500],
+  4: [1000, 6000],
+  5: [2000, 9000],
+  6: [4000, 13000]
 };
 
 // Progres / statystyki
@@ -109,6 +109,9 @@ let currentMaskedChars = [];
 let missingPositions = [];
 let currentStreak = 0;
 
+// Do cofnij literę – stos indeksów uzupełnianych przez gracza
+let fillHistory = [];
+
 // Timer
 let currentTimerTimeoutId = null;
 
@@ -122,9 +125,16 @@ let levelSolvedEl;
 let levelTargetEl;
 let wordOriginalEl;
 let wordMaskedEl;
+let wordPhaseLabelEl;
+let fillLabelEl;
 let keyboardEl;
 let messageEl;
 let timerBarEl;
+
+let backspaceBtn;
+let skipBtn;
+let refreshBtn;
+let hintBtn;
 
 // ============================
 // Inicjalizacja
@@ -140,33 +150,45 @@ function initGame() {
   levelTargetEl = document.getElementById("level-target");
   wordOriginalEl = document.getElementById("word-original");
   wordMaskedEl = document.getElementById("word-masked");
+  wordPhaseLabelEl = document.getElementById("word-phase-label");
+  fillLabelEl = document.getElementById("fill-label");
   keyboardEl = document.getElementById("keyboard");
   messageEl = document.getElementById("message");
   timerBarEl = document.getElementById("timer-bar");
 
+  backspaceBtn = document.getElementById("backspace-btn");
+  skipBtn = document.getElementById("skip-btn");
+  refreshBtn = document.getElementById("refresh-btn");
+  hintBtn = document.getElementById("hint-btn");
+
   attachEvents();
 
-  loadWords()
-    .then(loadProgress)
-    .then(function () {
-      renderLevels();
-      updateStatsUI();
-      selectLevel(currentLevel.id);
+  const coinsPromise =
+    window.ArcadeCoins && ArcadeCoins.load
+      ? ArcadeCoins.load().catch(function (err) {
+          console.warn("[GAME]", GAME_ID, "Błąd ArcadeCoins.load:", err);
+        })
+      : Promise.resolve();
 
-      showMessage(
-        "Wybierz świat i zapamiętaj słowo, zanim znikną literki.",
-        "info"
-      );
+  Promise.all([loadWords(), loadProgress(), coinsPromise]).then(function () {
+    renderLevels();
+    updateStatsUI();
+    selectLevel(currentLevel.id);
 
-      setupBeforeUnloadGuard();
-      setupClickGuard();
+    showMessage(
+      "Wybierz poziom i zapamiętaj słowo, zanim znikną literki.",
+      "info"
+    );
 
-      if (window.ArcadeUI && window.ArcadeUI.addBackToArcadeButton) {
-        window.ArcadeUI.addBackToArcadeButton({
-          backUrl: "../../../arcade.html"
-        });
-      }
-    });
+    setupBeforeUnloadGuard();
+    setupClickGuard();
+
+    if (window.ArcadeUI && window.ArcadeUI.addBackToArcadeButton) {
+      ArcadeUI.addBackToArcadeButton({
+        backUrl: "../../../arcade.html"
+      });
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", initGame);
@@ -366,10 +388,40 @@ function attachEvents() {
       showMessage("Statystyki wyzerowane.", "info");
     });
   }
+
+  if (backspaceBtn) {
+    backspaceBtn.addEventListener("click", onBackspaceClick);
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener("click", function () {
+      showMessage("Pominięto to słowo. Losuję nowe.", "info");
+      startNewRound();
+    });
+  }
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", function () {
+      showMessage("Odświeżam – nowe słowo na tym samym poziomie.", "info");
+      startNewRound();
+    });
+  }
+
+  if (hintBtn) {
+    hintBtn.addEventListener("click", onHintClick);
+  }
+
+  // opcjonalnie: backspace z klawiatury
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      onBackspaceClick();
+    }
+  });
 }
 
 // ============================
-// Poziomy / światy
+// Poziomy
 // ============================
 
 function renderLevels() {
@@ -391,7 +443,7 @@ function renderLevels() {
     btn.addEventListener("click", function () {
       if (lvl.id > highestUnlockedLevel) {
         showMessage(
-          "Ten świat jest jeszcze zablokowany. Ukończ więcej słówek w poprzednich światach.",
+          "Ten poziom jest jeszcze zablokowany. Ukończ więcej słówek na poprzednich poziomach.",
           "info"
         );
         return;
@@ -445,17 +497,19 @@ function startNewRound() {
     return;
   }
 
-  showMessage("Losuję słówko…", "info");
+  showMessage("Losuję słowo…", "info");
   keyboardEl.innerHTML = "";
   wordOriginalEl.textContent = "...";
   wordMaskedEl.textContent = "...";
+  wordPhaseLabelEl.textContent = "Zapamiętaj słowo:";
+  fillLabelEl.textContent = "Uzupełnij literki:";
 
   const word = pickWordForLevel(currentLevel);
   if (!word) {
     wordOriginalEl.textContent = "---";
     wordMaskedEl.textContent = "---";
     showMessage(
-      "Brak odpowiednich słówek dla tego świata. Spróbuj innego poziomu.",
+      "Brak odpowiednich słówek dla tego poziomu. Spróbuj innego.",
       "error"
     );
     return;
@@ -464,6 +518,8 @@ function startNewRound() {
   currentWord = word;
   wordOriginalEl.textContent = word.toUpperCase();
   wordMaskedEl.textContent = "…";
+
+  fillHistory = [];
 
   showTimer(currentLevel.showMs);
 
@@ -548,15 +604,17 @@ function hideLettersAndBuildKeyboard() {
     currentMaskedChars[idx] = "_";
   });
 
-  // TU słowo „znika” – ukrywamy wersję do zapamiętywania,
+  // słowo "znika" – ukrywamy wersję do zapamiętywania,
   // zostawiamy tylko wersję z lukami
   wordOriginalEl.textContent = "";
+  wordPhaseLabelEl.textContent = "Zapamiętaj słowo…";
+  fillLabelEl.textContent = "Uzupełnij literki:";
 
   renderMaskedWord();
   buildKeyboard(chars, positions);
 
   showMessage(
-    "Klikaj literki na dole, żeby uzupełnić brakujące miejsca.",
+    "Klikaj literki na dole, żeby uzupełnić brakujące miejsca. Możesz cofnąć literę przyciskiem ⌫.",
     "info"
   );
 }
@@ -607,6 +665,8 @@ function buildKeyboard(chars, missingPos) {
   });
 }
 
+// Kliknięcie litery
+
 function onLetterClick(letter) {
   if (!currentWord || !currentMaskedChars.length) return;
 
@@ -614,12 +674,86 @@ function onLetterClick(letter) {
   if (idx === -1) return;
 
   currentMaskedChars[idx] = letter;
+  fillHistory.push(idx);
   renderMaskedWord();
 
   if (!currentMaskedChars.includes("_")) {
     checkAnswer();
   }
 }
+
+// Cofnij literę
+
+function onBackspaceClick() {
+  if (!currentMaskedChars.length) return;
+  if (!fillHistory.length) return;
+
+  const idx = fillHistory.pop();
+  currentMaskedChars[idx] = "_";
+  renderMaskedWord();
+}
+
+// Podpowiedź za diaxy
+
+function onHintClick() {
+  if (!currentWord || !currentMaskedChars.length) {
+    showMessage("Najpierw wylosuj słowo.", "info");
+    return;
+  }
+
+  const missing = [];
+  for (let i = 0; i < currentMaskedChars.length; i++) {
+    if (currentMaskedChars[i] === "_") missing.push(i);
+  }
+
+  if (!missing.length) {
+    showMessage("Brak literek do odkrycia.", "info");
+    return;
+  }
+
+  if (!window.ArcadeCoins || !ArcadeCoins.getBalance) {
+    showMessage("Podpowiedzi są dostępne tylko dla zalogowanych.", "info");
+    return;
+  }
+
+  ArcadeCoins.getBalance()
+    .then(function (balance) {
+      if (typeof balance !== "number" || balance <= 0) {
+        showMessage("Za mało diaxów na podpowiedź.", "error");
+        return;
+      }
+
+      // odkryj jedną losową literkę
+      const randomIdx =
+        missing[Math.floor(Math.random() * missing.length)];
+      currentMaskedChars[randomIdx] = currentWord[randomIdx];
+      fillHistory.push(randomIdx);
+      renderMaskedWord();
+
+      // pobierz 1 diaxa
+      return ArcadeCoins.addForGame(GAME_ID, -1, {
+        reason: "hint",
+        level: currentLevel.id,
+        wordLength: currentWord.length
+      })
+        .then(function () {
+          if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+            ArcadeAuthUI.refreshCoins();
+          }
+          showMessage("Odkryto literkę (-1 💎).", "info");
+        })
+        .catch(function (err) {
+          console.error("[GAME]", GAME_ID, "błąd obciążenia za hint:", err);
+          showMessage("Coś poszło nie tak z płatnością za podpowiedź.", "error");
+        });
+    })
+    .catch(function (err) {
+      console.error("[GAME]", GAME_ID, "błąd getBalance:", err);
+      showMessage("Nie udało się sprawdzić salda diaxów.", "error");
+    });
+}
+
+// Sprawdzenie odpowiedzi
 
 function checkAnswer() {
   const candidate = currentMaskedChars.join("");
@@ -639,8 +773,15 @@ function checkAnswer() {
     stats.bestStreak = Math.max(stats.bestStreak, currentStreak);
     bestStreakGlobal = Math.max(bestStreakGlobal, currentStreak);
 
+    const reward = calculateCoinsReward();
+    awardCoinsOnCorrect(reward);
+
     showMessage(
-      "Dobrze! To było słowo: " + currentWord.toUpperCase() + ".",
+      "Dobrze! To było słowo: " +
+        currentWord.toUpperCase() +
+        "  (+" +
+        reward +
+        " 💎)",
       "success"
     );
 
@@ -668,6 +809,42 @@ function checkAnswer() {
   }
 }
 
+// Nagroda w diaxach za poprawne słowo
+
+function calculateCoinsReward() {
+  const lvlId = currentLevel ? currentLevel.id : 1;
+  return Math.max(1, lvlId); // np. poziom 3 → 3 diaxy
+}
+
+function awardCoinsOnCorrect(amount) {
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) return;
+
+  const meta = {
+    reason: "word_solved",
+    level: currentLevel.id,
+    wordLength: currentWord ? currentWord.length : null
+  };
+
+  ArcadeCoins.addForGame(GAME_ID, amount, meta)
+    .then(function () {
+      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+        ArcadeAuthUI.refreshCoins();
+      }
+      console.log(
+        "[GAME]",
+        GAME_ID,
+        "przyznano monety:",
+        amount,
+        meta
+      );
+    })
+    .catch(function (err) {
+      console.error("[GAME]", GAME_ID, "błąd przyznawania monet:", err);
+    });
+}
+
+// Odblokowanie kolejnego poziomu
+
 function maybeUnlockNextLevel() {
   const lvl = currentLevel;
   const stats = statsByLevel[lvl.id];
@@ -679,7 +856,7 @@ function maybeUnlockNextLevel() {
   ) {
     highestUnlockedLevel = lvl.id + 1;
     showMessage(
-      "Gratulacje! Odblokowałeś świat " + highestUnlockedLevel + " 🎉",
+      "Gratulacje! Odblokowałeś poziom " + highestUnlockedLevel + " 🎉",
       "success"
     );
   }
