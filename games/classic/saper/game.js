@@ -1,48 +1,15 @@
+// Neon Minesweeper – monety + rekord + licznik gier (rekord przez ArcadeProgress, monety przez ArcadeCoins)
+
 const GAME_ID = "saper";
 
-// rozmiar kafelka (stały)
+// ===== stałe =====
 const tileSize = 28;
-
-// klasyczne rozmiary plansz
 const SIZES = {
   small: { cols: 9, rows: 9 },
   medium: { cols: 16, rows: 16 },
   large: { cols: 30, rows: 16 }
 };
-
-// stała gęstość min (proporcjonalnie do wielkości planszy)
-const MINE_DENSITY = 0.16; // ok. 16% pól to miny
-
-// stan planszy
-let cols = 16;
-let rows = 16;
-let numMines = 0;
-
-let grid;
-let isGameOver = false;
-let isWin = false;
-let isFirstClick = true;
-let flagsLeft = 0;
-let revealedCount = 0;
-
-let timerInterval = null;
-let seconds = 0;
-
-// statystyki gry
-let bestTime = null;   // JEDYNA rzecz zapisywana do ArcadeProgress
-let totalGames = 0;    // licznik gier tylko w tej sesji (nie zapisujemy)
-
-// DOM
-let canvas;
-let ctx;
-let minesEl;
-let flagsLeftEl;
-let timeEl;
-let sizeSelect;
-let bestTimeEl;
-let totalGamesEl;
-let newGameBtn;
-let resetRecordBtn;
+const MINE_DENSITY = 0.16;
 
 const numberColors = {
   1: "#60a5fa",
@@ -55,9 +22,32 @@ const numberColors = {
   8: "#9ca3af"
 };
 
-/* =======================
-   REKORD (persist) + gry (lokalne)
-   ======================= */
+// ===== stan gry =====
+let canvas, ctx;
+let cols = 16;
+let rows = 16;
+let numMines = 0;
+let grid;
+let isGameOver = false;
+let isWin = false;
+let isFirstClick = true;
+let flagsLeft = 0;
+let revealedCount = 0;
+let timerInterval = null;
+let seconds = 0;
+
+// ===== statystyki =====
+let bestTime = null;   // zapisywane w ArcadeProgress
+let totalGames = 0;    // tylko lokalnie, w tej zakładce
+
+// ===== DOM =====
+let minesEl, flagsLeftEl, timeEl, sizeSelect;
+let bestTimeEl, totalGamesEl;
+let newGameBtn, resetRecordBtn;
+
+// ===================
+//  STATYSTYKI / REKORD
+// ===================
 
 function updateStatsUI() {
   if (bestTimeEl) {
@@ -69,50 +59,47 @@ function updateStatsUI() {
   }
 }
 
-// zapisujemy TYLKO rekord
-function saveBestTime() {
+// --- ArcadeProgress: zapis rekordu (bez stanu gry) ---
+
+function saveBestTimeToProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.save) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save – rekord tylko lokalnie.");
     return;
   }
   if (bestTime == null) return;
 
-  const payload = { bestTime };
-
-  ArcadeProgress.save(GAME_ID, payload)
-    .then(function () {
-      console.log("[GAME]", GAME_ID, "rekord zapisany:", payload);
+  ArcadeProgress.save(GAME_ID, { bestTime })
+    .then(() => {
+      console.log("[GAME]", GAME_ID, "rekord zapisany w progresie:", bestTime);
     })
-    .catch(function (err) {
-      console.error("[GAME]", GAME_ID, "Błąd save:", err);
+    .catch(err => {
+      console.error("[GAME]", GAME_ID, "Błąd zapisu rekordu:", err);
     });
 }
 
-function loadProgress() {
+function loadBestTimeFromProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.load) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.load");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.load – rekord tylko lokalnie.");
     updateStatsUI();
     return Promise.resolve();
   }
 
   return ArcadeProgress.load(GAME_ID)
-    .then(function (data) {
+    .then(data => {
       if (data && typeof data.bestTime === "number") {
         bestTime = data.bestTime;
       }
-      // totalGames jest tylko sesyjne
       updateStatsUI();
     })
-    .catch(function (err) {
-      console.error("[GAME]", GAME_ID, "Błąd load:", err);
+    .catch(err => {
+      console.error("[GAME]", GAME_ID, "Błąd wczytywania rekordu:", err);
       updateStatsUI();
     });
 }
 
-function clearProgress() {
-  // czyścimy rekord w backendzie (jeśli jest), plus lokalnie
+function clearBestTimeProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.clear) {
-    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.clear");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.clear – czyszczę tylko lokalnie.");
     bestTime = null;
     totalGames = 0;
     updateStatsUI();
@@ -120,33 +107,103 @@ function clearProgress() {
   }
 
   return ArcadeProgress.clear(GAME_ID)
-    .then(function () {
+    .then(() => {
       bestTime = null;
       totalGames = 0;
       updateStatsUI();
-      console.log("[GAME]", GAME_ID, "rekord wyczyszczony");
+      console.log("[GAME]", GAME_ID, "rekord wyczyszczony w progresie.");
     })
-    .catch(function (err) {
+    .catch(err => {
       console.error("[GAME]", GAME_ID, "Błąd clear:", err);
     });
 }
 
-/* =======================
-   LOGIKA PLANSZY
-   ======================= */
+// ===================
+//  MONETY (ArcadeCoins)
+// ===================
+
+function getCurrentSizeKey() {
+  if (sizeSelect && sizeSelect.value) return sizeSelect.value;
+  // awaryjnie na podstawie cols/rows
+  if (cols === 9 && rows === 9) return "small";
+  if (cols === 16 && rows === 16) return "medium";
+  if (cols === 30 && rows === 16) return "large";
+  return "medium";
+}
+
+/**
+ * Prosty system monet:
+ * - tylko za WYGRANĄ
+ * - mnożnik zależny od rozmiaru:
+ *   small  => 1
+ *   medium => 2
+ *   large  => 3
+ * - bazowo: 3 * diff
+ * - jeśli NOWY REKORD: + 2 * diff
+ *
+ * Czyli:
+ *  small win: 3 monety (5 z rekordem)
+ *  medium win: 6 (10 z rekordem)
+ *  large win: 9 (15 z rekordem)
+ * Nie ma monet za przegraną → „żeby nie było zbyt łatwo”.
+ */
+function computeCoinsReward(win, isNewRecord) {
+  if (!win) return 0;
+
+  const key = getCurrentSizeKey();
+  let diff = 1;
+  if (key === "medium") diff = 2;
+  if (key === "large") diff = 3;
+
+  let base = 3 * diff;
+  if (isNewRecord) {
+    base += 2 * diff;
+  }
+
+  return base;
+}
+
+function awardCoins(win, isNewRecord) {
+  if (!win) return;
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) {
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeCoins – monety nie zostaną zapisane.");
+    return;
+  }
+
+  const amount = computeCoinsReward(win, isNewRecord);
+  if (amount <= 0) return;
+
+  const sizeKey = getCurrentSizeKey();
+
+  ArcadeCoins.addForGame(GAME_ID, amount, {
+    outcome: win ? "win" : "lose",
+    boardSize: sizeKey,
+    time: seconds,
+    mines: numMines
+  })
+    .then(() => {
+      console.log("[GAME]", GAME_ID, `Przyznano ${amount} monet.`);
+      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+        ArcadeAuthUI.refreshCoins();
+      }
+    })
+    .catch(err => {
+      console.error("[GAME]", GAME_ID, "Błąd przyznawania monet:", err);
+    });
+}
+
+// ===================
+//  LOGIKA PLANSZY
+// ===================
 
 function applyBoardSizeFromSelect() {
   if (!canvas) return;
 
-  let key = "medium";
-  if (sizeSelect && sizeSelect.value) {
-    key = sizeSelect.value;
-  }
-
+  const key = getCurrentSizeKey();
   const cfg = SIZES[key] || SIZES.medium;
+
   cols = cfg.cols;
   rows = cfg.rows;
-
   numMines = Math.max(1, Math.round(cols * rows * MINE_DENSITY));
   flagsLeft = numMines;
 
@@ -184,9 +241,7 @@ function forEachNeighbor(x, y, fn) {
       if (dx === 0 && dy === 0) continue;
       const nx = x + dx;
       const ny = y + dy;
-      if (inBounds(nx, ny)) {
-        fn(nx, ny);
-      }
+      if (inBounds(nx, ny)) fn(nx, ny);
     }
   }
 }
@@ -204,7 +259,6 @@ function placeMines(excludeX, excludeY) {
     placed++;
   }
 
-  // policz liczby
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       if (grid[y][x].mine) {
@@ -220,13 +274,12 @@ function placeMines(excludeX, excludeY) {
   }
 }
 
-/* =======================
-   TIMER
-   ======================= */
+// ===================
+//  TIMER
+// ===================
 
 function startTimer(startFrom = 0) {
   if (!timeEl) return;
-
   if (timerInterval) clearInterval(timerInterval);
   seconds = startFrom;
   timeEl.textContent = seconds;
@@ -243,9 +296,9 @@ function stopTimer() {
   }
 }
 
-/* =======================
-   RESET I PRZEBIEG GRY
-   ======================= */
+// ===================
+//  PRZEBIEG GRY
+// ===================
 
 function resetGame() {
   stopTimer();
@@ -316,28 +369,32 @@ function gameOver(win) {
   isWin = win;
   stopTimer();
 
-  // licznik gier – tylko lokalnie
   totalGames++;
   updateStatsUI();
+
+  let isNewRecord = false;
 
   if (win) {
     const previousBest = bestTime;
     if (bestTime == null || seconds < bestTime) {
       bestTime = seconds;
+      isNewRecord = true;
       updateStatsUI();
-      // automatyczny zapis nowego rekordu
-      saveBestTime();
+      saveBestTimeToProgress();
     } else {
       updateStatsUI();
     }
   }
 
+  // monety: tylko za wygraną, z bonusem za rekord
+  awardCoins(win, isNewRecord);
+
   drawOverlay();
 }
 
-/* =======================
-   RYSOWANIE
-   ======================= */
+// ===================
+//  RYSOWANIE
+// ===================
 
 function drawBackground() {
   if (!ctx || !canvas) return;
@@ -531,9 +588,9 @@ function drawOverlay() {
   );
 }
 
-/* =======================
-   EVENTY
-   ======================= */
+// ===================
+//  EVENTY
+// ===================
 
 function getCellFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
@@ -550,11 +607,9 @@ function getCellFromEvent(e) {
 function setupCanvasEvents() {
   if (!canvas) return;
 
-  canvas.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-  });
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
 
-  canvas.addEventListener("mousedown", (e) => {
+  canvas.addEventListener("mousedown", e => {
     if (isGameOver) return;
     const cellPos = getCellFromEvent(e);
     if (!cellPos) return;
@@ -562,14 +617,12 @@ function setupCanvasEvents() {
     const { x, y } = cellPos;
     const cell = grid[y][x];
 
-    // PPM – flaga
     if (e.button === 2) {
       toggleFlag(x, y);
       draw();
       return;
     }
 
-    // LPM – odkryj
     if (e.button === 0) {
       if (cell.flagged) return;
 
@@ -587,37 +640,32 @@ function setupCanvasEvents() {
 
 function setupButtons() {
   if (newGameBtn) {
-    newGameBtn.addEventListener("click", function () {
-      resetGame();
-    });
+    newGameBtn.addEventListener("click", () => resetGame());
   }
 
   if (resetRecordBtn) {
-    resetRecordBtn.addEventListener("click", function () {
+    resetRecordBtn.addEventListener("click", () => {
       const ok = window.confirm(
         "Na pewno chcesz zresetować rekord czasu dla tej gry? Licznik gier w tej zakładce też się wyzeruje."
       );
       if (!ok) return;
-
-      clearProgress();
+      clearBestTimeProgress();
     });
   }
 
   if (sizeSelect) {
-    sizeSelect.addEventListener("change", () => {
-      resetGame();
-    });
+    sizeSelect.addEventListener("change", () => resetGame());
   }
 }
 
-/* =======================
-   INIT
-   ======================= */
+// ===================
+//  INIT
+// ===================
 
 function initGame() {
   canvas = document.getElementById("game");
   if (!canvas) {
-    console.error("[GAME]", GAME_ID, "Brak elementu <canvas id=\"game\">");
+    console.error('[GAME]', GAME_ID, 'Nie znaleziono <canvas id="game"> – sprawdź HTML.');
     return;
   }
 
@@ -628,7 +676,6 @@ function initGame() {
   sizeSelect = document.getElementById("size-select");
   bestTimeEl = document.getElementById("best-time");
   totalGamesEl = document.getElementById("total-games");
-
   newGameBtn = document.getElementById("new-game-btn");
   resetRecordBtn = document.getElementById("reset-record-btn");
 
@@ -638,12 +685,18 @@ function initGame() {
 
   resetGame();
   updateStatsUI();
-
   setupCanvasEvents();
   setupButtons();
 
-  // wczytujemy tylko rekord
-  loadProgress().finally(function () {
+  // rekord z ArcadeProgress
+  loadBestTimeFromProgress().finally(() => {
+    // opcjonalnie: załaduj portfel, jeśli chcesz mieć aktualne monety w pasku
+    if (window.ArcadeCoins && ArcadeCoins.load) {
+      ArcadeCoins.load().catch(err =>
+        console.warn("[GAME]", GAME_ID, "Błąd ArcadeCoins.load:", err)
+      );
+    }
+
     // uniwersalny przycisk „Powrót do Arcade”
     if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
       ArcadeUI.addBackToArcadeButton({
@@ -653,4 +706,4 @@ function initGame() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", initGame);
+window.addEventListener("load", initGame);
