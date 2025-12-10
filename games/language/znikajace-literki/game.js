@@ -1,414 +1,370 @@
-// ===== KONFIGURACJA GRY =====
-const GAME_ID = "neon-wordl-pl";
-const DICT_URL =
-  "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/pl/pl_full.txt";
-const MAX_ROWS = 6;
-const HINT_COST = 5; // koszt jednej podpowiedzi w 💎
+// ============================
+// Znikające literki – game.js
+// ============================
 
-let allWords = [];
-let validWords = [];
-let usedWords = new Set();
-let secret = "";
-let wordLength = 5;
+const GAME_ID = "znikajace-literki";
 
-// Stan planszy
-let board = []; // 2D: [row][col] -> tile element
-let row = 0;
-let col = 0;
-
-// Stan podpowiedzi
-let usedHintPositions = new Set();
-
-// Statystyki (ArcadeProgress)
-let gamesPlayed = 0;
-let wins = 0;
-let currentStreak = 0;
-let maxStreak = 0;
+let hasUnsavedChanges = false;
 let LAST_SAVE_DATA = null;
 
-// Klawiatura
-let keyboardEl;
-let keyboardInnerEl;
-const keyboardState = {}; // litera -> "absent" | "present" | "correct"
+// Zewnętrzne źródło słów: lista 50k najczęstszych polskich słów
+// format: "słowo częstotliwość"
+const WORDS_URL =
+  "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/pl/pl_50k.txt";
 
-// DOM
-let statusEl;
-let boardEl;
-let wordLenSel;
-let newGameBtn;
-let resetRecordBtn;
-let statGamesEl;
-let statWinsEl;
-let statStreakEl;
-let statMaxStreakEl;
+let frequentWords = [];
+let usedWords = new Set(); // unikalność w ramach sesji
 
-// Podpowiedzi / monety
-let hintBtn;
-let hintTextEl;
-let coinsLoaded = false;
-
-// ===== POMOCNICZE =====
-
-function normalizeWord(w) {
-  return w
-    .toLowerCase()
-    .replace(/[^a-ząćęłńóśżź]/g, ""); // tylko litery PL
-}
-
-function canUseCoins() {
-  return (
-    typeof window !== "undefined" &&
-    window.ArcadeCoins &&
-    typeof ArcadeCoins.load === "function" &&
-    typeof ArcadeCoins.getBalance === "function" &&
-    typeof ArcadeCoins.addForGame === "function"
-  );
-}
-
-// ===== SŁOWNIK =====
-
-async function loadDictionary() {
-  statusEl.textContent = "Pobieram słownik...";
-  try {
-    const resp = await fetch(DICT_URL);
-    const text = await resp.text();
-    const lines = text.split("\n").map((x) => normalizeWord(x.split(" ")[0]));
-    allWords = [...new Set(lines)].filter(
-      (w) => w.length >= 4 && w.length <= 7
-    );
-    statusEl.textContent = "Słownik gotowy. Zgaduj!";
-  } catch (err) {
-    console.error("[WORDL] Błąd przy pobieraniu słownika:", err);
-    statusEl.textContent =
-      "Błąd ładowania słownika. Sprawdź połączenie z internetem.";
+// Konfiguracja poziomów
+// Więcej poziomów, brak 3-literowych słów, więcej słów na poziom
+const LEVELS = [
+  {
+    id: 1,
+    label: "1",
+    minLen: 4,
+    maxLen: 6,
+    showMs: 6000,
+    missingMin: 1,
+    missingMax: 2,
+    extraLetters: 4,
+    targetSolved: 10
+  },
+  {
+    id: 2,
+    label: "2",
+    minLen: 4,
+    maxLen: 7,
+    showMs: 5800,
+    missingMin: 1,
+    missingMax: 2,
+    extraLetters: 5,
+    targetSolved: 12
+  },
+  {
+    id: 3,
+    label: "3",
+    minLen: 5,
+    maxLen: 8,
+    showMs: 5500,
+    missingMin: 2,
+    missingMax: 3,
+    extraLetters: 6,
+    targetSolved: 14
+  },
+  {
+    id: 4,
+    label: "4",
+    minLen: 5,
+    maxLen: 9,
+    showMs: 5200,
+    missingMin: 2,
+    missingMax: 3,
+    extraLetters: 7,
+    targetSolved: 16
+  },
+  {
+    id: 5,
+    label: "5",
+    minLen: 6,
+    maxLen: 10,
+    showMs: 5000,
+    missingMin: 2,
+    missingMax: 4,
+    extraLetters: 8,
+    targetSolved: 18
+  },
+  {
+    id: 6,
+    label: "6",
+    minLen: 6,
+    maxLen: 12,
+    showMs: 4800,
+    missingMin: 3,
+    missingMax: 4,
+    extraLetters: 9,
+    targetSolved: 20
   }
-}
-
-function chooseSecret() {
-  validWords = allWords.filter((w) => w.length === wordLength);
-  if (!validWords.length) return "";
-
-  let w;
-  let safety = 0;
-  do {
-    w = validWords[Math.floor(Math.random() * validWords.length)];
-    safety++;
-  } while (usedWords.has(w) && safety < 1000);
-
-  usedWords.add(w);
-  return w;
-}
-
-// ===== PLANSZA =====
-
-function initBoardStructure() {
-  boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${wordLength}, 42px)`;
-  board = [];
-
-  for (let r = 0; r < MAX_ROWS; r++) {
-    const rowArr = [];
-    for (let c = 0; c < wordLength; c++) {
-      const div = document.createElement("div");
-      div.className = "tile";
-      boardEl.appendChild(div);
-      rowArr.push(div);
-    }
-    board.push(rowArr);
-  }
-}
-
-function resetBoard() {
-  row = 0;
-  col = 0;
-  for (let r = 0; r < MAX_ROWS; r++) {
-    for (let c = 0; c < wordLength; c++) {
-      const tile = board[r][c];
-      tile.textContent = "";
-      tile.className = "tile";
-    }
-  }
-}
-
-// ===== KLAWIATURA DOTYKOWA =====
-const KEYBOARD_LAYOUT = [
-  ["w", "e", "r", "t", "y", "u", "i", "o", "p"],
-  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-  ["z", "ź", "ż", "c", "b", "n", "m", "backspace"],
-  ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "enter"],
 ];
 
-function buildKeyboard() {
-  keyboardEl.innerHTML = "";
-  keyboardInnerEl = document.createElement("div");
-  keyboardInnerEl.className = "keyboard-inner";
-  keyboardEl.appendChild(keyboardInnerEl);
+// Mapowanie poziomu na zakres częstotliwości (im wyżej, tym trudniej)
+const LEVEL_WORD_RANGES = {
+  1: [0, 800],
+  2: [0, 2000],
+  3: [500, 3500],
+  4: [1000, 6000],
+  5: [2000, 9000],
+  6: [4000, 13000]
+};
 
-  KEYBOARD_LAYOUT.forEach((rowKeys) => {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "keyboard-row";
+// Progres / statystyki
+let highestUnlockedLevel = 1;
+let totalSolved = 0;
+let bestStreakGlobal = 0;
+let statsByLevel = {}; // { [levelId]: { solved, attempts, bestStreak } }
 
-    rowKeys.forEach((key) => {
-      const btn = document.createElement("button");
-      btn.className = "key-btn";
-      btn.dataset.key = key;
+// Stan rundy
+let currentLevel = LEVELS[0];
+let currentWord = null;
+let currentMaskedChars = [];
+let missingPositions = [];
+let currentStreak = 0;
 
-      if (key === "enter") {
-        btn.textContent = "Enter";
-        btn.classList.add("key-wide");
-      } else if (key === "backspace") {
-        btn.textContent = "⌫";
-        btn.classList.add("key-wide");
-      } else {
-        btn.textContent = key;
-      }
+// Do cofania – stos indeksów uzupełnianych przez gracza
+let fillHistory = [];
 
-      btn.addEventListener("click", () => handleVirtualKey(key));
-      rowDiv.appendChild(btn);
-    });
+// Timer
+let currentTimerTimeoutId = null;
 
-    keyboardInnerEl.appendChild(rowDiv);
-  });
+// DOM
+let levelListEl;
+let highestLevelEl;
+let totalSolvedEl;
+let bestStreakEl;
+let currentLevelLabelEl;
+let levelSolvedEl;
+let levelTargetEl;
+let wordOriginalEl;
+let wordMaskedEl;
+let wordPhaseLabelEl;
+let fillLabelEl;
+let keyboardEl;
+let messageEl;
+let timerBarEl;
 
-  // czyścimy stan kolorów
-  Object.keys(keyboardState).forEach((k) => delete keyboardState[k]);
-}
+let backspaceBtn;
+let skipBtn;
+let refreshBtn;
+let hintBtn;
 
-function handleVirtualKey(k) {
-  statusEl.textContent = "";
+// ============================
+// Inicjalizacja
+// ============================
 
-  if (k === "enter") {
-    submitRow();
-    return;
-  }
-  if (k === "backspace") {
-    erase();
-    return;
-  }
-  pressLetter(k);
-}
+function initGame() {
+  levelListEl = document.getElementById("level-list");
+  highestLevelEl = document.getElementById("highest-level");
+  totalSolvedEl = document.getElementById("total-solved");
+  bestStreakEl = document.getElementById("best-streak");
+  currentLevelLabelEl = document.getElementById("current-level-label");
+  levelSolvedEl = document.getElementById("level-solved");
+  levelTargetEl = document.getElementById("level-target");
+  wordOriginalEl = document.getElementById("word-original");
+  wordMaskedEl = document.getElementById("word-masked");
+  wordPhaseLabelEl = document.getElementById("word-phase-label");
+  fillLabelEl = document.getElementById("fill-label");
+  keyboardEl = document.getElementById("keyboard");
+  messageEl = document.getElementById("message");
+  timerBarEl = document.getElementById("timer-bar");
 
-// ===== STATYSTYKI + AUTO-SAVE =====
+  backspaceBtn = document.getElementById("backspace-btn");
+  skipBtn = document.getElementById("skip-btn");
+  refreshBtn = document.getElementById("refresh-btn");
+  hintBtn = document.getElementById("hint-btn");
 
-function updateStatsUI() {
-  if (statGamesEl) statGamesEl.textContent = gamesPlayed.toString();
-  if (statWinsEl) statWinsEl.textContent = wins.toString();
-  if (statStreakEl) statStreakEl.textContent = currentStreak.toString();
-  if (statMaxStreakEl) statMaxStreakEl.textContent = maxStreak.toString();
-}
+  attachEvents();
 
-function autoSave() {
-  if (!window.ArcadeProgress || !ArcadeProgress.save) return;
+  const coinsPromise =
+    window.ArcadeCoins && ArcadeCoins.load
+      ? ArcadeCoins.load().catch(function (err) {
+          console.warn("[GAME]", GAME_ID, "Błąd ArcadeCoins.load:", err);
+        })
+      : Promise.resolve();
 
-  const payload = {
-    gamesPlayed,
-    wins,
-    currentStreak,
-    maxStreak,
-  };
+  Promise.all([loadWords(), loadProgress(), coinsPromise]).then(function () {
+    renderLevels();
+    updateStatsUI();
+    selectLevel(currentLevel.id);
 
-  ArcadeProgress.save(GAME_ID, payload)
-    .then(() => {
-      LAST_SAVE_DATA = payload;
-      console.log("[WORDL] auto-zapis:", payload);
-    })
-    .catch((err) => {
-      console.error("[WORDL] błąd zapisu:", err);
-    });
-}
+    showMessage(
+      "Wybierz poziom i zapamiętaj słowo, zanim znikną literki.",
+      "info"
+    );
 
-function rewardCoinsForGame(win) {
-  if (!canUseCoins()) return;
+    setupBeforeUnloadGuard();
+    setupClickGuard();
 
-  const amount = win ? 5 : 1;
-
-  ArcadeCoins.addForGame(GAME_ID, amount, {
-    reason: win ? "win" : "loss",
-    wordLength,
-    secret,
-  })
-    .then(() => {
-      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
-        ArcadeAuthUI.refreshCoins();
-      }
-      console.log("[WORDL] przyznano monety:", amount);
-    })
-    .catch((err) => {
-      console.warn("[WORDL] błąd przyznawania monet:", err);
-    });
-}
-
-function registerGameFinished(win) {
-  gamesPlayed++;
-  if (win) {
-    wins++;
-    currentStreak++;
-    if (currentStreak > maxStreak) {
-      maxStreak = currentStreak;
+    if (window.ArcadeUI && window.ArcadeUI.addBackToArcadeButton) {
+      ArcadeUI.addBackToArcadeButton({
+        backUrl: "../../../arcade.html"
+      });
     }
-  } else {
-    currentStreak = 0;
-  }
-  updateStatsUI();
-  autoSave();
-  rewardCoinsForGame(win);
+  });
 }
 
-// ===== ArcadeProgress – load / clear =====
+document.addEventListener("DOMContentLoaded", initGame);
+
+// ============================
+// Wczytywanie słów z internetu
+// ============================
+
+function loadWords() {
+  return fetch(WORDS_URL)
+    .then(function (res) {
+      if (!res.ok) {
+        throw new Error("Nie udało się pobrać listy słów");
+      }
+      return res.text();
+    })
+    .then(function (text) {
+      frequentWords = text
+        .split("\n")
+        .map(function (line) {
+          const first = line.split(" ")[0];
+          return String(first || "")
+            .trim()
+            .toLowerCase();
+        })
+        .filter(function (w) {
+          return /^[a-ząćęłńóśźż]+$/.test(w);
+        });
+
+      if (!frequentWords.length) {
+        console.warn("[GAME] Lista słów jest pusta");
+      } else {
+        console.log("[GAME] Wczytano słów:", frequentWords.length);
+      }
+    })
+    .catch(function (err) {
+      console.error("[GAME] Błąd ładowania słów:", err);
+      frequentWords = [];
+    });
+}
+
+// ============================
+// Progres – load / save / clear
+// ============================
 
 function loadProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.load) {
-    console.warn("[WORDL]", GAME_ID, "Brak ArcadeProgress.load");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.load");
+    initStatsDefaults();
     return Promise.resolve();
   }
 
   return ArcadeProgress.load(GAME_ID)
     .then(function (data) {
       if (!data) {
-        updateStatsUI();
+        initStatsDefaults();
         return;
       }
 
-      if (typeof data.gamesPlayed === "number") gamesPlayed = data.gamesPlayed;
-      if (typeof data.wins === "number") wins = data.wins;
-      if (typeof data.currentStreak === "number")
-        currentStreak = data.currentStreak;
-      if (typeof data.maxStreak === "number") maxStreak = data.maxStreak;
+      const maxLevelId = LEVELS[LEVELS.length - 1].id;
 
-      LAST_SAVE_DATA = data;
-      updateStatsUI();
+      highestUnlockedLevel =
+        typeof data.highestUnlockedLevel === "number"
+          ? clamp(data.highestUnlockedLevel, 1, maxLevelId)
+          : 1;
+
+      totalSolved =
+        typeof data.totalSolved === "number" ? data.totalSolved : 0;
+
+      bestStreakGlobal =
+        typeof data.bestStreakGlobal === "number"
+          ? data.bestStreakGlobal
+          : 0;
+
+      statsByLevel =
+        data.statsByLevel && typeof data.statsByLevel === "object"
+          ? data.statsByLevel
+          : {};
+
+      initStatsDefaults();
+      LAST_SAVE_DATA = buildSavePayload();
+      hasUnsavedChanges = false;
     })
     .catch(function (err) {
-      console.error("[WORDL]", GAME_ID, "Błąd load:", err);
+      console.error("[GAME]", GAME_ID, "Błąd load:", err);
+      initStatsDefaults();
+    });
+}
+
+function initStatsDefaults() {
+  LEVELS.forEach(function (lvl) {
+    if (!statsByLevel[lvl.id]) {
+      statsByLevel[lvl.id] = {
+        solved: 0,
+        attempts: 0,
+        bestStreak: 0
+      };
+    }
+  });
+}
+
+function buildSavePayload() {
+  return {
+    highestUnlockedLevel: highestUnlockedLevel,
+    totalSolved: totalSolved,
+    bestStreakGlobal: bestStreakGlobal,
+    statsByLevel: statsByLevel
+  };
+}
+
+function saveCurrentSession() {
+  if (!window.ArcadeProgress || !ArcadeProgress.save) {
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.save");
+    return Promise.resolve();
+  }
+
+  const payload = buildSavePayload();
+
+  return ArcadeProgress.save(GAME_ID, payload)
+    .then(function () {
+      LAST_SAVE_DATA = payload;
+      hasUnsavedChanges = false;
+      console.log("[GAME]", GAME_ID, "zapisano:", payload);
+      showMessage("Postęp zapisany ✨", "info");
+    })
+    .catch(function (err) {
+      console.error("[GAME]", GAME_ID, "Błąd save:", err);
+      showMessage("Nie udało się zapisać postępu.", "error");
     });
 }
 
 function clearProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.clear) {
-    console.warn("[WORDL]", GAME_ID, "Brak ArcadeProgress.clear");
+    console.warn("[GAME]", GAME_ID, "Brak ArcadeProgress.clear");
     return Promise.resolve();
   }
 
   return ArcadeProgress.clear(GAME_ID)
     .then(function () {
       LAST_SAVE_DATA = null;
-
-      gamesPlayed = 0;
-      wins = 0;
-      currentStreak = 0;
-      maxStreak = 0;
-      updateStatsUI();
-
-      console.log("[WORDL]", GAME_ID, "progress wyczyszczony");
-      statusEl.textContent = "Rekordy wyczyszczone.";
+      hasUnsavedChanges = false;
+      console.log("[GAME]", GAME_ID, "progress wyczyszczony");
     })
     .catch(function (err) {
-      console.error("[WORDL]", GAME_ID, "Błąd clear:", err);
-      statusEl.textContent = "Błąd czyszczenia rekordów.";
+      console.error("[GAME]", GAME_ID, "Błąd clear:", err);
     });
 }
 
-// ===== MONETY / PODPOWIEDZI =====
+// ============================
+// UI – przyciski główne
+// ============================
 
-function initCoins() {
-  if (!canUseCoins()) {
-    return;
-  }
+function attachEvents() {
+  const newGameBtn = document.getElementById("new-game-btn");
+  const saveGameBtn = document.getElementById("save-game-btn");
+  const resetRecordBtn = document.getElementById("reset-record-btn");
 
-  ArcadeCoins.load()
-    .then(() => {
-      coinsLoaded = true;
-    })
-    .catch((err) => {
-      console.warn("[WORDL] błąd ArcadeCoins.load:", err);
-    });
-}
-
-async function useHint() {
-  if (!hintBtn) return;
-
-  if (row >= MAX_ROWS || !secret) {
-    statusEl.textContent = "Najpierw rozpocznij nową grę.";
-    return;
-  }
-
-  if (!canUseCoins()) {
-    statusEl.textContent =
-      "Podpowiedzi za diamenty są dostępne tylko dla zalogowanych.";
-    return;
-  }
-
-  hintBtn.disabled = true;
-  statusEl.textContent = "";
-
-  try {
-    const balance = await ArcadeCoins.getBalance();
-    if (typeof balance !== "number" || balance < HINT_COST) {
-      statusEl.textContent =
-        "Za mało diamentów na podpowiedź. Zdobądź je, wygrywając gry.";
-      hintBtn.disabled = false;
-      return;
-    }
-
-    // znajdź pozycję, której jeszcze nie podpowiadaliśmy
-    const candidates = [];
-    for (let i = 0; i < wordLength; i++) {
-      if (!usedHintPositions.has(i)) {
-        candidates.push(i);
-      }
-    }
-
-    if (!candidates.length) {
-      statusEl.textContent =
-        "Wykorzystałeś wszystkie podpowiedzi dla tego słowa.";
-      hintBtn.disabled = false;
-      return;
-    }
-
-    const pos =
-      candidates[Math.floor(Math.random() * candidates.length)];
-    usedHintPositions.add(pos);
-
-    const letter = secret[pos].toUpperCase();
-
-    // próbujemy ODJĄĆ diamenty
-    await ArcadeCoins.addForGame(GAME_ID, -HINT_COST, {
-      reason: "hint",
-      position: pos,
-      letter: secret[pos],
-    });
-
-    if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
-      ArcadeAuthUI.refreshCoins();
-    }
-
-    if (hintTextEl) {
-      hintTextEl.textContent = `Podpowiedź: na pozycji ${
-        pos + 1
-      } jest litera ${letter}. (-${HINT_COST}💎)`;
-    }
-  } catch (err) {
-    console.error("[WORDL] błąd podpowiedzi:", err);
-    statusEl.textContent =
-      "Nie udało się użyć podpowiedzi. Sprawdź połączenie lub stan konta.";
-  } finally {
-    hintBtn.disabled = false;
-  }
-}
-
-// ===== OBSŁUGA PRZYCISKÓW =====
-
-function attachButtonEvents() {
   if (newGameBtn) {
     newGameBtn.addEventListener("click", function () {
       const ok =
-        row === 0 ||
-        row >= MAX_ROWS ||
+        !hasUnsavedChanges ||
         window.confirm(
-          "Rozpocząć nowe słowo? Aktualna próba zostanie przerwana."
+          "Rozpocząć nową sesję? Niezapisane statystyki tej sesji zostaną utracone."
         );
       if (!ok) return;
-      startNewGame();
+
+      usedWords.clear();
+      currentStreak = 0;
+      showMessage("Nowa sesja – losuję świeże słówka.", "info");
+      startNewRound();
+    });
+  }
+
+  if (saveGameBtn) {
+    saveGameBtn.addEventListener("click", function () {
+      saveCurrentSession();
     });
   }
 
@@ -418,241 +374,614 @@ function attachButtonEvents() {
         "Na pewno chcesz zresetować rekordy i statystyki dla tej gry?"
       );
       if (!ok) return;
+
+      highestUnlockedLevel = 1;
+      totalSolved = 0;
+      bestStreakGlobal = 0;
+      statsByLevel = {};
+      initStatsDefaults();
+      usedWords.clear();
+      currentStreak = 0;
+      updateStatsUI();
+      renderLevels();
       clearProgress();
+      showMessage("Statystyki wyzerowane.", "info");
     });
   }
 
-  if (wordLenSel) {
-    wordLenSel.addEventListener("change", function () {
-      wordLength = parseInt(wordLenSel.value, 10) || 5;
-      startNewGame();
+  if (backspaceBtn) {
+    backspaceBtn.addEventListener("click", onBackspaceClick);
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener("click", function () {
+      showMessage("Pominięto to słowo. Losuję nowe.", "info");
+      startNewRound();
+    });
+  }
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", function () {
+      showMessage("Odświeżam – nowe słowo na tym samym poziomie.", "info");
+      startNewRound();
     });
   }
 
   if (hintBtn) {
-    hintBtn.addEventListener("click", () => {
-      useHint();
-    });
-  }
-}
-
-// ===== MECHANIKA WORDLE =====
-
-function pressLetter(ch) {
-  if (row >= MAX_ROWS) return;
-  if (col >= wordLength) return;
-  const tile = board[row][col];
-  tile.textContent = ch.toUpperCase();
-  tile.classList.add("filled");
-  col++;
-}
-
-function erase() {
-  if (col > 0) {
-    col--;
-    const tile = board[row][col];
-    tile.textContent = "";
-    tile.classList.remove("filled");
-  }
-}
-
-// Priorytety kolorów klawiatury (nie psujemy zielonego)
-const KEY_STATE_PRIORITY = {
-  absent: 0,
-  present: 1,
-  correct: 2,
-};
-
-function updateKeyColor(letter, newState) {
-  const current = keyboardState[letter];
-  if (
-    current &&
-    KEY_STATE_PRIORITY[newState] <= KEY_STATE_PRIORITY[current]
-  ) {
-    return;
+    hintBtn.addEventListener("click", onHintClick);
   }
 
-  keyboardState[letter] = newState;
-
-  const buttons = keyboardEl.querySelectorAll(".key-btn");
-  buttons.forEach((btn) => {
-    const k = btn.dataset.key;
-    if (k !== letter) return;
-
-    btn.classList.remove("key-correct", "key-present", "key-absent");
-    if (newState === "correct") btn.classList.add("key-correct");
-    if (newState === "present") btn.classList.add("key-present");
-    if (newState === "absent") btn.classList.add("key-absent");
-  });
-}
-
-// pełna logika Wordle dla duplikatów
-function colorRow(r) {
-  const guess = [];
-  for (let c = 0; c < wordLength; c++) {
-    guess[c] = board[r][c].textContent.toLowerCase();
-  }
-
-  const secretArr = secret.split("");
-
-  const counts = {};
-  for (let i = 0; i < wordLength; i++) {
-    const ch = secretArr[i];
-    counts[ch] = (counts[ch] || 0) + 1;
-  }
-
-  // KROK 1 — zielone
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    const ch = guess[c];
-
-    if (ch === secretArr[c]) {
-      tile.classList.add("correct");
-      counts[ch]--;
-      updateKeyColor(ch, "correct");
-    }
-  }
-
-  // KROK 2 — żółte / szare
-  for (let c = 0; c < wordLength; c++) {
-    const tile = board[r][c];
-    if (tile.classList.contains("correct")) continue;
-
-    const ch = guess[c];
-
-    if (counts[ch] > 0) {
-      tile.classList.add("present");
-      counts[ch]--;
-      updateKeyColor(ch, "present");
-    } else {
-      tile.classList.add("absent");
-      updateKeyColor(ch, "absent");
-    }
-  }
-}
-
-function submitRow() {
-  if (row >= MAX_ROWS) return;
-  if (col < wordLength) {
-    statusEl.textContent = "Wpisz pełne słowo.";
-    return;
-  }
-
-  let guess = "";
-  for (let c = 0; c < wordLength; c++) {
-    guess += board[row][c].textContent.toLowerCase();
-  }
-
-  if (!validWords.includes(guess)) {
-    statusEl.textContent = "Nie ma takiego słowa!";
-    return;
-  }
-
-  colorRow(row);
-
-  if (guess === secret) {
-    statusEl.textContent = "Brawo! Trafione!";
-    registerGameFinished(true);
-    row = MAX_ROWS; // blokada dalszej gry
-    return;
-  }
-
-  row++;
-  col = 0;
-
-  if (row >= MAX_ROWS) {
-    statusEl.textContent = "Koniec! Słowo: " + secret.toUpperCase();
-    registerGameFinished(false);
-  } else {
-    statusEl.textContent = "";
-  }
-}
-
-// ===== NOWA GRA =====
-
-function startNewGame() {
-  secret = chooseSecret();
-  usedHintPositions = new Set();
-  if (hintTextEl) hintTextEl.textContent = "";
-
-  if (!secret) {
-    statusEl.textContent =
-      "Brak słów o tej długości w słowniku. Zmień długość słowa.";
-    return;
-  }
-
-  initBoardStructure();
-  resetBoard();
-  buildKeyboard();
-  statusEl.textContent = "Zgadnij słowo!";
-
-  if (hintBtn) {
-    hintBtn.disabled = !canUseCoins();
-  }
-}
-
-// ===== KLAWIATURA FIZYCZNA =====
-
-function setupKeyboardListener() {
-  document.addEventListener("keydown", (e) => {
-    statusEl.textContent = "";
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      submitRow();
-      return;
-    }
+  // Backspace z klawiatury
+  document.addEventListener("keydown", function (e) {
     if (e.key === "Backspace") {
       e.preventDefault();
-      erase();
-      return;
-    }
-    if (/^[a-ząćęłńóśżź]$/i.test(e.key)) {
-      e.preventDefault();
-      pressLetter(e.key.toLowerCase());
+      onBackspaceClick();
     }
   });
 }
 
-// ===== INICJALIZACJA =====
+// ============================
+// Poziomy
+// ============================
 
-function cacheDom() {
-  statusEl = document.getElementById("status");
-  boardEl = document.getElementById("board");
-  wordLenSel = document.getElementById("word-len");
-  keyboardEl = document.getElementById("keyboard");
+function renderLevels() {
+  levelListEl.innerHTML = "";
 
-  newGameBtn = document.getElementById("new-game-btn");
-  resetRecordBtn = document.getElementById("reset-record-btn");
+  LEVELS.forEach(function (lvl) {
+    const btn = document.createElement("button");
+    btn.className = "arcade-btn level-btn";
+    btn.textContent = lvl.label;
 
-  statGamesEl = document.getElementById("stat-games");
-  statWinsEl = document.getElementById("stat-wins");
-  statStreakEl = document.getElementById("stat-streak");
-  statMaxStreakEl = document.getElementById("stat-max-streak");
+    const isLocked = lvl.id > highestUnlockedLevel;
 
-  hintBtn = document.getElementById("hint-btn");
-  hintTextEl = document.getElementById("hint-text");
+    if (isLocked) {
+      btn.classList.add("level-btn--locked");
+    } else if (lvl.id === currentLevel.id) {
+      btn.classList.add("level-btn--active");
+    }
+
+    btn.addEventListener("click", function () {
+      if (lvl.id > highestUnlockedLevel) {
+        showMessage(
+          "Ten poziom jest jeszcze zablokowany. Ukończ więcej słówek na poprzednich poziomach.",
+          "info"
+        );
+        return;
+      }
+      selectLevel(lvl.id);
+    });
+
+    levelListEl.appendChild(btn);
+  });
 }
 
-function initGame() {
-  cacheDom();
+function selectLevel(levelId) {
+  const lvl = LEVELS.find(function (l) {
+    return l.id === levelId;
+  });
+  if (!lvl) return;
+
+  currentLevel = lvl;
+  currentStreak = 0;
+
+  Array.from(levelListEl.children).forEach(function (btn, idx) {
+    const levelCfg = LEVELS[idx];
+    btn.classList.remove("level-btn--active");
+    if (
+      levelCfg.id === currentLevel.id &&
+      levelCfg.id <= highestUnlockedLevel
+    ) {
+      btn.classList.add("level-btn--active");
+    }
+  });
+
   updateStatsUI();
+  startNewRound();
+}
 
-  setupKeyboardListener();
-  attachButtonEvents();
+// ============================
+// Rundy gry
+// ============================
 
-  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
-    ArcadeUI.addBackToArcadeButton({
-      backUrl: "../../../arcade.html",
-    });
+function startNewRound() {
+  clearTimer();
+
+  if (!frequentWords.length) {
+    wordOriginalEl.textContent = "---";
+    wordMaskedEl.textContent = "---";
+    keyboardEl.innerHTML = "";
+    showMessage(
+      "Nie udało się wczytać słów z internetu. Spróbuj odświeżyć stronę.",
+      "error"
+    );
+    return;
   }
 
-  Promise.all([loadProgress(), loadDictionary()]).then(() => {
-    wordLength = parseInt(wordLenSel.value, 10) || 5;
-    startNewGame();
-  });
+  showMessage("Losuję słowo…", "info");
+  keyboardEl.innerHTML = "";
+  wordOriginalEl.textContent = "...";
+  wordMaskedEl.textContent = "...";
+  wordPhaseLabelEl.textContent = "Zapamiętaj słowo:";
+  fillLabelEl.textContent = "Uzupełnij literki:";
 
-  initCoins();
+  const word = pickWordForLevel(currentLevel);
+  if (!word) {
+    wordOriginalEl.textContent = "---";
+    wordMaskedEl.textContent = "---";
+    showMessage(
+      "Brak odpowiednich słówek dla tego poziomu. Spróbuj innego.",
+      "error"
+    );
+    return;
+  }
+
+  currentWord = word;
+  wordOriginalEl.textContent = word.toUpperCase();
+  wordMaskedEl.textContent = "…";
+
+  fillHistory = [];
+
+  showTimer(currentLevel.showMs);
+
+  currentMaskedChars = [];
+  missingPositions = [];
+
+  currentTimerTimeoutId = setTimeout(function () {
+    hideLettersAndBuildKeyboard();
+  }, currentLevel.showMs);
 }
 
-document.addEventListener("DOMContentLoaded", initGame);
+// wybór słowa: częstotliwość + długość + unikatowość
+
+function pickWordForLevel(level) {
+  if (!frequentWords.length) return null;
+
+  const range = LEVEL_WORD_RANGES[level.id] || [0, 2000];
+
+  const start = clamp(range[0], 0, frequentWords.length);
+  const end = clamp(range[1], 0, frequentWords.length);
+  const slice = frequentWords.slice(start, end);
+
+  const candidates = slice.filter(function (w) {
+    const len = w.length;
+    return (
+      len >= level.minLen &&
+      len <= level.maxLen &&
+      !usedWords.has(w)
+    );
+  });
+
+  let pool = candidates;
+
+  if (!pool.length) {
+    usedWords.clear();
+    const fallback = slice.filter(function (w) {
+      const len = w.length;
+      return len >= level.minLen && len <= level.maxLen;
+    });
+    pool = fallback;
+  }
+
+  if (!pool.length) return null;
+
+  const idx = Math.floor(Math.random() * pool.length);
+  const word = pool[idx];
+  usedWords.add(word);
+  return word;
+}
+
+// Ukrywanie liter i klawiatura
+
+function hideLettersAndBuildKeyboard() {
+  clearTimer();
+
+  if (!currentWord) return;
+
+  const chars = currentWord.split("");
+  const len = chars.length;
+
+  const missingCount = clamp(
+    randomInt(currentLevel.missingMin, currentLevel.missingMax),
+    1,
+    len
+  );
+
+  const positions = [];
+  while (positions.length < missingCount) {
+    const pos = Math.floor(Math.random() * len);
+    if (!positions.includes(pos)) {
+      positions.push(pos);
+    }
+  }
+  positions.sort(function (a, b) {
+    return a - b;
+  });
+
+  missingPositions = positions;
+  currentMaskedChars = chars.slice();
+
+  positions.forEach(function (idx) {
+    currentMaskedChars[idx] = "_";
+  });
+
+  // słowo "znika" – ukrywamy wersję do zapamiętywania,
+  // zostawiamy tylko wersję z lukami
+  wordOriginalEl.textContent = "";
+  wordPhaseLabelEl.textContent = "Zapamiętaj słowo…";
+  fillLabelEl.textContent = "Uzupełnij literki:";
+
+  renderMaskedWord();
+  buildKeyboard(chars, positions);
+
+  showMessage(
+    "Klikaj literki na dole, żeby uzupełnić brakujące miejsca. Możesz cofnąć literę przyciskiem ⌫.",
+    "info"
+  );
+}
+
+function renderMaskedWord() {
+  if (!currentMaskedChars.length) {
+    wordMaskedEl.textContent = "---";
+    return;
+  }
+
+  wordMaskedEl.textContent = currentMaskedChars
+    .map(function (ch) {
+      return ch === "_" ? "_" : ch.toUpperCase();
+    })
+    .join(" ");
+}
+
+function buildKeyboard(chars, missingPos) {
+  keyboardEl.innerHTML = "";
+
+  const missingLetters = missingPos.map(function (idx) {
+    return chars[idx];
+  });
+
+  const letterSet = new Set(missingLetters);
+
+  const alphabet = "aąbcćdeęfghijklłmnńoóprsśtuwyzźż".split("");
+
+  while (letterSet.size < missingLetters.length + currentLevel.extraLetters) {
+    const candidate =
+      alphabet[Math.floor(Math.random() * alphabet.length)];
+    if (!letterSet.has(candidate)) {
+      letterSet.add(candidate);
+    }
+  }
+
+  const lettersArray = Array.from(letterSet);
+  shuffleArray(lettersArray);
+
+  lettersArray.forEach(function (letter) {
+    const btn = document.createElement("button");
+    btn.className = "arcade-btn key-btn";
+    btn.textContent = letter.toUpperCase();
+    btn.addEventListener("click", function () {
+      onLetterClick(letter);
+    });
+    keyboardEl.appendChild(btn);
+  });
+}
+
+// Kliknięcie litery
+
+function onLetterClick(letter) {
+  if (!currentWord || !currentMaskedChars.length) return;
+
+  const idx = currentMaskedChars.indexOf("_");
+  if (idx === -1) return;
+
+  currentMaskedChars[idx] = letter;
+  fillHistory.push(idx);
+  renderMaskedWord();
+
+  if (!currentMaskedChars.includes("_")) {
+    checkAnswer();
+  }
+}
+
+// Cofnij literę
+
+function onBackspaceClick() {
+  if (!currentMaskedChars.length) return;
+  if (!fillHistory.length) return;
+
+  const idx = fillHistory.pop();
+  currentMaskedChars[idx] = "_";
+  renderMaskedWord();
+}
+
+// Podpowiedź za 5 diaxów
+
+function onHintClick() {
+  if (!currentWord || !currentMaskedChars.length) {
+    showMessage("Najpierw wylosuj słowo.", "info");
+    return;
+  }
+
+  const missing = [];
+  for (let i = 0; i < currentMaskedChars.length; i++) {
+    if (currentMaskedChars[i] === "_") missing.push(i);
+  }
+
+  if (!missing.length) {
+    showMessage("Brak literek do odkrycia.", "info");
+    return;
+  }
+
+  if (!window.ArcadeCoins || !ArcadeCoins.getBalance) {
+    showMessage("Podpowiedzi są dostępne tylko dla zalogowanych.", "info");
+    return;
+  }
+
+  const balance = ArcadeCoins.getBalance();
+
+  if (typeof balance !== "number" || balance < 5) {
+    showMessage("Za mało diaxów na podpowiedź (koszt 5 💎).", "error");
+    return;
+  }
+
+  // odkryj jedną losową literkę
+  const randomIdx =
+    missing[Math.floor(Math.random() * missing.length)];
+  currentMaskedChars[randomIdx] = currentWord[randomIdx];
+  fillHistory.push(randomIdx);
+  renderMaskedWord();
+
+  // pobierz 5 diaxów
+  ArcadeCoins.addForGame(GAME_ID, -5, {
+    reason: "hint",
+    level: currentLevel.id,
+    wordLength: currentWord.length
+  })
+    .then(function () {
+      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+        ArcadeAuthUI.refreshCoins();
+      }
+      showMessage("Odkryto literkę (-5 💎).", "info");
+    })
+    .catch(function (err) {
+      console.error("[GAME]", GAME_ID, "błąd obciążenia za hint:", err);
+      showMessage(
+        "Coś poszło nie tak z płatnością za podpowiedź.",
+        "error"
+      );
+    });
+}
+
+// Sprawdzenie odpowiedzi
+
+function checkAnswer() {
+  const candidate = currentMaskedChars.join("");
+  const isCorrect =
+    currentWord &&
+    candidate.toLowerCase() === currentWord.toLowerCase();
+
+  const lvlId = currentLevel.id;
+  const stats = statsByLevel[lvlId];
+
+  stats.attempts += 1;
+
+  if (isCorrect) {
+    stats.solved += 1;
+    totalSolved += 1;
+    currentStreak += 1;
+    stats.bestStreak = Math.max(stats.bestStreak, currentStreak);
+    bestStreakGlobal = Math.max(bestStreakGlobal, currentStreak);
+
+    const reward = calculateCoinsReward();
+    awardCoinsOnCorrect(reward);
+
+    showMessage(
+      "Dobrze! To było słowo: " +
+        currentWord.toUpperCase() +
+        "  (+" +
+        reward +
+        " 💎)",
+      "success"
+    );
+
+    hasUnsavedChanges = true;
+    maybeUnlockNextLevel();
+    updateStatsUI();
+
+    setTimeout(function () {
+      startNewRound();
+    }, 900);
+  } else {
+    currentStreak = 0;
+    showMessage(
+      "Nie tym razem. Poprawne słowo to: " +
+        currentWord.toUpperCase() +
+        ". Spróbuj kolejnego!",
+      "error"
+    );
+    hasUnsavedChanges = true;
+    updateStatsUI();
+
+    setTimeout(function () {
+      startNewRound();
+    }, 1100);
+  }
+}
+
+// Nagroda w diaxach za poprawne słowo
+
+function calculateCoinsReward() {
+  const lvlId = currentLevel ? currentLevel.id : 1;
+  return Math.max(1, lvlId); // poziom 3 → 3 diaxy
+}
+
+function awardCoinsOnCorrect(amount) {
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) return;
+
+  const meta = {
+    reason: "word_solved",
+    level: currentLevel.id,
+    wordLength: currentWord ? currentWord.length : null
+  };
+
+  ArcadeCoins.addForGame(GAME_ID, amount, meta)
+    .then(function () {
+      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+        ArcadeAuthUI.refreshCoins();
+      }
+      console.log(
+        "[GAME]",
+        GAME_ID,
+        "przyznano monety:",
+        amount,
+        meta
+      );
+    })
+    .catch(function (err) {
+      console.error("[GAME]", GAME_ID, "błąd przyznawania monet:", err);
+    });
+}
+
+// Odblokowanie kolejnego poziomu
+
+function maybeUnlockNextLevel() {
+  const lvl = currentLevel;
+  const stats = statsByLevel[lvl.id];
+
+  if (
+    stats.solved >= lvl.targetSolved &&
+    lvl.id === highestUnlockedLevel &&
+    lvl.id < LEVELS[LEVELS.length - 1].id
+  ) {
+    highestUnlockedLevel = lvl.id + 1;
+    showMessage(
+      "Gratulacje! Odblokowałeś poziom " + highestUnlockedLevel + " 🎉",
+      "success"
+    );
+  }
+
+  renderLevels();
+}
+
+// ============================
+// UI – statystyki, komunikaty
+// ============================
+
+function updateStatsUI() {
+  highestLevelEl.textContent = highestUnlockedLevel;
+  totalSolvedEl.textContent = totalSolved;
+  bestStreakEl.textContent = bestStreakGlobal;
+
+  currentLevelLabelEl.textContent = currentLevel.id;
+  levelTargetEl.textContent = currentLevel.targetSolved;
+
+  const stats = statsByLevel[currentLevel.id] || {
+    solved: 0,
+    attempts: 0,
+    bestStreak: 0
+  };
+  levelSolvedEl.textContent = stats.solved;
+}
+
+function showMessage(text, type) {
+  messageEl.textContent = text || "";
+  messageEl.classList.remove(
+    "game-message--success",
+    "game-message--error",
+    "game-message--info"
+  );
+  if (!type) return;
+  messageEl.classList.add("game-message--" + type);
+}
+
+// ============================
+// Timer (pasek czasu)
+// ============================
+
+function showTimer(durationMs) {
+  clearTimer();
+
+  timerBarEl.classList.remove("timer-bar--hidden");
+  timerBarEl.innerHTML = "";
+
+  const inner = document.createElement("div");
+  inner.className = "timer-inner";
+  timerBarEl.appendChild(inner);
+
+  inner.style.transform = "scaleX(1)";
+  inner.style.transition = "transform " + durationMs + "ms linear";
+
+  requestAnimationFrame(function () {
+    inner.style.transform = "scaleX(0)";
+  });
+}
+
+function clearTimer() {
+  if (currentTimerTimeoutId !== null) {
+    clearTimeout(currentTimerTimeoutId);
+    currentTimerTimeoutId = null;
+  }
+  if (timerBarEl) {
+    timerBarEl.classList.add("timer-bar--hidden");
+    timerBarEl.innerHTML = "";
+  }
+}
+
+// ============================
+// Guardy – niezapisane zmiany
+// ============================
+
+function setupBeforeUnloadGuard() {
+  window.addEventListener("beforeunload", function (e) {
+    if (!hasUnsavedChanges) return;
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+  });
+}
+
+function setupClickGuard() {
+  document.addEventListener("click", function (e) {
+    if (!hasUnsavedChanges) return;
+
+    const target = e.target.closest("a,button");
+    if (!target) return;
+
+    const href = target.getAttribute("href");
+    const isReturnToArcade =
+      (href && href.indexOf("arcade.html") !== -1) ||
+      target.classList.contains("arcade-back-btn");
+
+    if (isReturnToArcade) {
+      const ok = window.confirm(
+        "Masz niezapisany postęp. Wyjść bez zapisywania?"
+      );
+      if (!ok) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+  });
+}
+
+// ============================
+// Helpery
+// ============================
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function randomInt(min, max) {
+  const a = Math.ceil(min);
+  const b = Math.floor(max);
+  return Math.floor(Math.random() * (b - a + 1)) + a;
+}
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
