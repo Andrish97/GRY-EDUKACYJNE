@@ -2,75 +2,114 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-    <title>Neon Arcade</title>
+    <title>Neon Pong – Neon Arcade</title>
 
-    <link rel="stylesheet" href="css/theme.css" />
-    <link rel="stylesheet" href="css/arcade.css" />
+    <!-- Motyw globalny -->
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <!-- Styl gry -->
+    <link rel="stylesheet" href="game.css" />
 
-    <!-- Supabase -->
+    <!-- Supabase – musi być przed auth.js -->
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
       defer
     ></script>
 
     <!-- Core -->
-    <script src="js/core/auth.js" defer></script>
-    <script src="js/core/auth-bar.js" defer></script>
-    <script src="js/core/progress.js" defer></script>
-    <script src="js/core/coins.js" defer></script>
-    <script src="js/core/ui.js" defer></script>
+    <script src="../../../js/core/auth.js" defer></script>
+    <script src="../../../js/core/auth-bar.js" defer></script>
+    <script src="../../../js/core/progress.js" defer></script>
+    <script src="../../../js/core/ui.js" defer></script>
 
-    <!-- Logika arcade -->
-    <script src="js/pages/arcade.js" defer></script>
+    <!-- Logika gry -->
+    <script src="game.js" defer></script>
   </head>
-  <body class="arcade-body">
+  <body class="arcade-body arcade-game-page">
     <!-- Pasek logowania -->
     <div
       data-arcade-auth-bar
-      data-after-login="arcade.html"
-      data-after-guest="arcade.html"
+      data-after-login="../../../arcade.html"
+      data-after-guest="../../../arcade.html"
     ></div>
 
-    <main class="arcade-main">
-      <header class="arcade-header">
-        <h1 class="arcade-title">Neon Arcade</h1>
-        <p class="arcade-subtitle">
-          Wybierz kategorię z zakładek i zagraj w jedną z gier.
-        </p>
+    <div class="shell">
+      <div class="card game-root pong-root">
+        <header class="game-header">
+          <div class="game-header-main">
+            <h1 class="game-title">Neon Pong</h1>
+            <p class="game-subtitle">
+              Sterowanie: <strong>A/D</strong>, <strong>strzałki lewo/prawo</strong>,
+              myszą lub dotykiem – <strong>złap paletkę i przeciągnij</strong>.
+            </p>
 
-        <!-- Pasek monet -->
-        <div class="arcade-wallet">
-          <span class="arcade-wallet-label">Monety:</span>
-          <span id="arcade-wallet-balance">–</span>
-          <span id="arcade-wallet-guest-hint" hidden>
-            Zaloguj się, aby zdobywać monety
-          </span>
+            <!-- Ładny przełącznik trybów (slider) -->
+            <div class="mode-toggle" id="mode-toggle">
+              <div class="mode-toggle__slider" id="mode-toggle-slider"></div>
+              <button
+                type="button"
+                class="mode-toggle__option mode-toggle__option--active"
+                data-mode="wall"
+              >
+                Ściana
+              </button>
+              <button
+                type="button"
+                class="mode-toggle__option"
+                data-mode="ai"
+              >
+                Pojedynek z AI
+              </button>
+            </div>
+          </div>
+
+          <div class="game-header-side">
+            <div class="stats-panel">
+              <div class="stat-box">
+                <span class="stat-label">Wynik</span>
+                <span id="current-score" class="stat-value">0</span>
+              </div>
+              <div class="stat-box">
+                <span id="record-label" class="stat-label">Rekord – Ściana</span>
+                <span id="best-score" class="stat-value">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Rozegrane gry</span>
+                <span id="games-played" class="stat-value">0</span>
+              </div>
+            </div>
+
+            <div class="controls-panel">
+              <button id="new-game-btn" class="btn-primary btn-sm">
+                Nowa gra
+              </button>
+              <button id="save-game-btn" class="btn-primary btn-sm">
+                Zapisz
+              </button>
+              <button id="reset-record-btn" class="btn-primary btn-sm">
+                Wyzeruj rekord
+              </button>
+              <button
+                id="pause-btn"
+                class="btn-primary btn-sm btn-secondary"
+              >
+                Pauza
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div class="pong-layout">
+          <canvas id="game"></canvas>
+          <!-- Wynik Gracz : Straty / Gracz : AI -->
+          <div id="score" class="pong-score">0 : 0</div>
         </div>
-      </header>
 
-      <!-- Zakładki kategorii -->
-      <section class="arcade-section">
-        <h2 class="arcade-section-title">Kategorie</h2>
-        <div id="categories" class="categories-tabs"></div>
-      </section>
-
-      <!-- Gry w wybranej kategorii -->
-      <section class="arcade-section games-section" id="games-section">
-        <h2 id="games-section-title" class="arcade-section-title">
-          Gry
-        </h2>
-        <div id="games"></div>
-      </section>
-
-      <!-- Błędy i stan ładowania -->
-      <div id="arcade-error" data-arcade-error style="display:none"></div>
-      <div id="arcade-loading" data-arcade-wait style="display:none">
-        Ładowanie gier…
+        <p class="pong-hint">
+          <strong>Ściana:</strong> lewa wartość to odbicia, prawa – straty.  
+          <strong>Pojedynek z AI:</strong> wynik Gracz : AI. Rekord zapisywany
+          osobno dla każdego trybu.
+        </p>
       </div>
-    </main>
+    </div>
   </body>
 </html>
