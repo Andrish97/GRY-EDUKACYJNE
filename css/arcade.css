@@ -267,30 +267,3 @@
   font-size: 0.9rem;
   color: #fecaca;
 }
-
-.arcade-wallet {
-  margin-top: 0.45rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #e5e7eb;
-}
-
-.arcade-wallet-label {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.72rem;
-  opacity: 0.75;
-}
-
-#arcade-wallet-balance {
-  font-weight: 600;
-}
-
-#arcade-wallet-guest-hint {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-
-
