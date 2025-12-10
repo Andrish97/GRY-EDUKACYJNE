@@ -660,6 +660,14 @@ function awardCoins(amount, reason) {
         "Nowe saldo:",
         newBalance
       );
+          var coinsEl = document.querySelector(".auth-coins");
+          var hintEl = document.querySelector(".auth-coins-hint");
+          if (coinsEl) {
+            coinsEl.textContent = "Monety: " + newBalance;
+          }
+          if (hintEl) {
+            hintEl.style.display = "none";
+          }
     })
     .catch((err) => {
       console.error("[2048] Błąd przyznawania monet:", err);
