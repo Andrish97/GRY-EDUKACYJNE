@@ -3,6 +3,7 @@ const GAME_ID = "neon-wordl-pl";
 const DICT_URL =
   "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/pl/pl_full.txt";
 const MAX_ROWS = 6;
+const HINT_COST = 3; // koszt jednej podpowiedzi w 💎
 
 let allWords = [];
 let validWords = [];
@@ -14,6 +15,9 @@ let wordLength = 5;
 let board = []; // 2D: [row][col] -> tile element
 let row = 0;
 let col = 0;
+
+// Stan podpowiedzi
+let usedHintPositions = new Set();
 
 // Statystyki (ArcadeProgress)
 let gamesPlayed = 0;
@@ -38,12 +42,28 @@ let statWinsEl;
 let statStreakEl;
 let statMaxStreakEl;
 
+// Podpowiedzi / monety
+let hintBtn;
+let hintTextEl;
+let coinsBalanceEl;
+let coinsLoaded = false;
+
 // ===== POMOCNICZE =====
 
 function normalizeWord(w) {
   return w
     .toLowerCase()
     .replace(/[^a-ząćęłńóśżź]/g, ""); // tylko litery PL
+}
+
+function canUseCoins() {
+  return (
+    typeof window !== "undefined" &&
+    window.ArcadeCoins &&
+    typeof ArcadeCoins.load === "function" &&
+    typeof ArcadeCoins.getBalance === "function" &&
+    typeof ArcadeCoins.addForGame === "function"
+  );
 }
 
 // ===== SŁOWNIK =====
@@ -204,6 +224,30 @@ function autoSave() {
     });
 }
 
+// nagroda za grę + odświeżenie monet
+function rewardCoinsForGame(win) {
+  if (!canUseCoins()) return;
+
+  // prosta ekonomia: wygrana = 5💎, przegrana = 1💎
+  const amount = win ? 5 : 1;
+
+  ArcadeCoins.addForGame(GAME_ID, amount, {
+    reason: win ? "win" : "loss",
+    wordLength,
+    secret,
+  })
+    .then(() => {
+      if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+        ArcadeAuthUI.refreshCoins();
+      }
+      refreshCoinsBalance();
+      console.log("[WORDL] przyznano monety:", amount);
+    })
+    .catch((err) => {
+      console.warn("[WORDL] błąd przyznawania monet:", err);
+    });
+}
+
 function registerGameFinished(win) {
   gamesPlayed++;
   if (win) {
@@ -217,6 +261,7 @@ function registerGameFinished(win) {
   }
   updateStatsUI();
   autoSave();
+  rewardCoinsForGame(win);
 }
 
 // ===== ArcadeProgress – load / clear =====
@@ -273,6 +318,116 @@ function clearProgress() {
     });
 }
 
+// ===== MONETY / PODPOWIEDZI =====
+
+function refreshCoinsBalance() {
+  if (!canUseCoins() || !coinsBalanceEl) return;
+
+  ArcadeCoins.getBalance()
+    .then((bal) => {
+      coinsLoaded = true;
+      if (typeof bal === "number") {
+        coinsBalanceEl.textContent = bal.toString();
+      } else {
+        coinsBalanceEl.textContent = "0";
+      }
+    })
+    .catch((err) => {
+      console.warn("[WORDL] błąd pobierania balansu monet:", err);
+      coinsBalanceEl.textContent = "–";
+    });
+}
+
+function initCoins() {
+  if (!canUseCoins()) {
+    if (coinsBalanceEl) coinsBalanceEl.textContent = "–";
+    return;
+  }
+
+  ArcadeCoins.load()
+    .then(() => {
+      coinsLoaded = true;
+      refreshCoinsBalance();
+    })
+    .catch((err) => {
+      console.warn("[WORDL] błąd ArcadeCoins.load:", err);
+      if (coinsBalanceEl) coinsBalanceEl.textContent = "–";
+    });
+}
+
+async function useHint() {
+  if (!hintBtn) return;
+
+  if (row >= MAX_ROWS || !secret) {
+    statusEl.textContent = "Najpierw rozpocznij nową grę.";
+    return;
+  }
+
+  if (!canUseCoins()) {
+    statusEl.textContent =
+      "Podpowiedzi za diamenty są dostępne tylko dla zalogowanych.";
+    return;
+  }
+
+  hintBtn.disabled = true;
+  statusEl.textContent = "";
+
+  try {
+    const balance = await ArcadeCoins.getBalance();
+    if (typeof balance !== "number" || balance < HINT_COST) {
+      statusEl.textContent =
+        "Za mało diamentów na podpowiedź. Zdobądź je, wygrywając gry.";
+      hintBtn.disabled = false;
+      return;
+    }
+
+    // znajdź pozycję, której jeszcze nie podpowiadaliśmy
+    const candidates = [];
+    for (let i = 0; i < wordLength; i++) {
+      if (!usedHintPositions.has(i)) {
+        candidates.push(i);
+      }
+    }
+
+    if (!candidates.length) {
+      statusEl.textContent =
+        "Wykorzystałeś wszystkie podpowiedzi dla tego słowa.";
+      hintBtn.disabled = false;
+      return;
+    }
+
+    const pos =
+      candidates[Math.floor(Math.random() * candidates.length)];
+    usedHintPositions.add(pos);
+
+    const letter = secret[pos].toUpperCase();
+
+    // pobierz diamenty
+    await ArcadeCoins.addForGame(GAME_ID, -HINT_COST, {
+      reason: "hint",
+      position: pos,
+      letter: secret[pos],
+    });
+
+    if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+      ArcadeAuthUI.refreshCoins();
+    }
+    refreshCoinsBalance();
+
+    if (hintTextEl) {
+      hintTextEl.textContent = `Podpowiedź: na pozycji ${
+        pos + 1
+      } jest litera ${letter}. (-${HINT_COST}💎)`;
+    }
+  } catch (err) {
+    console.error("[WORDL] błąd podpowiedzi:", err);
+    statusEl.textContent =
+      "Nie udało się użyć podpowiedzi. Sprawdź połączenie lub stan konta.";
+  } finally {
+    hintBtn.disabled = false;
+  }
+}
+
 // ===== OBSŁUGA PRZYCISKÓW =====
 
 function attachButtonEvents() {
@@ -303,6 +458,12 @@ function attachButtonEvents() {
     wordLenSel.addEventListener("change", function () {
       wordLength = parseInt(wordLenSel.value, 10) || 5;
       startNewGame();
+    });
+  }
+
+  if (hintBtn) {
+    hintBtn.addEventListener("click", () => {
+      useHint();
     });
   }
 }
@@ -444,6 +605,9 @@ function submitRow() {
 
 function startNewGame() {
   secret = chooseSecret();
+  usedHintPositions = new Set();
+  if (hintTextEl) hintTextEl.textContent = "";
+
   if (!secret) {
     statusEl.textContent =
       "Brak słów o tej długości w słowniku. Zmień długość słowa.";
@@ -454,6 +618,11 @@ function startNewGame() {
   resetBoard();
   buildKeyboard();
   statusEl.textContent = "Zgadnij słowo!";
+
+  if (hintBtn) {
+    // na wszelki wypadek włączamy, jeśli monety działają
+    hintBtn.disabled = !canUseCoins();
+  }
 }
 
 // ===== KLAWIATURA FIZYCZNA =====
@@ -494,6 +663,10 @@ function cacheDom() {
   statWinsEl = document.getElementById("stat-wins");
   statStreakEl = document.getElementById("stat-streak");
   statMaxStreakEl = document.getElementById("stat-max-streak");
+
+  hintBtn = document.getElementById("hint-btn");
+  hintTextEl = document.getElementById("hint-text");
+  coinsBalanceEl = document.getElementById("coins-balance");
 }
 
 function initGame() {
@@ -514,6 +687,9 @@ function initGame() {
     wordLength = parseInt(wordLenSel.value, 10) || 5;
     startNewGame();
   });
+
+  // monety / diamenty
+  initCoins();
 }
 
 document.addEventListener("DOMContentLoaded", initGame);
