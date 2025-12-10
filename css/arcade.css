@@ -289,3 +289,12 @@
   font-weight: 600;
 }
 
+.arcade-wallet-guest-hint {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+#arcade-wallet-balance {
+  font-weight: 600;
+}
+
