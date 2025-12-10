@@ -36,39 +36,45 @@
     <div class="shell">
       <div class="card game-root">
         <div class="znajdz-slowo-screen">
-          <div class="title">Znajdź słowo</div>
+          <!-- TU wraca wewnętrzna karta -->
+          <div class="znajdz-slowo-card">
+            <div class="title">Znajdź słowo</div>
 
-          <div class="worlds-row" id="worldsRow">
-            <!-- przyciski światów generuje JS -->
-          </div>
+            <div class="worlds-row" id="worldsRow">
+              <!-- przyciski światów generuje JS -->
+            </div>
 
-          <div class="top-row">
-            <div class="world-name" id="worldNameLabel">Świat: Zwierzęta</div>
-            <div class="streak-info">
-              Seria: <span id="streak">0</span>
+            <div class="top-row">
+              <div class="world-name" id="worldNameLabel">
+                Świat: Zwierzęta
+              </div>
+              <div class="streak-info">
+                Seria: <span id="streak">0</span>
+              </div>
+            </div>
+
+            <div class="progress-wrapper">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="emoji-box" id="emoji">🐱</div>
+            <div class="hint" id="hint">
+              Kliknij wyraz, który pasuje do obrazka.
+            </div>
+
+            <div class="choices" id="choices"></div>
+
+            <div id="message"></div>
+
+            <div class="bottom-row">
+              <div id="score">Punkty: 0</div>
+              <button id="next">Następne</button>
+              <button id="resetProgress" class="reset-progress-btn">
+                Wyczyść postęp
+              </button>
             </div>
           </div>
-
-          <div class="progress-wrapper">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
-
-          <div class="emoji-box" id="emoji">🐱</div>
-          <div class="hint" id="hint">
-            Kliknij wyraz, który pasuje do obrazka.
-          </div>
-
-          <div class="choices" id="choices"></div>
-
-          <div id="message"></div>
-
-          <div class="bottom-row">
-            <div id="score">Punkty: 0</div>
-            <button id="next">Następne</button>
-            <button id="resetProgress" class="reset-progress-btn">
-              Wyczyść postęp
-            </button>
-          </div>
+          <!-- /znajdz-slowo-card -->
         </div>
       </div>
     </div>
