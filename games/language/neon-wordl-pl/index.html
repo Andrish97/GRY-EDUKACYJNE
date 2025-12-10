@@ -26,7 +26,7 @@
     <script src="game.js" defer></script>
   </head>
   <body class="arcade-body arcade-game-page">
-    <!-- Pasek logowania -->
+    <!-- Pasek logowania (z globalnym licznikiem 💎) -->
     <div
       data-arcade-auth-bar
       data-after-login="../../../arcade.html"
@@ -76,10 +76,9 @@
             <div class="hint-panel">
               <div class="hint-meta">
                 <span class="hint-label">Podpowiedzi za 💎</span>
-                <span class="hint-cost">Odsłoń jedną literę za 3 diamenty.</span>
-                <span class="hint-balance">
-                  Twoje 💎:
-                  <span id="coins-balance">–</span>
+                <span class="hint-cost">
+                  Odsłoń jedną literę za 3 diamenty. Stan konta zobaczysz w
+                  górnym pasku.
                 </span>
               </div>
               <button id="hint-btn" class="arcade-btn btn-secondary">
@@ -115,7 +114,7 @@
           <p>
             Sterowanie: klawiatura fizyczna lub dotykowa poniżej. Masz 6 prób
             na odgadnięcie słowa. Wygrywając, zdobywasz diamenty 💎, które możesz
-            wydać na podpowiedzi.
+            wydać na podpowiedzi (stan konta w górnym pasku).
           </p>
         </footer>
       </div>
