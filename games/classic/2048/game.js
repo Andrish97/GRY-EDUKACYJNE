@@ -10,6 +10,7 @@ let grid = [];
 let score = 0;
 let bestScore = 0;
 let totalGames = 0;
+let sessionCoins = 0;
 
 let hasUnsavedChanges = false;
 let LAST_SAVE_DATA = null;
@@ -316,10 +317,18 @@ function checkGameOver() {
     // koniec gry
     totalGames += 1;
     hasUnsavedChanges = true;
+
+    // prosty przelicznik: 1 moneta za ukończoną grę + bonus za wysoki wynik
+    const base = 1;
+    const bonus = Math.floor(score / 256); // np. 1 moneta co 256 punktów
+    const coinsToAdd = base + bonus;
+    awardCoins(coinsToAdd, "game_over");
+
     showOverlay();
     updateUI();
   }
 }
+
 
 // ------------------------------------------------------
 // Widok planszy
@@ -624,6 +633,39 @@ function restoreLastRunIfAvailable() {
   updateBoardView();
   return true;
 }
+
+function awardCoins(amount, reason) {
+  const n = Math.floor(Number(amount) || 0);
+  if (n <= 0) return;
+
+  sessionCoins += n;
+
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) {
+    console.warn(
+      "[2048] ArcadeCoins niedostępne – przyznano tylko lokalnie:",
+      n
+    );
+    return;
+  }
+
+  ArcadeCoins.addForGame(GAME_ID, n, {
+    reason: reason || "game_event",
+    score,
+    timestamp: Date.now(),
+  })
+    .then((newBalance) => {
+      console.log(
+        "[2048] Przyznano monety:",
+        n,
+        "Nowe saldo:",
+        newBalance
+      );
+    })
+    .catch((err) => {
+      console.error("[2048] Błąd przyznawania monet:", err);
+    });
+}
+
 
 // ------------------------------------------------------
 // Guardy: niezapisany postęp
