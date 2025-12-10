@@ -10,6 +10,7 @@
     0 0 0 1px rgba(148, 163, 184, 0.14);
   color: #e5e7eb;
   backdrop-filter: blur(10px);
+  min-height: calc(100vh - 80px); /* dopasowanie do wysokości okna */
 }
 
 /* Nagłówek */
@@ -248,7 +249,7 @@
   }
 }
 
-/* RWD – wysokość: dostosowanie do niższych ekranów */
+/* RWD – wysokość: dopasowanie do niższych ekranów */
 
 @media (max-height: 720px) {
   .game-root {
