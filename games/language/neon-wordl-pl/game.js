@@ -3,7 +3,7 @@ const GAME_ID = "neon-wordl-pl";
 const DICT_URL =
   "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/pl/pl_full.txt";
 const MAX_ROWS = 6;
-const HINT_COST = 3; // koszt jednej podpowiedzi w 💎
+const HINT_COST = 5; // koszt jednej podpowiedzi w 💎
 
 let allWords = [];
 let validWords = [];
