@@ -2,6 +2,10 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>Neon Arcade</title>
 
     <link rel="stylesheet" href="css/theme.css" />
@@ -17,13 +21,14 @@
     <script src="js/core/auth.js" defer></script>
     <script src="js/core/auth-bar.js" defer></script>
     <script src="js/core/progress.js" defer></script>
-    <script src="js/core/ui.js" defer></script>
     <script src="js/core/coins.js" defer></script>
+    <script src="js/core/ui.js" defer></script>
 
     <!-- Logika arcade -->
     <script src="js/pages/arcade.js" defer></script>
   </head>
   <body class="arcade-body">
+    <!-- Pasek logowania -->
     <div
       data-arcade-auth-bar
       data-after-login="arcade.html"
@@ -36,15 +41,17 @@
         <p class="arcade-subtitle">
           Wybierz kategorię z zakładek i zagraj w jedną z gier.
         </p>
-        <div class="arcade-wallet" id="arcade-wallet">
-        <span class="arcade-wallet-label">Monety:</span>
-        <span id="arcade-wallet-balance">–</span>
-        <span id="arcade-wallet-guest-hint" class="arcade-wallet-guest-hint" hidden>
-          Zaloguj się, aby zdobywać monety
-        </span>
-      </div>
 
+        <!-- Pasek monet -->
+        <div class="arcade-wallet">
+          <span class="arcade-wallet-label">Monety:</span>
+          <span id="arcade-wallet-balance">–</span>
+          <span id="arcade-wallet-guest-hint" hidden>
+            Zaloguj się, aby zdobywać monety
+          </span>
+        </div>
       </header>
+
       <!-- Zakładki kategorii -->
       <section class="arcade-section">
         <h2 class="arcade-section-title">Kategorie</h2>
@@ -52,21 +59,14 @@
       </section>
 
       <!-- Gry w wybranej kategorii -->
-      <section class="arcade-section games-section" id="games-section" hidden>
-        <div class="games-header">
-          <button
-            id="back-to-categories"
-            class="back-to-categories-btn"
-            type="button"
-          >
-            ← Wszystkie kategorie
-          </button>
-          <h2 id="games-section-title" class="arcade-section-title"></h2>
-        </div>
-
+      <section class="arcade-section games-section" id="games-section">
+        <h2 id="games-section-title" class="arcade-section-title">
+          Gry
+        </h2>
         <div id="games"></div>
       </section>
 
+      <!-- Błędy i stan ładowania -->
       <div id="arcade-error" data-arcade-error style="display:none"></div>
       <div id="arcade-loading" data-arcade-wait style="display:none">
         Ładowanie gier…
@@ -74,6 +74,3 @@
     </main>
   </body>
 </html>
-
-
-
