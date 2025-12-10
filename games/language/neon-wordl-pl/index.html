@@ -4,29 +4,23 @@
     <meta charset="UTF-8" />
     <title>Neon Wordl PL – Neon Arcade</title>
 
-    <!-- Motyw globalny -->
     <link rel="stylesheet" href="../../../css/theme.css" />
-    <!-- Styl gry -->
     <link rel="stylesheet" href="game.css" />
 
-    <!-- Supabase – musi być przed auth.js -->
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
       defer
     ></script>
 
-    <!-- Core -->
     <script src="../../../js/core/auth.js" defer></script>
     <script src="../../../js/core/progress.js" defer></script>
     <script src="../../../js/core/coins.js" defer></script>
     <script src="../../../js/core/auth-bar.js" defer></script>
     <script src="../../../js/core/ui.js" defer></script>
 
-    <!-- Logika gry -->
     <script src="game.js" defer></script>
   </head>
   <body class="arcade-body arcade-game-page">
-    <!-- Pasek logowania (z globalnym licznikiem 💎) -->
     <div
       data-arcade-auth-bar
       data-after-login="../../../arcade.html"
