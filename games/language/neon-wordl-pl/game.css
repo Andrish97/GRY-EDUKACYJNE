@@ -100,6 +100,40 @@
   white-space: nowrap;
 }
 
+/* ===== PANEL PODPOWIEDZI ===== */
+
+.hint-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.hint-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-end;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.hint-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: #e5e7eb;
+}
+
+.hint-cost {
+  font-size: 0.8rem;
+}
+
+.hint-balance {
+  font-size: 0.8rem;
+}
+
 /* Na węższych ekranach – wrap + pełna szerokość */
 
 @media (max-width: 640px) {
@@ -111,6 +145,15 @@
   .controls-panel .arcade-btn {
     flex: 1 1 100%;
     max-width: none;
+  }
+
+  .hint-panel {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .hint-meta {
+    align-items: flex-start;
   }
 }
 
@@ -200,12 +243,19 @@
   color: #64748b;
 }
 
-/* ===== STATUS ===== */
+/* ===== STATUS / PODPOWIEDŹ ===== */
 
 .status-text {
   min-height: 1.1rem;
   font-size: 0.85rem;
   color: #9ca3af;
+  text-align: center;
+}
+
+.hint-text {
+  min-height: 1.1rem;
+  font-size: 0.85rem;
+  color: #a5b4fc; /* delikatny fiolet, żeby odróżnić od statusu */
   text-align: center;
 }
 
