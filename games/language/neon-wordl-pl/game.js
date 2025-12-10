@@ -331,8 +331,7 @@ async function useHint() {
   }
 
   if (!canUseCoins()) {
-    statusEl.textContent =
-      "Podpowiedzi za diamenty są dostępne tylko dla zalogowanych.";
+    statusEl.textContent = "Podpowiedzi za diamenty są dostępne tylko dla zalogowanych.";
     return;
   }
 
@@ -340,55 +339,57 @@ async function useHint() {
   statusEl.textContent = "";
 
   try {
+    // 1. Pobierz saldo
     const balance = await ArcadeCoins.getBalance();
-    if (typeof balance !== "number" || balance < HINT_COST) {
-      statusEl.textContent =
-        "Za mało diamentów na podpowiedź (koszt: 5💎). Zdobądź je, wygrywając gry.";
+
+    if (typeof balance !== "number") {
+      statusEl.textContent = "Nie udało się pobrać ilości diamentów.";
       hintBtn.disabled = false;
       return;
     }
 
-    // znajdź pozycję, której jeszcze nie podpowiadaliśmy
-    const candidates = [];
-    for (let i = 0; i < wordLength; i++) {
-      if (!usedHintPositions.has(i)) {
-        candidates.push(i);
-      }
-    }
-
-    if (!candidates.length) {
-      statusEl.textContent =
-        "Wykorzystałeś wszystkie podpowiedzi dla tego słowa.";
+    if (balance < HINT_COST) {
+      statusEl.textContent = "Za mało diamentów! Potrzebujesz minimum 5.";
       hintBtn.disabled = false;
       return;
     }
 
-    const pos =
-      candidates[Math.floor(Math.random() * candidates.length)];
-    usedHintPositions.add(pos);
+    // 2. Odejmij lokalnie
+    const newBalance = balance - HINT_COST;
 
-    const letter = secret[pos].toUpperCase();
+    // 3. Zapisz nowe saldo
+    // 🔥 jeżeli masz inną funkcję niż setBalance – podmień tutaj!
+    await ArcadeCoins.setBalance(newBalance);
 
-    // >>> tu próbujemy ODJĄĆ 5 diamentów <<<
-    await ArcadeCoins.addForGame(GAME_ID, -HINT_COST, {
-      reason: "hint",
-      position: pos,
-      letter: secret[pos],
-    });
-
+    // 4. Odśwież UI monet
     if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
       ArcadeAuthUI.refreshCoins();
     }
 
-    if (hintTextEl) {
-      hintTextEl.textContent = `Podpowiedź: na pozycji ${
-        pos + 1
-      } jest litera ${letter}. (-5💎)`;
+    // 5. Wygeneruj podpowiedź
+    const candidates = [];
+    for (let i = 0; i < wordLength; i++) {
+      if (!usedHintPositions.has(i)) candidates.push(i);
     }
+
+    if (!candidates.length) {
+      statusEl.textContent = "Wykorzystałeś już wszystkie podpowiedzi!";
+      hintBtn.disabled = false;
+      return;
+    }
+
+    const pos = candidates[Math.floor(Math.random() * candidates.length)];
+    usedHintPositions.add(pos);
+
+    const letter = secret[pos].toUpperCase();
+
+    if (hintTextEl) {
+      hintTextEl.textContent = `Podpowiedź: litera ${letter} na pozycji ${pos + 1}. (-${HINT_COST}💎)`;
+    }
+
   } catch (err) {
-    console.error("[WORDL] błąd podpowiedzi:", err);
-    statusEl.textContent =
-      "Nie udało się użyć podpowiedzi. Sprawdź połączenie lub stan konta.";
+    console.error("[WORDL] Błąd podpowiedzi:", err);
+    statusEl.textContent = "Nie udało się użyć podpowiedzi.";
   } finally {
     hintBtn.disabled = false;
   }
