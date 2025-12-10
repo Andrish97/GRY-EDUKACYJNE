@@ -267,3 +267,27 @@
   font-size: 0.9rem;
   color: #fecaca;
 }
+
+.auth-bar-coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.auth-bar-coins-label {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.auth-bar-coins-value {
+  font-weight: 600;
+}
+
+.auth-bar-coins-hint {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
