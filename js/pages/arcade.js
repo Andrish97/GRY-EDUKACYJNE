@@ -330,5 +330,13 @@
   document.addEventListener("DOMContentLoaded", function () {
     setupBackButton();
     loadCategories();
-  });
-})();
+    
+  if (window.ArcadeCoins && ArcadeCoins.load) {
+    ArcadeCoins.load().then(function (balance) {
+      const el = document.getElementById("arcade-wallet-balance");
+      if (el) {
+        el.textContent = balance.toString();
+      }
+    });
+  }
+});
