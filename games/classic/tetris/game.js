@@ -1,4 +1,4 @@
-const GAME_ID = "neon-tetris";
+const GAME_ID = "tetris";
 
 let hasUnsavedChanges = false;
 let LAST_SAVE_DATA = null;
