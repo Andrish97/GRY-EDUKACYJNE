@@ -208,6 +208,9 @@ window.ArcadeAuthUI = {
     var onLogout = opts.onLogout || null;
     var onGuest = opts.onGuest || null;
 
+    var coins = opts.coins || null;
+    var coinsHint = opts.coinsHint || null;
+
     if (!email || !pass || !status || !btnLogin || !btnRegister) {
       console.error("[ArcadeAuthUI] brak wymaganych elementów w panelu");
       return;
