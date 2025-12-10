@@ -657,17 +657,17 @@ function awardCoins(amount, reason) {
       console.log(
         "[2048] Przyznano monety:",
         n,
-        "Nowe saldo:",
+        "Nowe saldo w portfelu:",
         newBalance
       );
-          var coinsEl = document.querySelector(".auth-coins");
-          var hintEl = document.querySelector(".auth-coins-hint");
-          if (coinsEl) {
-            coinsEl.textContent = "Monety: " + newBalance;
-          }
-          if (hintEl) {
-            hintEl.style.display = "none";
-          }
+
+      // odśwież pasek, jeśli jest
+      if (
+        window.ArcadeAuthUI &&
+        typeof ArcadeAuthUI.refreshCoins === "function"
+      ) {
+        ArcadeAuthUI.refreshCoins();
+      }
     })
     .catch((err) => {
       console.error("[2048] Błąd przyznawania monet:", err);
