@@ -1,16 +1,13 @@
-// games/language/znajdz-slowo/game.js
 
 const GAME_ID = "znajdz-slowo";
-
-let hasUnsavedChanges = false;
-let LAST_SAVE_DATA = null;
-
-// Stałe gry
 const QUESTIONS_PER_LEVEL = 6;
 
-// Definicje światów / rund – 1:1 z poprzednią wersją
+// =========================
+// ŚWIATY / PYTANIA
+// =========================
+
 const WORLDS = [
-  {
+{
     id: "animals",
     name: "Zwierzęta",
     icon: "🐾",
@@ -233,8 +230,28 @@ const levelCompleteMessages = [
   "Brawo! Czas na kolejny poziom."
 ];
 
-// Stan dynamiczny
-let unlockedWorlds = 1;
+// =========================
+// DOM
+// =========================
+
+let worldsRow;
+let emojiEl;
+let choicesEl;
+let scoreEl;
+let messageEl;
+let nextBtn;
+let cardEl;
+let streakEl;
+let progressBar;
+let worldNameLabel;
+let hintEl;
+let resetProgressBtn;
+
+// =========================
+// STAN GRY
+// =========================
+
+let unlockedWorlds = 1; // na start tylko Zwierzęta
 let currentWorldIndex = 0;
 let currentRound = null;
 let answered = false;
@@ -243,31 +260,9 @@ let streak = 0;
 let bestStreakCurrentWorld = 0;
 let questionInWorld = 0;
 
-// DOM
-let worldsRow;
-let emojiEl;
-let choicesEl;
-let messageEl;
-let nextBtn;
-let cardEl;
-let streakEl;
-let progressBar;
-let worldNameLabel;
-let hintEl;
-let scoreEl;
-let unlockedWorldsLabel;
-let questionCounterEl;
-let questionsPerLevelLabel;
-
-// Helpers
-
-function $(selector) {
-  return document.querySelector(selector);
-}
-
-function markDirty() {
-  hasUnsavedChanges = true;
-}
+// =========================
+// HELPERY
+// =========================
 
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -281,202 +276,118 @@ function randomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-// ArcadeProgress – integracja
-
-function buildSavePayload() {
-  return {
-    unlockedWorlds,
-    currentWorldIndex,
-    score,
-    streak,
-    bestStreakCurrentWorld,
-    questionInWorld
-  };
+function clampWorldIndex(idx) {
+  if (idx < 0) return 0;
+  if (idx >= WORLDS.length) return WORLDS.length - 1;
+  return idx;
 }
 
-function applyLoadedState(data) {
-  if (!data) return;
-
-  if (typeof data.unlockedWorlds === "number") {
-    unlockedWorlds = Math.min(Math.max(1, data.unlockedWorlds), WORLDS.length);
-  }
-  if (typeof data.currentWorldIndex === "number") {
-    currentWorldIndex = Math.min(
-      Math.max(0, data.currentWorldIndex),
-      WORLDS.length - 1
-    );
-  }
-  if (typeof data.score === "number") {
-    score = data.score;
-  }
-  if (typeof data.streak === "number") {
-    streak = data.streak;
-  }
-  if (typeof data.bestStreakCurrentWorld === "number") {
-    bestStreakCurrentWorld = data.bestStreakCurrentWorld;
-  }
-  if (typeof data.questionInWorld === "number") {
-    questionInWorld = data.questionInWorld;
-  }
-
-  LAST_SAVE_DATA = data;
-  hasUnsavedChanges = false;
-}
+// =========================
+// ARCADE PROGRESS (minimalny)
+// =========================
 
 function loadProgress() {
   if (!window.ArcadeProgress || !ArcadeProgress.load) {
-    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.load – lecimy bez chmury");
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.load");
     return Promise.resolve();
   }
 
   return ArcadeProgress.load(GAME_ID)
-    .then(function (data) {
-      applyLoadedState(data);
-    })
-    .catch(function (err) {
-      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd load:", err);
-    });
-}
+    .then((data) => {
+      if (!data) return;
 
-function saveCurrentSession() {
-  if (!window.ArcadeProgress || !ArcadeProgress.save) {
-    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.save");
-    return Promise.resolve();
-  }
-
-  const payload = buildSavePayload();
-
-  return ArcadeProgress.save(GAME_ID, payload)
-    .then(function () {
-      LAST_SAVE_DATA = payload;
-      hasUnsavedChanges = false;
-      console.log("[ZnajdzSlowo]", GAME_ID, "zapisano:", payload);
-    })
-    .catch(function (err) {
-      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd save:", err);
-    });
-}
-
-function clearProgress() {
-  if (!window.ArcadeProgress || !ArcadeProgress.clear) {
-    console.warn("[ZnajdzSlowo]", GAME_ID, "Brak ArcadeProgress.clear");
-    return Promise.resolve();
-  }
-
-  return ArcadeProgress.clear(GAME_ID)
-    .then(function () {
-      LAST_SAVE_DATA = null;
-      hasUnsavedChanges = false;
-
-      // pełny reset stanu gry
-      unlockedWorlds = 1;
-      currentWorldIndex = 0;
-      score = 0;
-      streak = 0;
-      bestStreakCurrentWorld = 0;
-      questionInWorld = 0;
-
-      updateScoreUI();
-      updateStreakDisplay();
-      updateProgress();
-      buildWorldButtons();
-      loadWorldInfo();
-      loadRound();
-
-      console.log("[ZnajdzSlowo]", GAME_ID, "progress wyczyszczony");
-    })
-    .catch(function (err) {
-      console.error("[ZnajdzSlowo]", GAME_ID, "Błąd clear:", err);
-    });
-}
-
-// Guardy "niezapisane zmiany"
-
-function setupBeforeUnloadGuard() {
-  window.addEventListener("beforeunload", function (e) {
-    if (!hasUnsavedChanges) return;
-    e.preventDefault();
-    e.returnValue = "";
-    return "";
-  });
-}
-
-function setupClickGuard() {
-  document.addEventListener("click", function (e) {
-    if (!hasUnsavedChanges) return;
-
-    const target = e.target.closest("a,button");
-    if (!target) return;
-
-    const href = target.getAttribute("href");
-    const isReturnToArcade =
-      (href && href.indexOf("arcade.html") !== -1) ||
-      target.classList.contains("arcade-back-btn");
-
-    if (isReturnToArcade) {
-      const ok = window.confirm(
-        "Masz niezapisany postęp. Wyjść bez zapisywania?"
-      );
-      if (!ok) {
-        e.preventDefault();
-        e.stopPropagation();
+      if (typeof data.unlockedWorlds === "number") {
+        unlockedWorlds = Math.max(1, Math.min(WORLDS.length, data.unlockedWorlds));
       }
-    }
+      if (typeof data.currentWorldIndex === "number") {
+        currentWorldIndex = clampWorldIndex(data.currentWorldIndex);
+      }
+      if (typeof data.score === "number") {
+        score = data.score;
+      }
+    })
+    .catch((err) => {
+      console.error("[ZnajdzSlowo] Błąd load:", err);
+    });
+}
+
+function saveProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.save) {
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.save");
+    return;
+  }
+
+  const payload = {
+    unlockedWorlds,
+    currentWorldIndex,
+    score
+  };
+
+  ArcadeProgress.save(GAME_ID, payload).catch((err) => {
+    console.error("[ZnajdzSlowo] Błąd save:", err);
   });
 }
 
-// UI
+// =========================
+// MONETY (ArcadeCoins)
+// =========================
+
+function awardCoins(amount, reason) {
+  const delta = Math.floor(amount);
+  if (!Number.isFinite(delta) || delta <= 0) return;
+
+  if (window.ArcadeCoins && ArcadeCoins.addForGame) {
+    ArcadeCoins.addForGame(GAME_ID, delta, { reason })
+      .then(() => {
+        if (window.ArcadeAuthUI && ArcadeAuthUI.refreshCoins) {
+          ArcadeAuthUI.refreshCoins();
+        }
+      })
+      .catch((err) => {
+        console.warn("[ZnajdzSlowo] Nie udało się dodać monet:", err);
+      });
+  }
+}
+
+// =========================
+// UI UPDATE
+// =========================
 
 function updateScoreUI() {
   if (scoreEl) {
-    scoreEl.textContent = String(score);
-  }
-  if (unlockedWorldsLabel) {
-    unlockedWorldsLabel.textContent = unlockedWorlds + " / " + WORLDS.length;
+    scoreEl.textContent = "Punkty: " + score;
   }
 }
 
 function updateStreakDisplay() {
-  if (streakEl) {
-    streakEl.textContent = streak;
-  }
+  streakEl.textContent = streak;
   const streakInfo = document.querySelector(".streak-info");
-  if (streakInfo) {
-    if (streak >= 3) {
-      streakInfo.classList.add("streak-highlight");
-    } else {
-      streakInfo.classList.remove("streak-highlight");
-    }
+  if (!streakInfo) return;
+  if (streak >= 3) {
+    streakInfo.classList.add("streak-highlight");
+  } else {
+    streakInfo.classList.remove("streak-highlight");
   }
 }
 
 function updateProgress() {
-  if (!progressBar) return;
   const progress = (questionInWorld / QUESTIONS_PER_LEVEL) * 100;
   progressBar.style.width = progress + "%";
-  if (questionCounterEl) {
-    questionCounterEl.textContent = questionInWorld.toString();
-  }
-  if (questionsPerLevelLabel) {
-    questionsPerLevelLabel.textContent = QUESTIONS_PER_LEVEL.toString();
-  }
 }
 
 function loadWorldInfo() {
   const world = WORLDS[currentWorldIndex];
-  if (worldNameLabel) {
-    worldNameLabel.textContent = "Świat: " + world.name;
-  }
-  if (hintEl) {
-    hintEl.textContent = world.hint;
-  }
+  worldNameLabel.textContent = "Świat: " + world.name;
+  hintEl.textContent = world.hint;
   updateProgress();
 }
 
-function buildWorldButtons() {
-  if (!worldsRow) return;
-  worldsRow.innerHTML = "";
+// =========================
+// ŚWIATY
+// =========================
 
+function buildWorldButtons() {
+  worldsRow.innerHTML = "";
   WORLDS.forEach((world, index) => {
     const btn = document.createElement("button");
     btn.className = "world-btn";
@@ -488,11 +399,7 @@ function buildWorldButtons() {
     }
     btn.dataset.index = index;
 
-    // ⬇️ TUTAJ: tylko emotka, bez nazwy
-    const iconSpan = document.createElement("span");
-    iconSpan.className = "world-icon";
-    iconSpan.textContent = world.icon;
-    btn.appendChild(iconSpan);
+    btn.textContent = world.icon;
 
     btn.addEventListener("click", () => {
       if (index >= unlockedWorlds) {
@@ -506,11 +413,10 @@ function buildWorldButtons() {
         bestStreakCurrentWorld = 0;
         questionInWorld = 0;
         updateStreakDisplay();
-        updateProgress();
         loadWorldInfo();
         loadRound();
         buildWorldButtons();
-        markDirty();
+        saveProgress();
       }
     });
 
@@ -518,8 +424,9 @@ function buildWorldButtons() {
   });
 }
 
-
-// Rundy
+// =========================
+// RUNDA
+// =========================
 
 function pickRandomRoundFromWorld(world) {
   return world.rounds[Math.floor(Math.random() * world.rounds.length)];
@@ -527,18 +434,16 @@ function pickRandomRoundFromWorld(world) {
 
 function loadRound() {
   answered = false;
-  if (messageEl) messageEl.textContent = "";
-
+  messageEl.textContent = "";
   const world = WORLDS[currentWorldIndex];
-  currentRound = pickRandomRoundFromWorld(world);
 
-  if (emojiEl) emojiEl.textContent = currentRound.emoji;
+  currentRound = pickRandomRoundFromWorld(world);
+  emojiEl.textContent = currentRound.emoji;
 
   const options = shuffle([currentRound.correct, ...currentRound.others]);
-  if (!choicesEl) return;
   choicesEl.innerHTML = "";
 
-  options.forEach(word => {
+  options.forEach((word) => {
     const btn = document.createElement("button");
     btn.textContent = word;
     btn.className = "choice-btn";
@@ -550,7 +455,6 @@ function loadRound() {
 
   updateProgress();
   updateStreakDisplay();
-  updateScoreUI();
 }
 
 function handleChoice(button, isCorrect) {
@@ -558,7 +462,7 @@ function handleChoice(button, isCorrect) {
   answered = true;
 
   const allButtons = document.querySelectorAll(".choice-btn");
-  allButtons.forEach(b => b.classList.add("disabled"));
+  allButtons.forEach((b) => b.classList.add("disabled"));
 
   if (isCorrect) {
     button.classList.add("correct");
@@ -567,26 +471,28 @@ function handleChoice(button, isCorrect) {
 
     streak++;
     bestStreakCurrentWorld = Math.max(bestStreakCurrentWorld, streak);
+
     const bonus = streak >= 3 ? 1 : 0;
     score += 1 + bonus;
     updateScoreUI();
     updateStreakDisplay();
-    markDirty();
+
+    // +1 za poprawną odpowiedź (+bonus nie wpływa na monety, ale możesz to zmienić)
+    awardCoins(1, "correct-answer");
+
+    saveProgress();
   } else {
     button.classList.add("wrong");
     const msg = randomItem(wrongMessages);
     messageEl.textContent = msg;
     streak = 0;
     updateStreakDisplay();
-    markDirty();
 
-    if (cardEl) {
-      cardEl.classList.remove("shake");
-      void cardEl.offsetWidth;
-      cardEl.classList.add("shake");
-    }
+    cardEl.classList.remove("shake");
+    void cardEl.offsetWidth;
+    cardEl.classList.add("shake");
 
-    allButtons.forEach(b => {
+    allButtons.forEach((b) => {
       if (b.textContent === currentRound.correct) {
         b.classList.add("correct");
       }
@@ -594,33 +500,39 @@ function handleChoice(button, isCorrect) {
   }
 }
 
+// =========================
+// POZIOM / ŚWIAT
+// =========================
+
 function completeWorldIfNeeded() {
   if (questionInWorld >= QUESTIONS_PER_LEVEL) {
     const msg = randomItem(levelCompleteMessages);
     messageEl.textContent =
-      msg +
-      " (Najlepsza seria w tym świecie: " +
-      bestStreakCurrentWorld +
-      ")";
-
+      msg + " (Najlepsza seria w tym świecie: " + bestStreakCurrentWorld + ")";
     questionInWorld = 0;
     bestStreakCurrentWorld = 0;
     streak = 0;
     updateStreakDisplay();
 
-    if (
-      unlockedWorlds < WORLDS.length &&
-      currentWorldIndex === unlockedWorlds - 1
-    ) {
+    // +5 za ukończenie poziomu
+    awardCoins(5, "level-complete");
+
+    if (unlockedWorlds < WORLDS.length && currentWorldIndex === unlockedWorlds - 1) {
       unlockedWorlds++;
       messageEl.textContent += " Nowy świat odblokowany!";
+
+      // +10 za odblokowanie świata
+      awardCoins(10, "world-unlock");
     }
 
-    markDirty();
+    saveProgress();
     buildWorldButtons();
-    updateScoreUI();
   }
 }
+
+// =========================
+// NAVIGACJA RUND
+// =========================
 
 function nextRound() {
   if (!answered) {
@@ -633,97 +545,77 @@ function nextRound() {
   completeWorldIfNeeded();
 
   const allButtons = document.querySelectorAll(".choice-btn");
-  allButtons.forEach(b =>
+  allButtons.forEach((b) =>
     b.classList.remove("correct", "wrong", "disabled")
   );
-  if (cardEl) {
-    cardEl.classList.remove("shake");
-  }
+  cardEl.classList.remove("shake");
   loadRound();
 }
 
-// Przyciski: Nowa gra / Zapisz / Reset
+// =========================
+// RESET PROGRESU
+// =========================
 
-function attachEvents() {
-  const newGameBtn = $("#new-game-btn");
-  const saveGameBtn = $("#save-game-btn");
-  const resetRecordBtn = $("#reset-record-btn");
+function attachResetProgress() {
+  if (!resetProgressBtn) return;
+  resetProgressBtn.addEventListener("click", () => {
+    const ok = window.confirm(
+      "Na pewno chcesz wyczyścić postęp w tej grze? Odblokowane światy i punkty zostaną zresetowane, monety zostają."
+    );
+    if (!ok) return;
 
-  if (nextBtn) {
-    nextBtn.addEventListener("click", nextRound);
-  }
+    unlockedWorlds = 1;
+    currentWorldIndex = 0;
+    score = 0;
+    streak = 0;
+    bestStreakCurrentWorld = 0;
+    questionInWorld = 0;
 
-  if (newGameBtn) {
-    newGameBtn.addEventListener("click", function () {
-      const ok =
-        !hasUnsavedChanges ||
-        window.confirm(
-          "Rozpocząć nową grę? Aktualny postęp tej rozgrywki nie zostanie zapisany."
-        );
-      if (!ok) return;
+    updateScoreUI();
+    updateStreakDisplay();
+    loadWorldInfo();
+    buildWorldButtons();
+    loadRound();
 
-      unlockedWorlds = 1;
-      currentWorldIndex = 0;
-      score = 0;
-      streak = 0;
-      bestStreakCurrentWorld = 0;
-      questionInWorld = 0;
-
-      updateScoreUI();
-      updateStreakDisplay();
-      updateProgress();
-      buildWorldButtons();
-      loadWorldInfo();
-      loadRound();
-
-      hasUnsavedChanges = true;
-    });
-  }
-
-  if (saveGameBtn) {
-    saveGameBtn.addEventListener("click", function () {
-      saveCurrentSession();
-    });
-  }
-
-  if (resetRecordBtn) {
-    resetRecordBtn.addEventListener("click", function () {
-      const ok = window.confirm(
-        "Na pewno chcesz całkowicie wyczyścić postęp w tej gry?"
-      );
-      if (!ok) return;
-      clearProgress();
-    });
-  }
+    if (window.ArcadeProgress && ArcadeProgress.clear) {
+      ArcadeProgress.clear(GAME_ID).catch((err) => {
+        console.error("[ZnajdzSlowo] Błąd clear:", err);
+      });
+    }
+  });
 }
 
-// Init
+// =========================
+// INIT
+// =========================
 
-function initGame() {
-  // Złapanie DOM
+async function initZnajdzSlowo() {
+  // DOM
   worldsRow = document.getElementById("worldsRow");
   emojiEl = document.getElementById("emoji");
   choicesEl = document.getElementById("choices");
+  scoreEl = document.getElementById("score");
   messageEl = document.getElementById("message");
   nextBtn = document.getElementById("next");
-  cardEl = document.querySelector(".game-root");
+  cardEl = document.querySelector(".znajdz-slowo-card");
   streakEl = document.getElementById("streak");
   progressBar = document.getElementById("progressBar");
   worldNameLabel = document.getElementById("worldNameLabel");
   hintEl = document.getElementById("hint");
-  scoreEl = document.getElementById("score");
-  unlockedWorldsLabel = document.getElementById("unlocked-worlds-label");
-  questionCounterEl = document.getElementById("question-counter");
-  questionsPerLevelLabel = document.getElementById("questions-per-level-label");
+  resetProgressBtn = document.getElementById("resetProgress");
 
   if (
-    !cardEl ||
     !worldsRow ||
     !emojiEl ||
     !choicesEl ||
+    !scoreEl ||
     !messageEl ||
     !nextBtn ||
-    !scoreEl
+    !cardEl ||
+    !streakEl ||
+    !progressBar ||
+    !worldNameLabel ||
+    !hintEl
   ) {
     console.error(
       "[ZnajdzSlowo] Brak wymaganych elementów DOM – sprawdź index.html gry."
@@ -731,23 +623,24 @@ function initGame() {
     return;
   }
 
-  loadProgress().then(function () {
-    updateScoreUI();
-    updateStreakDisplay();
-    updateProgress();
-    buildWorldButtons();
-    loadWorldInfo();
-    loadRound();
-    attachEvents();
-    setupBeforeUnloadGuard();
-    setupClickGuard();
+  await loadProgress();
 
-    if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
-      ArcadeUI.addBackToArcadeButton({
-        backUrl: "../../../arcade.html"
-      });
-    }
-  });
+  updateScoreUI();
+  updateStreakDisplay();
+  buildWorldButtons();
+  loadWorldInfo();
+  loadRound();
+
+  nextBtn.addEventListener("click", nextRound);
+  attachResetProgress();
+
+  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
+    ArcadeUI.addBackToArcadeButton({
+      backUrl: "../../../arcade.html"
+    });
+  }
 }
 
-document.addEventListener("DOMContentLoaded", initGame);
+document.addEventListener("DOMContentLoaded", initZnajdzSlowo);
+
+
