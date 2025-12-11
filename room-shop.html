@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neon Arcade – Sklep pokoju</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- globalny motyw -->
+    <link rel="stylesheet" href="css/theme.css" />
+    <!-- styl sklepu -->
+    <link rel="stylesheet" href="css/room-shop.css" />
+
+    <!-- supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+
+    <!-- core Neon Arcade -->
+    <script src="js/core/auth.js" defer></script>
+    <script src="js/core/progress.js" defer></script>
+    <script src="js/core/coins.js" defer></script>
+    <script src="js/core/auth-bar.js" defer></script>
+    <script src="js/core/ui.js" defer></script>
+    <script src="js/core/room-api.js" defer></script>
+
+    <!-- logika sklepu -->
+    <script src="js/pages/room-shop.js" defer></script>
+  </head>
+  <body>
+    <div data-arcade-auth-bar data-after-login="room-shop.html"></div>
+
+    <main class="room-shop-page">
+      <header class="room-shop-header">
+        <div class="room-shop-header-left">
+          <h1 class="room-shop-title">Sklep pokoju</h1>
+          <p class="room-shop-subtitle">
+            Kupuj meble, trofea i style. Odblokowane przedmioty możesz dodawać do pokoju.
+          </p>
+        </div>
+
+        <div class="room-shop-header-right">
+          <div class="room-shop-balance">
+            <span>Twoje 💎:</span>
+            <strong id="shop-balance">–</strong>
+          </div>
+          <button id="shop-btn-back-room" class="room-shop-btn">
+            Do pokoju
+          </button>
+        </div>
+      </header>
+
+      <section class="room-shop-layout">
+        <aside class="room-shop-categories">
+          <h2 class="room-shop-section-title">Kategorie</h2>
+          <div id="shop-categories" class="room-shop-category-list"></div>
+        </aside>
+
+        <section class="room-shop-items">
+          <div class="room-shop-items-header">
+            <h2 id="shop-items-title" class="room-shop-section-title">Przedmioty</h2>
+          </div>
+          <div id="shop-item-list" class="room-shop-item-list"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
