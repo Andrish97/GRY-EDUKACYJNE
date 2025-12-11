@@ -1,0 +1,22 @@
+{
+  "id": "trophy_gold",
+  "name": "Złote trofeum",
+  "categoryId": "trophies",
+  "price": null,
+  "maxLevel": 3,
+  "source": "game",
+  "art": {
+    "width": 40,
+    "height": 60,
+    "anchor": {
+      "attachment": "surface",
+      "x": 0.5,
+      "y": 1.0
+    }
+  },
+  "placement": {
+    "allowedAttachments": ["surface"],
+    "preferredParentsPrefix": ["sofa_", "shelf_", "desk_"],
+    "canBeParentSurface": false
+  }
+}
