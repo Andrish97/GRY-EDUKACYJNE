@@ -1,20 +1,12 @@
-// -------------------------------------------------------------
-// Znajdź Słowo – Neon Arcade 2025
-// -------------------------------------------------------------
-// Funkcje:
-// - minimalny progres (opcje A)
-// - monety: +1 poprawna, +5 koniec poziomu, +10 odblokowanie świata
-// - podpowiedź za 5 diamentów
-// - integracja z ArcadeCoins, ArcadeProgress, ArcadeUI
-// -------------------------------------------------------------
-
 const GAME_ID = "znajdz-slowo";
+const QUESTIONS_PER_LEVEL = 6;
 
-// -------------------------------
-// Światy gry + pytania
-// -------------------------------
+// ======================================
+// ŚWIATY – TWOJA PEŁNA KONFIGURACJA
+// ======================================
+
 const WORLDS = [
-   {
+  {
     id: "animals",
     name: "Zwierzęta",
     icon: "🐾",
@@ -215,290 +207,531 @@ const WORLDS = [
   }
 ];
 
-let progress = {
-  unlockedWorlds: 1,
-  currentWorld: 0,
-  score: 0
-};
+const goodMessages = [
+  "Brawo! Czytasz jak mistrz.",
+  "Super! Twoje oczy są szybkie jak laser.",
+  "Tak jest! Świetnie dopasowane słowo.",
+  "Pięknie! Litery chyba cię lubią. 😊",
+  "Ekstra! Kolejny dobry wybór.",
+  "Świetnie! Ten świat coraz łatwiejszy."
+];
 
-let streak = 0;
-let currentWorld = 0;
-let roundIndex = 0;
+const wrongMessages = [
+  "Prawie! Zwróć uwagę na pierwszą literę.",
+  "Spróbuj inaczej: popatrz na koniec słowa.",
+  "Nie szkodzi. Przeczytaj powoli wszystkie wyrazy.",
+  "Litery czasem mylą – spróbuj jeszcze raz."
+];
+
+const levelCompleteMessages = [
+  "Poziom ukończony! Odblokowujesz nowy świat!",
+  "Świetnie! Ten świat jest twój.",
+  "Brawo! Czas na kolejny poziom."
+];
+
+// ======================================
+// STAN GRY
+// ======================================
+
+let unlockedWorlds = 1;
+let currentWorldIndex = 0;
 let currentRound = null;
+let answered = false;
+let score = 0;
+let streak = 0;
+let bestStreakCurrentWorld = 0;
+let questionInWorld = 0;
 
 // DOM
-let emojiEl, choicesEl, messageEl, scoreEl, streakEl;
-let nextBtn, resetBtn, hintBtn;
-let worldNameLabel, progressBar;
+let worldsRow;
+let emojiEl;
+let choicesEl;
+let scoreEl;
+let messageEl;
+let nextBtn;
+let cardEl;
+let streakEl;
+let progressBar;
+let worldNameLabel;
+let hintEl;
+let resetProgressBtn;
+let hintBtn;
 
-// -------------------------------
-// Init
-// -------------------------------
-document.addEventListener("DOMContentLoaded", initGame);
+// ======================================
+// HELPERY
+// ======================================
 
-async function initGame() {
-  ArcadeUI.addBackToArcadeButton({
-    backUrl: "../../../arcade.html"
-  });
-
-  emojiEl = document.getElementById("emoji");
-  choicesEl = document.getElementById("choices");
-  messageEl = document.getElementById("message");
-  scoreEl = document.getElementById("score");
-  streakEl = document.getElementById("streak");
-  nextBtn = document.getElementById("next");
-  resetBtn = document.getElementById("resetProgress");
-  hintBtn = document.getElementById("hintBtn");
-  worldNameLabel = document.getElementById("worldNameLabel");
-  progressBar = document.getElementById("progressBar");
-
-  nextBtn.addEventListener("click", nextRound);
-  resetBtn.addEventListener("click", resetAllProgress);
-
-  hintBtn.addEventListener("click", useHint);
-
-  await loadProgress();
-  renderWorldButtons();
-  startWorld(progress.currentWorld);
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
 
-// -------------------------------
-// PROGRES
-// -------------------------------
-async function loadProgress() {
-  const loaded = await ArcadeProgress.load(GAME_ID);
-  if (loaded) {
-    progress = {
-      unlockedWorlds: loaded.unlockedWorlds ?? 1,
-      currentWorld: loaded.currentWorld ?? 0,
-      score: loaded.score ?? 0
-    };
+function randomItem(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+function clampWorldIndex(idx) {
+  if (idx < 0) return 0;
+  if (idx >= WORLDS.length) return WORLDS.length - 1;
+  return idx;
+}
+
+function getCurrentUserLikeThing() {
+  if (!window.ArcadeAuth) return null;
+  if (typeof ArcadeAuth.getUser === "function") return ArcadeAuth.getUser();
+  if (typeof ArcadeAuth.getCurrentUser === "function")
+    return ArcadeAuth.getCurrentUser();
+  return null;
+}
+
+// ======================================
+// PROGRES – ArcadeProgress
+// ======================================
+
+function loadProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.load) {
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.load");
+    return Promise.resolve();
+  }
+
+  return ArcadeProgress.load(GAME_ID)
+    .then((data) => {
+      if (!data) return;
+
+      if (typeof data.unlockedWorlds === "number") {
+        unlockedWorlds = Math.max(1, Math.min(WORLDS.length, data.unlockedWorlds));
+      }
+      if (typeof data.currentWorldIndex === "number") {
+        currentWorldIndex = clampWorldIndex(data.currentWorldIndex);
+      }
+      if (typeof data.score === "number") {
+        score = data.score;
+      }
+    })
+    .catch((err) => {
+      console.error("[ZnajdzSlowo] Błąd load:", err);
+    });
+}
+
+function saveProgress() {
+  if (!window.ArcadeProgress || !ArcadeProgress.save) {
+    console.warn("[ZnajdzSlowo] Brak ArcadeProgress.save");
+    return;
+  }
+
+  const payload = {
+    unlockedWorlds,
+    currentWorldIndex,
+    score
+  };
+
+  ArcadeProgress.save(GAME_ID, payload).catch((err) => {
+    console.error("[ZnajdzSlowo] Błąd save:", err);
+  });
+}
+
+// ======================================
+// MONETY – ArcadeCoins
+// ======================================
+
+function awardCoins(amount, reason) {
+  const delta = Math.floor(amount);
+  if (!Number.isFinite(delta) || delta === 0) return;
+
+  if (!window.ArcadeCoins || !ArcadeCoins.addForGame) {
+    return;
+  }
+
+  ArcadeCoins.addForGame(GAME_ID, delta, { reason })
+    .then(() => {
+      if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
+        ArcadeAuthUI.refreshCoins();
+      }
+    })
+    .catch((err) => {
+      console.warn("[ZnajdzSlowo] Nie udało się zmienić monet:", err);
+    });
+}
+
+async function spendCoins(cost, meta) {
+  if (
+    !window.ArcadeCoins ||
+    !ArcadeCoins.load ||
+    !ArcadeCoins.getBalance ||
+    !ArcadeCoins.addForGame
+  ) {
+    messageEl.textContent = "System monet jest chwilowo niedostępny.";
+    return false;
+  }
+
+  try {
+    await ArcadeCoins.load();
+    const balance = ArcadeCoins.getBalance();
+    if (typeof balance !== "number" || balance < cost) {
+      messageEl.textContent = "Masz za mało diamentów (5💎).";
+      return false;
+    }
+
+    await ArcadeCoins.addForGame(GAME_ID, -cost, meta);
+
+    if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
+      ArcadeAuthUI.refreshCoins();
+    }
+
+    return true;
+  } catch (err) {
+    console.warn("[ZnajdzSlowo] Błąd przy wydawaniu monet:", err);
+    messageEl.textContent = "Nie udało się pobrać diamentów.";
+    return false;
   }
 }
 
-async function saveProgress() {
-  return ArcadeProgress.save(GAME_ID, {
-    unlockedWorlds: progress.unlockedWorlds,
-    currentWorld: progress.currentWorld,
-    score: progress.score
-  });
+// ======================================
+// UI – aktualizacje
+// ======================================
+
+function updateScoreUI() {
+  if (scoreEl) {
+    scoreEl.textContent = "Punkty: " + score;
+  }
 }
 
-async function resetAllProgress() {
-  const ok = confirm("Na pewno chcesz wyczyścić postęp?");
-  if (!ok) return;
-
-  progress = {
-    unlockedWorlds: 1,
-    currentWorld: 0,
-    score: 0
-  };
-
-  streak = 0;
-
-  await saveProgress();
-
-  renderWorldButtons();
-  startWorld(0);
+function updateStreakDisplay() {
+  streakEl.textContent = streak;
+  const streakInfo = document.querySelector(".streak-info");
+  if (!streakInfo) return;
+  if (streak >= 3) {
+    streakInfo.classList.add("streak-highlight");
+  } else {
+    streakInfo.classList.remove("streak-highlight");
+  }
 }
 
-// -------------------------------
-// LOGIKA GRY
-// -------------------------------
-function renderWorldButtons() {
-  const container = document.getElementById("worldsRow");
-  container.innerHTML = "";
+function updateProgress() {
+  const progress = (questionInWorld / QUESTIONS_PER_LEVEL) * 100;
+  progressBar.style.width = progress + "%";
+}
 
-  WORLDS.forEach(w => {
+function loadWorldInfo() {
+  const world = WORLDS[currentWorldIndex];
+  worldNameLabel.textContent = "Świat: " + world.name;
+  hintEl.textContent = world.hint;
+  updateProgress();
+}
+
+// ======================================
+// ŚWIATY – przyciski (same emotki)
+// ======================================
+
+function buildWorldButtons() {
+  worldsRow.innerHTML = "";
+  WORLDS.forEach((world, index) => {
     const btn = document.createElement("button");
-    btn.textContent = `${w.id + 1}`;
     btn.className = "world-btn";
-
-    if (w.id > progress.unlockedWorlds - 1) {
-      btn.disabled = true;
+    if (index === currentWorldIndex) {
+      btn.classList.add("active");
     }
+    if (index >= unlockedWorlds) {
+      btn.classList.add("locked");
+    }
+    btn.dataset.index = index;
+
+    // Tylko ikonka – dopasowane do Twojego CSS (.world-btn .icon)
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "icon";
+    iconSpan.textContent = world.icon;
+    btn.appendChild(iconSpan);
 
     btn.addEventListener("click", () => {
-      startWorld(w.id);
+      if (index >= unlockedWorlds) {
+        messageEl.textContent =
+          "Ten świat jest jeszcze zamknięty. Ukończ najpierw poprzedni.";
+        return;
+      }
+      if (currentWorldIndex !== index) {
+        currentWorldIndex = index;
+        streak = 0;
+        bestStreakCurrentWorld = 0;
+        questionInWorld = 0;
+        updateStreakDisplay();
+        loadWorldInfo();
+        loadRound();
+        buildWorldButtons();
+        saveProgress();
+      }
     });
 
-    container.appendChild(btn);
+    worldsRow.appendChild(btn);
   });
 }
 
-function startWorld(worldId) {
-  currentWorld = worldId;
-  progress.currentWorld = worldId;
+// ======================================
+// RUNDA
+// ======================================
 
-  worldNameLabel.textContent = `Świat: ${WORLDS[worldId].name}`;
-  roundIndex = 0;
-  streak = 0;
-
-  updateUI();
-  nextRound();
+function pickRandomRoundFromWorld(world) {
+  return world.rounds[Math.floor(Math.random() * world.rounds.length)];
 }
 
-function nextRound() {
+function loadRound() {
+  answered = false;
   messageEl.textContent = "";
+  const world = WORLDS[currentWorldIndex];
+
+  currentRound = pickRandomRoundFromWorld(world);
+  emojiEl.textContent = currentRound.emoji;
+
+  const options = shuffle([currentRound.correct, ...currentRound.others]);
   choicesEl.innerHTML = "";
 
-  const world = WORLDS[currentWorld];
-  const items = world.items;
-
-  if (roundIndex >= items.length) {
-    finishWorld();
-    return;
-  }
-
-  const [emoji, word] = items[roundIndex];
-
-  currentRound = {
-    emoji,
-    correct: word,
-    allChoices: shuffle([
-      word,
-      ...pickOtherWords(word, items, 3)
-    ])
-  };
-
-  emojiEl.textContent = emoji;
-  renderChoices();
-  updateProgressBar();
-
-  roundIndex++;
-}
-
-function renderChoices() {
-  choicesEl.innerHTML = "";
-
-  currentRound.allChoices.forEach(text => {
+  options.forEach((word) => {
     const btn = document.createElement("button");
-    btn.textContent = text;
+    btn.textContent = word;
     btn.className = "choice-btn";
-
-    btn.addEventListener("click", () => handleChoice(btn, text));
-
+    btn.addEventListener("click", () =>
+      handleChoice(btn, word === currentRound.correct)
+    );
     choicesEl.appendChild(btn);
   });
+
+  updateProgress();
+  updateStreakDisplay();
 }
 
-async function handleChoice(btn, text) {
-  if (text === currentRound.correct) {
-    btn.classList.add("correct");
+function handleChoice(button, isCorrect) {
+  if (answered) return;
+  answered = true;
+
+  const allButtons = document.querySelectorAll(".choice-btn");
+  allButtons.forEach((b) => b.classList.add("disabled"));
+
+  if (isCorrect) {
+    button.classList.add("correct");
+    const msg = randomItem(goodMessages);
+    messageEl.textContent = msg;
+
     streak++;
-    progress.score++;
+    bestStreakCurrentWorld = Math.max(bestStreakCurrentWorld, streak);
 
-    await ArcadeCoins.addForGame(GAME_ID, +1, {
-      reason: "correct_answer",
-      world: currentWorld,
-      round: roundIndex
-    });
+    const bonus = streak >= 3 ? 1 : 0;
+    score += 1 + bonus;
+    updateScoreUI();
+    updateStreakDisplay();
 
-    messageEl.textContent = "✔ Dobrze!";
+    // +1 za poprawną odpowiedź (bonus tylko jako punkty)
+    awardCoins(1, "correct-answer");
+
+    saveProgress();
   } else {
-    btn.classList.add("wrong");
+    button.classList.add("wrong");
+    const msg = randomItem(wrongMessages);
+    messageEl.textContent = msg;
     streak = 0;
-    messageEl.textContent = "✖ Spróbuj dalej!";
-  }
+    updateStreakDisplay();
 
-  updateUI();
-  if (window.ArcadeAuthUI?.refreshCoins) {
-    ArcadeAuthUI.refreshCoins();
-  }
-}
-
-// -------------------------------
-// Podpowiedź za 5 monet
-// -------------------------------
-async function useHint() {
-  const user = ArcadeAuth.getUser();
-
-  if (!user) {
-    messageEl.textContent = "Podpowiedzi są tylko dla zalogowanych.";
-    return;
-  }
-
-  const balance = ArcadeCoins.getBalance();
-  if (balance == null || balance < 5) {
-    messageEl.textContent = "Masz za mało diamentów (5💎).";
-    return;
-  }
-
-  const newBalance = await ArcadeCoins.addForGame(GAME_ID, -5, {
-    reason: "hint",
-    world: currentWorld,
-    correct: currentRound.correct
-  });
-
-  if (window.ArcadeAuthUI?.refreshCoins) {
-    ArcadeAuthUI.refreshCoins();
-  }
-
-  // wizualna podpowiedź
-  document.querySelectorAll(".choice-btn").forEach(btn => {
-    if (btn.textContent === currentRound.correct) {
-      btn.classList.add("correct");
+    if (cardEl) {
+      cardEl.classList.remove("shake");
+      void cardEl.offsetWidth;
+      cardEl.classList.add("shake");
     }
-  });
 
-  messageEl.textContent = "Podpowiedź użyta!";
+    allButtons.forEach((b) => {
+      if (b.textContent === currentRound.correct) {
+        b.classList.add("correct");
+      }
+    });
+  }
 }
 
-// -------------------------------
-// Koniec świata
-// -------------------------------
-async function finishWorld() {
-  messageEl.textContent = "Świat ukończony!";
+// ======================================
+// POZIOM / ŚWIAT – koniec
+// ======================================
 
-  await ArcadeCoins.addForGame(GAME_ID, +5, {
-    reason: "finish_world",
-    world: currentWorld
-  });
+function completeWorldIfNeeded() {
+  if (questionInWorld >= QUESTIONS_PER_LEVEL) {
+    const msg = randomItem(levelCompleteMessages);
+    messageEl.textContent =
+      msg + " (Najlepsza seria w tym świecie: " + bestStreakCurrentWorld + ")";
+    questionInWorld = 0;
+    bestStreakCurrentWorld = 0;
+    streak = 0;
+    updateStreakDisplay();
 
-  if (currentWorld + 1 < WORLDS.length) {
-    if (progress.unlockedWorlds < currentWorld + 2) {
-      progress.unlockedWorlds++;
-      await ArcadeCoins.addForGame(GAME_ID, +10, {
-        reason: "unlock_world",
-        unlocked: currentWorld + 1
+    // +5 za ukończenie poziomu
+    awardCoins(5, "level-complete");
+
+    if (unlockedWorlds < WORLDS.length && currentWorldIndex === unlockedWorlds - 1) {
+      unlockedWorlds++;
+      messageEl.textContent += " Nowy świat odblokowany!";
+
+      // +10 za odblokowanie nowego świata
+      awardCoins(10, "world-unlock");
+    }
+
+    saveProgress();
+    buildWorldButtons();
+  }
+}
+
+// ======================================
+// NAVIGACJA RUND
+// ======================================
+
+function nextRound() {
+  if (!answered) {
+    messageEl.textContent =
+      "Najpierw wybierz słowo, potem przejdź dalej. 🙂";
+    return;
+  }
+
+  questionInWorld++;
+  completeWorldIfNeeded();
+
+  const allButtons = document.querySelectorAll(".choice-btn");
+  allButtons.forEach((b) =>
+    b.classList.remove("correct", "wrong", "disabled")
+  );
+  if (cardEl) {
+    cardEl.classList.remove("shake");
+  }
+  loadRound();
+}
+
+// ======================================
+// RESET PROGRESU
+// ======================================
+
+function attachResetProgress() {
+  if (!resetProgressBtn) return;
+  resetProgressBtn.addEventListener("click", () => {
+    const ok = window.confirm(
+      "Na pewno chcesz wyczyścić postęp w tej grze? Odblokowane światy i punkty zostaną zresetowane, monety zostają."
+    );
+    if (!ok) return;
+
+    unlockedWorlds = 1;
+    currentWorldIndex = 0;
+    score = 0;
+    streak = 0;
+    bestStreakCurrentWorld = 0;
+    questionInWorld = 0;
+
+    updateScoreUI();
+    updateStreakDisplay();
+    loadWorldInfo();
+    buildWorldButtons();
+    loadRound();
+
+    if (window.ArcadeProgress && ArcadeProgress.clear) {
+      ArcadeProgress.clear(GAME_ID).catch((err) => {
+        console.error("[ZnajdzSlowo] Błąd clear:", err);
       });
     }
+  });
+}
+
+// ======================================
+// PODPOWIEDŹ ZA 5 DIAMENTÓW
+// ======================================
+
+function attachHintHandler() {
+  if (!hintBtn) return;
+
+  hintBtn.addEventListener("click", async () => {
+    const user = getCurrentUserLikeThing();
+    if (!user) {
+      messageEl.textContent =
+        "Tylko zalogowani gracze mogą korzystać z podpowiedzi.";
+      return;
+    }
+
+    if (!currentRound) {
+      messageEl.textContent = "Brak rundy do podpowiedzi.";
+      return;
+    }
+
+    const ok = await spendCoins(5, {
+      reason: "hint",
+      game: GAME_ID,
+      world: WORLDS[currentWorldIndex].id,
+      correct: currentRound.correct
+    });
+
+    if (!ok) return;
+
+    const buttons = document.querySelectorAll(".choice-btn");
+    buttons.forEach((btn) => {
+      if (btn.textContent === currentRound.correct) {
+        btn.classList.add("correct");
+      }
+    });
+
+    messageEl.textContent = "Podpowiedź: to właściwy wyraz. 🙂";
+  });
+}
+
+// ======================================
+// INIT
+// ======================================
+
+async function initZnajdzSlowo() {
+  worldsRow = document.getElementById("worldsRow");
+  emojiEl = document.getElementById("emoji");
+  choicesEl = document.getElementById("choices");
+  scoreEl = document.getElementById("score");
+  messageEl = document.getElementById("message");
+  nextBtn = document.getElementById("next");
+  streakEl = document.getElementById("streak");
+  progressBar = document.getElementById("progressBar");
+  worldNameLabel = document.getElementById("worldNameLabel");
+  hintEl = document.getElementById("hint");
+  resetProgressBtn = document.getElementById("resetProgress");
+  hintBtn = document.getElementById("hintBtn");
+
+  // karta – dopasowana do Twojego HTML:
+  cardEl =
+    document.querySelector(".card.game-root") ||
+    document.querySelector(".card") ||
+    null;
+
+  if (
+    !worldsRow ||
+    !emojiEl ||
+    !choicesEl ||
+    !scoreEl ||
+    !messageEl ||
+    !nextBtn ||
+    !streakEl ||
+    !progressBar ||
+    !worldNameLabel ||
+    !hintEl
+  ) {
+    console.error(
+      "[ZnajdzSlowo] Brak wymaganych elementów DOM – sprawdź index.html gry."
+    );
+    return;
   }
 
-  await saveProgress();
+  await loadProgress();
 
-  if (window.ArcadeAuthUI?.refreshCoins) {
-    ArcadeAuthUI.refreshCoins();
+  updateScoreUI();
+  updateStreakDisplay();
+  buildWorldButtons();
+  loadWorldInfo();
+  loadRound();
+
+  nextBtn.addEventListener("click", nextRound);
+  attachResetProgress();
+  attachHintHandler();
+
+  if (window.ArcadeUI && ArcadeUI.addBackToArcadeButton) {
+    ArcadeUI.addBackToArcadeButton({
+      backUrl: "../../../arcade.html"
+    });
   }
-
-  renderWorldButtons();
 }
 
-// -------------------------------
-// Pomocnicze
-// -------------------------------
-function updateUI() {
-  scoreEl.textContent = `Punkty: ${progress.score}`;
-  streakEl.textContent = streak;
-}
-
-function updateProgressBar() {
-  const world = WORLDS[currentWorld];
-  const pct = Math.floor((roundIndex / world.items.length) * 100);
-  progressBar.style.width = pct + "%";
-}
-
-function pickOtherWords(correct, items, count) {
-  const pool = items
-    .map(i => i[1])
-    .filter(w => w !== correct);
-
-  shuffle(pool);
-
-  return pool.slice(0, count);
-}
-
-function shuffle(arr) {
-  return arr.sort(() => Math.random() - 0.5);
-}
-
+document.addEventListener("DOMContentLoaded", initZnajdzSlowo);
