@@ -231,7 +231,7 @@ body.arcade-body {
 .arcade-game-page {
   min-height: 100vh;
   max-height: 100vh;
-  overflow: hidden; /* brak scrolla */
+  overflow: auto; /* brak scrolla */
   display: flex;
   flex-direction: column;
 }
