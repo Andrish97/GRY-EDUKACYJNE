@@ -1,0 +1,22 @@
+{
+  "id": "sofa_pink",
+  "name": "Sofa neonowa",
+  "categoryId": "furniture",
+  "price": 40,
+  "maxLevel": 3,
+  "source": "shop",
+  "art": {
+    "width": 140,
+    "height": 80,
+    "anchor": {
+      "attachment": "floor",
+      "x": 0.5,
+      "y": 1.0
+    }
+  },
+  "placement": {
+    "allowedAttachments": ["floor"],
+    "canBeParentSurface": true,
+    "stackOffsetY": -10
+  }
+}
