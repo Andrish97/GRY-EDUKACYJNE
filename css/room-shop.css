@@ -1,0 +1,325 @@
+/* Neon Room – Sklep pokoju */
+
+.room-shop-page {
+  max-width: 1100px;
+  margin: 1.5rem auto 2rem;
+  padding: 0 1rem;
+}
+
+/* header */
+
+.room-shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.room-shop-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.room-shop-title {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-shop-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.room-shop-header-right {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.room-shop-balance {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: radial-gradient(circle at top, #020617, #000000);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.7);
+  font-size: 0.8rem;
+}
+
+.room-shop-balance strong {
+  font-size: 1rem;
+}
+
+/* przycisk do pokoju */
+
+.room-shop-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #0b1120;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease,
+    filter 0.06s ease;
+}
+
+.room-shop-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.9);
+  filter: brightness(1.04);
+}
+
+.room-shop-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+/* layout */
+
+.room-shop-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+/* kategorie */
+
+.room-shop-categories {
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: radial-gradient(circle at top left, #020617, #000000);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.room-shop-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-shop-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.room-shop-category-btn {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  background: radial-gradient(circle at top, #020617, #020617);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.08s ease,
+    background 0.08s ease,
+    transform 0.06s ease,
+    box-shadow 0.06s ease;
+}
+
+.room-shop-category-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.9);
+}
+
+.room-shop-category-btn.is-active {
+  border-color: rgba(244, 63, 94, 0.95);
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.8);
+}
+
+/* lista itemów */
+
+.room-shop-items {
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: radial-gradient(circle at top right, #020617, #000000);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.room-shop-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.room-shop-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* pojedyncza karta itemu */
+
+.room-shop-item-card {
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.7rem;
+  background: radial-gradient(circle at top, #020617, #020617);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.9);
+}
+
+.room-shop-item-header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.room-shop-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.room-shop-item-sub {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* body: podgląd + info */
+
+.room-shop-item-body {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.room-shop-item-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 0.7rem;
+  background: radial-gradient(circle at top, #0b1120, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(15, 23, 42, 0.9);
+}
+
+.room-shop-item-preview-img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.room-shop-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.room-shop-item-status {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.room-shop-item-price {
+  font-weight: 500;
+}
+
+/* actions */
+
+.room-shop-item-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.room-shop-item-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #052e16;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 14px rgba(22, 163, 74, 0.7);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease,
+    filter 0.06s ease;
+}
+
+.room-shop-item-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(22, 163, 74, 0.9);
+  filter: brightness(1.04);
+}
+
+.room-shop-item-btn:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+.room-shop-item-btn:disabled {
+  background: rgba(55, 65, 81, 0.9);
+  color: rgba(148, 163, 184, 0.95);
+  box-shadow: none;
+  cursor: default;
+}
+
+/* RWD */
+
+@media (max-width: 900px) {
+  .room-shop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-shop-categories {
+    order: 1;
+  }
+
+  .room-shop-items {
+    order: 2;
+  }
+}
+
+@media (max-width: 800px) {
+  .room-shop-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .room-shop-header-right {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+}
