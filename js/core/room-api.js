@@ -1,7 +1,7 @@
 // js/core/room-api.js
-// Neon Room – API pokoju dla gier i sklepu
+// Neon Room – API pokoju dla gier, sklepu i sceny
 // --------------------------------------------------
-// Zapisywany stan (ArcadeProgress, klucz "neon_room_v2") ma strukturę:
+// Stan zapisujemy pod kluczem "neon_room_v2" w ArcadeProgress:
 //
 // {
 //   version: 2,
@@ -17,56 +17,50 @@
 //       parentInstanceId: string|null,
 //       x: number,   // 0..1
 //       y: number,   // 0..1
-//       offsetX?: number, // dla surface
-//       offsetY?: number, // dla surface
+//       offsetX?: number,
+//       offsetY?: number,
 //       rotation?: number,
 //       meta?: any
 //     }
-//   ]
+//   ],
+//   roomStyleId: string|null
 // }
-//
-// Ten plik NIE renderuje sceny – tylko manipuluje stanem.
 
 (function () {
   "use strict";
 
   const ROOM_SAVE_KEY = "neon_room_v2";
 
-  /**
-   * Ładuje stan pokoju z ArcadeProgress.
-   * Zwraca zawsze kompletne struktury (version/unlockedItemTypes/instances).
-   */
   async function loadRoomState() {
     if (!window.ArcadeProgress || !ArcadeProgress.load) {
-      console.warn("[ArcadeRoom] Brak ArcadeProgress – stan pokoju tylko w pamięci.");
+      console.warn("[ArcadeRoom] Brak ArcadeProgress – używam stanu tymczasowego.");
       return {
         version: 2,
         unlockedItemTypes: {},
-        instances: []
+        instances: [],
+        roomStyleId: null
       };
     }
 
     try {
       const raw = (await ArcadeProgress.load(ROOM_SAVE_KEY)) || {};
-      const state = {
+      return {
         version: raw.version || 2,
         unlockedItemTypes: raw.unlockedItemTypes || {},
-        instances: raw.instances || []
+        instances: raw.instances || [],
+        roomStyleId: typeof raw.roomStyleId === "string" ? raw.roomStyleId : null
       };
-      return state;
     } catch (e) {
       console.error("[ArcadeRoom] Błąd ładowania stanu pokoju:", e);
       return {
         version: 2,
         unlockedItemTypes: {},
-        instances: []
+        instances: [],
+        roomStyleId: null
       };
     }
   }
 
-  /**
-   * Zapisuje stan pokoju do ArcadeProgress.
-   */
   async function saveRoomState(state) {
     if (!window.ArcadeProgress || !ArcadeProgress.save) {
       console.warn("[ArcadeRoom] Brak ArcadeProgress – nie zapisuję stanu.");
@@ -76,7 +70,8 @@
     const safeState = {
       version: state.version || 2,
       unlockedItemTypes: state.unlockedItemTypes || {},
-      instances: state.instances || []
+      instances: state.instances || [],
+      roomStyleId: state.roomStyleId || null
     };
 
     try {
@@ -88,13 +83,7 @@
   }
 
   /**
-   * Odblokowanie TYPU przedmiotu (np. gra lub sklep).
-   *
-   * Przykład z gry:
-   * ArcadeRoom.unlockItemType("trophy_gold", {
-   *   fromGameId: "2048",
-   *   meta: { reason: "score_1000" }
-   * });
+   * Odblokowanie typu przedmiotu (z gry lub sklepu).
    */
   async function unlockItemType(itemId, options = {}) {
     const { fromGameId = null, meta = null } = options;
@@ -118,8 +107,7 @@
   }
 
   /**
-   * (Opcjonalne dla sklepu) – oznaczenie, że gracz kupił typ przedmiotu za 💎.
-   * Technicznie to to samo co unlockItemType, ale z innym meta.
+   * Wersja wygodna dla sklepu (tylko inne meta).
    */
   async function unlockItemTypeFromShop(itemId, options = {}) {
     const meta = Object.assign({}, options.meta, { source: "shop" });
@@ -129,7 +117,6 @@
     });
   }
 
-  // podłączamy do globalnego obiektu, nie nadpisując istniejącego
   const exported = window.ArcadeRoom || {};
   exported.loadRoomState = loadRoomState;
   exported.saveRoomState = saveRoomState;
