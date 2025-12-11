@@ -1,0 +1,34 @@
+{
+  "categories": [
+    {
+      "id": "furniture",
+      "name": "Meble",
+      "order": 1,
+      "itemIds": ["sofa_pink"]
+    },
+    {
+      "id": "wall_decor",
+      "name": "Dekoracje ścienne",
+      "order": 2,
+      "itemIds": ["wall_poster_neon_city"]
+    },
+    {
+      "id": "lighting",
+      "name": "Oświetlenie",
+      "order": 3,
+      "itemIds": ["ceiling_lamp_cyan"]
+    },
+    {
+      "id": "trophies",
+      "name": "Trofea",
+      "order": 4,
+      "itemIds": ["trophy_gold"]
+    },
+    {
+      "id": "walls",
+      "name": "Kolory ścian",
+      "order": 0,
+      "itemIds": []
+    }
+  ]
+}
