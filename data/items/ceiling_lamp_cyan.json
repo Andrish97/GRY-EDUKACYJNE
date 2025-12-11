@@ -1,0 +1,21 @@
+{
+  "id": "ceiling_lamp_cyan",
+  "name": "Lampa sufitowa",
+  "categoryId": "lighting",
+  "price": 30,
+  "maxLevel": 2,
+  "source": "shop",
+  "art": {
+    "width": 60,
+    "height": 80,
+    "anchor": {
+      "attachment": "ceiling",
+      "x": 0.5,
+      "y": 0.0
+    }
+  },
+  "placement": {
+    "allowedAttachments": ["ceiling"],
+    "canBeParentSurface": false
+  }
+}
