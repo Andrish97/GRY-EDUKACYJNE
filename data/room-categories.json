@@ -26,9 +26,9 @@
     },
     {
       "id": "walls",
-      "name": "Kolory ścian",
+      "name": "Style pokoju",
       "order": 0,
-      "itemIds": []
+      "itemIds": ["room_style_neon_blue"]
     }
   ]
 }
