@@ -1,0 +1,12 @@
+{
+  "id": "room_style_neon_blue",
+  "name": "Neonowy niebieski",
+  "categoryId": "walls",
+  "price": 25,
+  "maxLevel": 1,
+  "source": "shop",
+  "kind": "room_style",
+  "style": {
+    "className": "room-style-neon-blue"
+  }
+}
