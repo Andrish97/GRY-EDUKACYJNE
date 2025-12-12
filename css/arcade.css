@@ -1,15 +1,9 @@
 /* css/arcade.css */
-/* Neon Arcade – launcher (kategorie jako karty-tabs + kafelki gier) */
-
-.arcade-main {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 1.15rem 1rem 2rem;
-}
-
-/* Header: Neon Arcade + Pokój nagród obok */
-.arcade-header {/* css/arcade.css */
 /* Neon Arcade – launcher (tabs jak karty przeglądarki + kafelki gier) */
+
+/* ===============================
+   GŁÓWNY LAYOUT
+   =============================== */
 
 .arcade-main {
   max-width: 1040px;
@@ -17,7 +11,10 @@
   padding: 1.25rem 1rem 2rem;
 }
 
-/* Header: Neon Arcade + Pokój nagród */
+/* ===============================
+   HEADER: Neon Arcade + Pokój nagród
+   =============================== */
+
 .arcade-header {
   display: flex;
   align-items: center;
@@ -33,7 +30,8 @@
   margin: 0;
 }
 
-/* Pokój nagród (ten sam styl co wcześniej, tylko ciaśniej) */
+/* Pokój nagród */
+
 .arcade-room-btn {
   display: inline-flex;
   align-items: center;
@@ -69,6 +67,7 @@
 .arcade-room-btn .icon {
   font-size: 16px;
 }
+
 /* Mobile: Pokój nagród tylko jako ikonka */
 @media (max-width: 520px) {
   .arcade-room-btn .label {
@@ -80,9 +79,9 @@
   }
 }
 
-/* ---------------------------------------------
-   Kategorie: karty jak w przeglądarce
----------------------------------------------- */
+/* ===============================
+   KATEGORIE – KARTY JAK W PRZEGLĄDARCE
+   =============================== */
 
 .categories-tabs {
   display: flex;
@@ -111,7 +110,7 @@
 
   cursor: pointer;
   user-select: none;
-  transition: transform 0.10s ease, filter 0.10s ease, border-color 0.10s ease;
+  transition: transform 0.1s ease, filter 0.1s ease, border-color 0.1s ease;
 }
 
 .category-tab:hover {
@@ -126,26 +125,8 @@
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
 }
 
-.category-tab::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: -9px;
-  height: 10px;
-  border-radius: 0 0 12px 12px;
-  background: transparent;
-}
-
-.category-tab.active::after {
-  background: rgba(15, 23, 42, 0.96);
-  border-left: 1px solid rgba(34, 197, 94, 0.25);
-  border-right: 1px solid rgba(34, 197, 94, 0.25);
-}
-
 .category-tab .icon {
   font-size: 16px;
-  line-height: 1;
 }
 
 .category-tab .label {
@@ -156,20 +137,16 @@
   white-space: nowrap;
 }
 
-/* Mobile: jeśli ciasno → tylko ikony + bez zaokrągleń */
+/* Mobile: jeśli ciasno → chowamy etykietę, zostaje ikona */
 @media (max-width: 520px) {
-  .category-tab {
-    border-radius: 0;
-    padding: 10px 12px;
-  }
   .category-tab .label {
     display: none;
   }
 }
 
-/* ---------------------------------------------
-   Gry: siatka kafelków
----------------------------------------------- */
+/* ===============================
+   GRY – SIATKA
+   =============================== */
 
 .games-section {
   margin-top: 10px;
@@ -181,9 +158,9 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-/* ---------------------------------------------
-   Kafelki gier: klik uruchamia, prosto i czytelnie
----------------------------------------------- */
+/* ===============================
+   KAFELKI GIER
+   =============================== */
 
 .game-card {
   display: block;
@@ -198,7 +175,10 @@
     0 0 0 1px rgba(15, 23, 42, 0.75);
 
   padding: 12px;
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .game-card:hover {
@@ -207,12 +187,15 @@
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.82);
 }
 
+/* Miniatura */
+
 .thumb-wrap {
   border-radius: 12px;
   overflow: hidden;
   background: #020617;
   border: 1px solid rgba(15, 23, 42, 0.9);
   height: 140px;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,6 +205,8 @@
   font-size: 34px;
   opacity: 0.9;
 }
+
+/* Nazwa gry */
 
 .game-headline {
   margin-top: 10px;
@@ -233,11 +218,12 @@
 }
 
 .game-name {
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-/* Statystyki gry (krótka linia) */
+/* Statystyki */
+
 .game-stats {
   margin-top: 6px;
   font-size: 11px;
@@ -245,250 +231,10 @@
   opacity: 0.95;
 }
 
-/* Mobile: launcher bez „kartowości” */
-@media (max-width: 520px) {
-  .game-card {
-    border-radius: 0;
-  }
-  .thumb-wrap {
-    border-radius: 0;
-  }
-}
+/* ===============================
+   INFO / BŁĘDY
+   =============================== */
 
-/* Info / błędy */
-.arcade-empty {
-  font-size: 0.95rem;
-  opacity: 0.85;
-}
-
-[data-arcade-error] {
-  margin-top: 1rem;
-  font-size: 0.95rem;
-  color: #fecaca;
-}
-
-[data-arcade-wait] {
-  margin-top: 1rem;
-  font-size: 0.95rem;
-  opacity: 0.85;
-}
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 12px;
-}
-
-.arcade-title {
-  font-size: 1.6rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin: 0;
-}
-
-/* Przycisk pokoju */
-.arcade-room-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-
-  background: linear-gradient(135deg, #38bdf8, #a855f7);
-  color: #0b1120;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow:
-    0 0 16px rgba(56, 189, 248, 0.45),
-    0 0 22px rgba(168, 85, 247, 0.35);
-  transition: transform 0.08s ease, filter 0.08s ease;
-}
-
-.arcade-room-btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-.arcade-room-btn:active {
-  transform: translateY(0);
-  filter: brightness(0.97);
-}
-
-.arcade-room-btn .icon {
-  font-size: 16px;
-}
-
-/* =========================================================
-   Kategorie jako "karty przeglądarki"
-   ========================================================= */
-
-.categories-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding: 6px 2px 12px;
-  margin-bottom: 10px;
-
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.category-tab {
-  position: relative;
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.8);
-  color: #e5e7eb;
-
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.10s ease, filter 0.10s ease, border-color 0.10s ease;
-}
-
-.category-tab:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.06);
-  border-color: rgba(56, 189, 248, 0.45);
-}
-
-.category-tab.active {
-  background: rgba(15, 23, 42, 0.96);
-  border-color: rgba(34, 197, 94, 0.65);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
-}
-
-/* “język” aktywnej karty (jak w przeglądarce) */
-.category-tab::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: -10px;
-  height: 10px;
-  border-radius: 0 0 12px 12px;
-  background: transparent;
-}
-
-.category-tab.active::after {
-  background: rgba(15, 23, 42, 0.96);
-  border-left: 1px solid rgba(34, 197, 94, 0.22);
-  border-right: 1px solid rgba(34, 197, 94, 0.22);
-}
-
-.category-tab .icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.category-tab .label {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Mobile: jeśli ciasno, chowamy podpis – zostaje tylko ikona */
-@media (max-width: 520px) {
-  .category-tab {
-    border-radius: 0;
-    padding: 10px 12px;
-  }
-  .category-tab .label {
-    display: none;
-  }
-}
-
-/* =========================================================
-   Grid gier
-   ========================================================= */
-
-#games {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-/* Kafel gry – klik uruchamia */
-.game-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-
-  border-radius: 14px;
-  background: radial-gradient(circle at top, #020617, #020617);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(15, 23, 42, 0.75);
-
-  padding: 12px;
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
-}
-
-.game-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(34, 197, 94, 0.75);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.82);
-}
-
-.thumb-wrap {
-  border-radius: 12px;
-  overflow: hidden;
-  background: #020617;
-  border: 1px solid rgba(15, 23, 42, 0.9);
-  height: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.thumb-placeholder {
-  font-size: 36px;
-  opacity: 0.9;
-}
-
-.game-headline {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.game-name {
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-}
-
-/* Statystyki: krótka linia */
-.game-stats {
-  margin-top: 6px;
-  font-size: 11px;
-  color: #9ca3af;
-  opacity: 0.95;
-}
-
-/* Mobile: bez zaokrągleń */
-@media (max-width: 520px) {
-  .game-card { border-radius: 0; }
-  .thumb-wrap { border-radius: 0; }
-}
-
-/* Info / błędy */
 .arcade-empty {
   font-size: 0.95rem;
   opacity: 0.85;
