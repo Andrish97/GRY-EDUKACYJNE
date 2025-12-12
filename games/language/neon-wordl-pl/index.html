@@ -1,16 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Neon Wordl PL – Neon Arcade</title>
 
+    <link rel="icon" href="../../../favicon.ico" />
+    <link rel="shortcut icon" href="../../../favicon.ico" />
+
     <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/game-layout.css" />
     <link rel="stylesheet" href="game.css" />
 
-    <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-      defer
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
     <script src="../../../js/core/auth.js" defer></script>
     <script src="../../../js/core/progress.js" defer></script>
@@ -20,74 +22,52 @@
 
     <script src="game.js" defer></script>
   </head>
-  <body class="arcade-body arcade-game-page">
-    <div
-      data-arcade-auth-bar
-      data-after-login="../../../arcade.html"
-      data-after-guest="../../../arcade.html"
-    ></div>
 
-    <div class="shell">
-      <div class="card game-root">
-        <header class="game-header">
+  <body class="arcade-body arcade-game">
+    <div data-arcade-auth-bar data-back-url="../../../arcade.html"></div>
+
+    <div class="ga-shell">
+      <section class="ga-card">
+        <div class="ga-topbar">
           <div>
-            <h1 class="game-title">Neon Wordl PL</h1>
-            <p class="game-subtitle">
-              Zgadnij polskie słowo w 6 próbach. Zielone – litera i miejsce
-              trafione, żółte – litera jest, ale w innym miejscu.
-            </p>
-          </div>
-
-          <div class="game-header-right">
-            <div class="stats-panel">
-              <div class="stat-box">
-                <span class="stat-label">Gry</span>
-                <span id="stat-games" class="stat-value">0</span>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Wygrane</span>
-                <span id="stat-wins" class="stat-value">0</span>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Streak</span>
-                <span id="stat-streak" class="stat-value">0</span>
-              </div>
-              <div class="stat-box">
-                <span class="stat-label">Max streak</span>
-                <span id="stat-max-streak" class="stat-value">0</span>
-              </div>
-            </div>
-
-            <div class="controls-panel">
-              <button id="new-game-btn" class="arcade-btn btn-primary">
-                Nowa gra
-              </button>
-              <button id="reset-record-btn" class="arcade-btn btn-primary">
-                Resetuj rekord
-              </button>
-            </div>
-
-            <div class="hint-panel">
-              <div class="hint-meta">
-                <span class="hint-label">Podpowiedzi za 💎</span>
-                <span class="hint-cost">
-                  Odsłoń jedną literę za 5 diamentów. Stan konta zobaczysz w
-                  górnym pasku.
-                </span>
-              </div>
-              <button id="hint-btn" class="arcade-btn btn-secondary">
-                Podpowiedź za 5 💎
-              </button>
+            <h1 class="ga-title" id="ga-title">Neon Wordl PL</h1>
+            <div class="ga-subtitle" id="ga-subtitle">
+              Zgadnij polskie słowo w 6 próbach. Zielone – litera i miejsce trafione, żółte – litera jest, ale w innym miejscu.
             </div>
           </div>
-        </header>
 
-        <section class="game-main">
-          <div class="top-row">
-            <label class="word-len-label" for="word-len">
-              Długość słowa:
-            </label>
-            <select id="word-len" class="word-len-select">
+          <div class="ga-actions">
+            <button class="ga-btn ga-btn-primary" id="btn-new">
+              <span class="ico">🔁</span>Nowa
+            </button>
+
+            <button class="ga-btn ga-btn-secondary" id="btn-reset">
+              <span class="ico">🧹</span>Reset rekord
+            </button>
+
+            <button class="ga-btn-mini" id="btn-stats">
+              <span class="ico">📊</span>Staty
+            </button>
+          </div>
+        </div>
+
+        <section class="ga-stats-panel" id="stats-panel">
+          <div class="ga-stats">
+            <div class="ga-stat c1"><span class="k">Gry</span><span class="v" id="stat-games">0</span></div>
+            <div class="ga-stat c2"><span class="k">Wygrane</span><span class="v" id="stat-wins">0</span></div>
+            <div class="ga-stat c3"><span class="k">Streak</span><span class="v" id="stat-streak">0</span></div>
+            <div class="ga-stat c4"><span class="k">Max streak</span><span class="v" id="stat-max-streak">0</span></div>
+          </div>
+
+          <div class="ga-stats-actions">
+            <button class="ga-btn-mini" id="btn-stats-close">Zamknij</button>
+          </div>
+        </section>
+
+        <div class="ga-stage">
+          <div class="nw-toprow">
+            <label class="nw-label" for="word-len">Długość słowa:</label>
+            <select id="word-len" class="nw-select">
               <option value="5">Słowo 5-literowe (klasyczne)</option>
               <option value="4">4 litery</option>
               <option value="6">6 liter</option>
@@ -95,23 +75,37 @@
             </select>
           </div>
 
-          <div class="board-status-wrapper">
-            <div id="board" class="board"></div>
+          <div class="nw-center">
+            <div id="board" class="board" aria-label="Plansza"></div>
             <div id="status" class="status-text">Ładowanie słownika...</div>
             <div id="hint-text" class="hint-text"></div>
           </div>
+        </div>
 
-          <div id="keyboard" class="keyboard"></div>
-        </section>
+        <footer class="ga-footer">
+          <div class="ga-controls-slot" id="controls-slot" style="--controls-h:auto"></div>
 
-        <footer class="game-info">
-          <p>
-            Sterowanie: klawiatura fizyczna lub dotykowa poniżej. Masz 6 prób
-            na odgadnięcie słowa. Wygrywając, zdobywasz diamenty 💎, które możesz
-            wydać na podpowiedzi (każda za 5 💎, stan konta w górnym pasku).
-          </p>
+          <div class="ga-hints" id="hints-slot">
+            <div class="nw-hintbox">
+              <div class="nw-hintmeta">
+                <div class="nw-hinttitle">Podpowiedzi za 💎</div>
+                <div class="nw-hintdesc">Odsłoń jedną literę za 5 diamentów. Stan konta masz w górnym pasku.</div>
+              </div>
+              <button id="hint-btn" class="ga-btn ga-btn-secondary">
+                <span class="ico">💡</span>Podpowiedź (5 💎)
+              </button>
+            </div>
+          </div>
         </footer>
-      </div>
+      </section>
     </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const panel = document.getElementById("stats-panel");
+        document.getElementById("btn-stats")?.addEventListener("click", () => panel?.classList.toggle("open"));
+        document.getElementById("btn-stats-close")?.addEventListener("click", () => panel?.classList.remove("open"));
+      });
+    </script>
   </body>
 </html>
