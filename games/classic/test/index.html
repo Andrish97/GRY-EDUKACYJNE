@@ -5,7 +5,7 @@
     <title>Neon Arcade – Gra</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      <!-- favicon z root -->
+    <!-- favicon z root -->
     <link rel="icon" href="../../../favicon.ico" />
     <link rel="shortcut icon" href="../../../favicon.ico" />
 
@@ -24,91 +24,98 @@
   </head>
 
   <body class="arcade-body arcade-game">
+    <!-- Pasek logowania (na bardzo wąskich ekranach chowa formularz automatycznie przez CSS) -->
     <div data-arcade-auth-bar></div>
 
     <div class="ga-shell">
       <section class="ga-card">
-        <!-- NAGŁÓWEK -->
-        <header class="ga-header">
-          <div class="ga-headline">
-            <h1 id="ga-title">Nazwa gry</h1>
-            <p id="ga-subtitle">Krótki opis / instrukcja (opcjonalnie)</p>
-          </div>
+        <!-- WĄSKI TOP: tytuł lewo, akcje prawo -->
+        <div class="ga-topbar">
+          <h1 class="ga-title" id="ga-title">Nazwa gry</h1>
 
           <div class="ga-actions">
-            <!-- Nowa gra -->
             <button class="ga-btn ga-btn-primary" id="btn-new">
-              <span class="ico">🔁</span>Nowa gra
+              <span class="ico">🔁</span>Nowa
             </button>
 
-            <!-- Zapis (opcjonalnie) -->
             <button class="ga-btn ga-btn-secondary" id="btn-save" hidden>
               <span class="ico">💾</span>Zapisz
             </button>
 
-            <!-- Pauza/Wznów (opcjonalnie) -->
             <button class="ga-btn ga-btn-ghost" id="btn-pause" hidden>
-              <span class="ico" id="pause-ico">▶</span><span id="pause-txt">Wznów</span>
+              <span class="ico" id="pause-ico">▶</span>
+              <span id="pause-txt">Wznów</span>
+            </button>
+
+            <button class="ga-btn-mini" id="btn-stats">
+              <span class="ico">📊</span>Staty
             </button>
           </div>
-        </header>
+        </div>
 
-        <!-- STATY 1–5 (gra wybiera ile używa: resztę możesz ukryć) -->
-        <section class="ga-stats">
-          <div class="ga-stat c1" id="stat1">
-            <span class="k">Wynik</span><span class="v" id="v-score">0</span>
+        <!-- PANEL STATYSTYK: otwierany przyciskiem -->
+        <section class="ga-stats-panel" id="stats-panel">
+          <div class="ga-stats">
+            <div class="ga-stat c1">
+              <span class="k">Wynik</span><span class="v" id="v-score">0</span>
+            </div>
+            <div class="ga-stat c2">
+              <span class="k">Rekord</span><span class="v" id="v-best">0</span>
+            </div>
+            <div class="ga-stat c3" id="stat3" hidden>
+              <span class="k">Stat 3</span><span class="v" id="v-s3">–</span>
+            </div>
+            <div class="ga-stat c4" id="stat4" hidden>
+              <span class="k">Stat 4</span><span class="v" id="v-s4">–</span>
+            </div>
+            <div class="ga-stat c5" id="stat5" hidden>
+              <span class="k">Stat 5</span><span class="v" id="v-s5">–</span>
+            </div>
           </div>
-          <div class="ga-stat c2" id="stat2">
-            <span class="k">Rekord</span><span class="v" id="v-best">0</span>
-          </div>
-          <div class="ga-stat c3" id="stat3" hidden>
-            <span class="k">Ruchy</span><span class="v" id="v-moves">0</span>
-          </div>
-          <div class="ga-stat c4" id="stat4" hidden>
-            <span class="k">Czas</span><span class="v" id="v-time">0:00</span>
-          </div>
-          <div class="ga-stat c5" id="stat5" hidden>
-            <span class="k">Combo</span><span class="v" id="v-combo">x1</span>
+
+          <div class="ga-stats-actions">
+            <button class="ga-record-reset" id="btn-reset-best">
+              resetuj rekord
+            </button>
+            <button class="ga-btn-mini" id="btn-stats-close">Zamknij</button>
           </div>
         </section>
 
-        <!-- CONTENT -->
-        <div class="ga-content">
-          <!-- tu jest miejsce na UI gry (plansza, canvas, itp.) -->
-          <div class="ga-stage">
-            <div id="game-mount" class="game-area">
-              <!-- gra renderuje swoje wnętrze -->
-            </div>
+        <!-- MIEJSCE NA GRĘ -->
+        <div class="ga-stage">
+          <div id="game-mount" class="game-area">
+            <!-- gra renderuje tu swoje UI (plansza/canvas/kafelki) -->
+          </div>
+        </div>
+
+        <!-- DÓŁ: sterowanie + hinty -->
+        <footer class="ga-footer">
+          <div class="ga-controls-slot" id="controls-slot" style="--controls-h:auto">
+            <!-- Jeśli gra ma dodatkowe przyciski sterowania, umieszcza je tutaj -->
+            <!-- Przykład: -->
+            <!-- <button class="ga-control-btn" data-action="left">◀</button> -->
           </div>
 
-          <!-- FOOTER: sterowanie + hinty + reset rekordu -->
-          <footer class="ga-footer">
-            <div class="ga-controls" id="controls-slot">
-              <!-- opcjonalne przyciski dotykowe / klawiatura -->
-              <!-- przykładowe: -->
-              <button class="ga-control-btn" data-action="left">◀</button>
-              <button class="ga-control-btn" data-action="up">▲</button>
-              <button class="ga-control-btn" data-action="down">▼</button>
-              <button class="ga-control-btn" data-action="right">▶</button>
-
-              <!-- reset rekordu – mniej widoczny, w innym miejscu -->
-              <button class="ga-record-reset" id="btn-reset-best">
-                resetuj rekord
-              </button>
-            </div>
-
-            <div class="ga-hints" id="hints-slot">
-              <!-- opcjonalne hinty za 💎 -->
-              <button class="ga-hint-btn" id="btn-hint" hidden>
-                Podpowiedź <span class="cost">💎 3</span>
-              </button>
-              <button class="ga-hint-btn" id="btn-undo" hidden>
-                Cofnij <span class="cost">💎 5</span>
-              </button>
-            </div>
-          </footer>
-        </div>
+          <div class="ga-hints" id="hints-slot">
+            <!-- opcjonalne hinty za 💎 -->
+            <button class="ga-hint-btn" id="btn-hint" hidden>
+              Podpowiedź <span class="cost">💎 3</span>
+            </button>
+          </div>
+        </footer>
       </section>
     </div>
+
+    <!-- Minimalny JS do toggle statystyk (możesz przenieść do game.js) -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const panel = document.getElementById("stats-panel");
+        const btnOpen = document.getElementById("btn-stats");
+        const btnClose = document.getElementById("btn-stats-close");
+
+        btnOpen?.addEventListener("click", () => panel?.classList.toggle("open"));
+        btnClose?.addEventListener("click", () => panel?.classList.remove("open"));
+      });
+    </script>
   </body>
 </html>
