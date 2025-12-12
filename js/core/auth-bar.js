@@ -1,5 +1,5 @@
 // js/core/auth-bar.js
-// Neon Arcade – Auth Bar (responsive, compact, with back button + mobile drawer)
+// Neon Arcade – Auth Bar (responsive, back button, coins, mobile drawer via status click)
 // Wymaga: auth.js (ArcadeAuth + ArcadeAuthUI) oraz opcjonalnie coins.js
 
 (function () {
@@ -18,10 +18,11 @@
                 : ``
             }
 
-            <div class="arcade-user">
+            <!-- Status jest klikalny na mobile -->
+            <button class="arcade-user" type="button" data-auth-toggle aria-expanded="false">
               <span class="auth-status">Ładuję…</span>
               <span class="auth-coins" title="Diamenty">💎 –</span>
-            </div>
+            </button>
           </div>
 
           <div class="arcade-auth" data-auth-drawer>
@@ -45,14 +46,14 @@
               style="display:none"
             />
 
-            <button class="arcade-btn auth-login btn-login" type="button">Login</button>
-            <button class="arcade-btn auth-register btn-register" type="button">Załóż konto</button>
-            <button class="arcade-btn guest auth-guest btn-guest" type="button">Gość</button>
+            <button class="arcade-btn auth-login" type="button">Zaloguj</button>
+            <button class="arcade-btn auth-register" type="button">Załóż konto</button>
+
             <button class="arcade-btn logout auth-logout" type="button" style="display:none">
               Wyloguj
             </button>
 
-            <button class="auth-forgot btn-forgot" type="button">Przypomnij hasło</button>
+            <button class="auth-forgot" type="button">Przypomnij hasło</button>
             <span class="auth-error"></span>
           </div>
 
@@ -68,6 +69,7 @@
     const q = (s) => holder.querySelector(s);
 
     const topbar = q(".arcade-topbar");
+    const toggleBtn = q("[data-auth-toggle]");
     const drawer = q("[data-auth-drawer]");
 
     const email = q(".auth-email");
@@ -79,46 +81,52 @@
 
     const btnLogin = q(".auth-login");
     const btnRegister = q(".auth-register");
-    const btnGuest = q(".auth-guest");
     const btnLogout = q(".auth-logout");
     const btnForgot = q(".auth-forgot");
 
-    // Powrót do Arcade
+    // Back
     const backBtn = q("[data-back]");
     if (backBtn && backUrl) {
-      backBtn.addEventListener("click", () => {
-        window.location.href = backUrl;
-      });
+      backBtn.addEventListener("click", () => (window.location.href = backUrl));
     }
 
-    // MOBILE: klik "Login" ma rozwijać drawer (jeśli jest zwinięty)
-    // Jeśli drawer jest otwarty albo to desktop — działa normalnie (ArcadeAuthUI przejmie logikę).
-    btnLogin?.addEventListener(
-      "click",
-      () => {
-        const isMobile = window.matchMedia("(max-width: 520px)").matches;
-        if (!isMobile) return;
+    function isMobile() {
+      return window.matchMedia("(max-width: 520px)").matches;
+    }
 
-        // jeśli drawer jest zamknięty, otwórz i pokaż inputy
-        if (!topbar.classList.contains("drawer-open")) {
-          topbar.classList.add("drawer-open");
-          // focus na email, żeby UX był szybki
-          setTimeout(() => email?.focus(), 0);
-        }
-      },
-      true // capture: nie blokujemy docelowego handlera, tylko najpierw otwieramy drawer
-    );
+    function setDrawer(open) {
+      if (!topbar) return;
+      topbar.classList.toggle("drawer-open", !!open);
+      if (toggleBtn) toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open && email) setTimeout(() => email.focus(), 0);
+    }
 
-    // Gdy klikniesz poza topbarem na mobile, można go zamknąć
-    document.addEventListener("click", (e) => {
-      const isMobile = window.matchMedia("(max-width: 520px)").matches;
-      if (!isMobile) return;
-      if (!topbar.classList.contains("drawer-open")) return;
-      if (topbar.contains(e.target)) return;
-      topbar.classList.remove("drawer-open");
+    // Na mobile klik statusu otwiera/zamyka panel auth
+    toggleBtn?.addEventListener("click", () => {
+      if (!isMobile()) return; // desktop: status nie steruje drawerem
+      const open = topbar.classList.contains("drawer-open");
+      setDrawer(!open);
     });
 
-    // Inicjalizacja panelu auth + monety
+    // Klik poza topbarem zamyka drawer na mobile
+    document.addEventListener("click", (e) => {
+      if (!isMobile()) return;
+      if (!topbar.classList.contains("drawer-open")) return;
+      if (topbar.contains(e.target)) return;
+      setDrawer(false);
+    });
+
+    // Ustaw klasę body.auth-logged (żeby CSS mógł reagować)
+    async function syncLoggedClass() {
+      try {
+        const user = await window.ArcadeAuth?.getUser?.();
+        document.body.classList.toggle("auth-logged", !!user);
+      } catch {
+        document.body.classList.remove("auth-logged");
+      }
+    }
+
+    // Init UI (bez guest)
     ArcadeAuthUI.initLoginPanel({
       email,
       pass,
@@ -128,23 +136,28 @@
       coins,
       btnLogin,
       btnRegister,
-      btnGuest,
       btnLogout,
       btnForgot,
 
-      // po login/logout zawsze odśwież (wg Twoich zasad)
+      // wg Twojej zasady: zawsze refresh po akcjach
       onLoginSuccess: () => window.location.reload(),
       onRegisterSuccess: () => window.location.reload(),
       onLogout: () => window.location.reload(),
-      onGuest: () => window.location.reload(),
     });
 
-    // Po każdej zmianie sesji: domknij drawer na mobile (żeby nie wisiał)
+    // Reaguj na zmiany sesji
+    syncLoggedClass();
     if (window.ArcadeAuth?.onAuthStateChange) {
       window.ArcadeAuth.onAuthStateChange(() => {
-        topbar.classList.remove("drawer-open");
+        syncLoggedClass();
+        setDrawer(false); // po zmianie sesji zamknij panel na mobile
       });
     }
+
+    // Jeśli przejdziesz z mobile->desktop, panel niech się sam „odklei”
+    window.addEventListener("resize", () => {
+      if (!isMobile()) setDrawer(false);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
