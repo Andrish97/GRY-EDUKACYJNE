@@ -1,75 +1,93 @@
-/* css/login.css */
-/* Layout strony logowania / startowej */
+/* ===============================
+   LOGIN / REGISTER PAGE
+   =============================== */
 
-.login-shell {
-  min-height: 100vh;
+.auth-controls {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
-  box-sizing: border-box;
-}
-
-.login-card {
-  max-width: 380px;
-  width: 100%;
-}
-
-.login-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.login-subtitle {
-  font-size: 13px;
-  color: #9ca3af;
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.login-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #9ca3af;
-  margin-bottom: 4px;
-  margin-top: 8px;
-}
-
-.login-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: #020617;
-  color: #e5e7eb;
-  font-size: 13px;
-}
-
-.login-row {
-  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 14px;
-  margin-bottom: 6px;
 }
 
-.login-error {
-  font-size: 12px;
-  color: #f97373;
-  margin-top: 6px;
-  min-height: 16px;
-  text-align: center;
+.auth-controls .arcade-input {
+  width: 100%;
 }
 
-.login-hint {
+/* przyciski logowania */
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* główne przyciski */
+.auth-login,
+.auth-register {
+  min-width: 120px;
+}
+
+/* GOŚĆ – szary, mniej ważny */
+.auth-guest {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: #f9fafb;
+  box-shadow: 0 6px 14px rgba(107, 114, 128, 0.45);
+}
+
+.auth-guest:hover {
+  filter: brightness(1.05);
+}
+
+/* status i błędy */
+.auth-status {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.auth-error {
   font-size: 11px;
-  color: #6b7280;
-  margin-top: 10px;
-  text-align: center;
-  line-height: 1.4;
+  color: #fca5a5;
+}
+
+/* ===============================
+   MOBILE LOGIN
+   =============================== */
+
+@media (max-width: 520px) {
+  .shell {
+    padding: 16px 12px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 0;
+  }
+
+  .header {
+    margin-bottom: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+    letter-spacing: 0.12em;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .auth-actions {
+    flex-direction: column;
+  }
+
+  .auth-login,
+  .auth-register,
+  .auth-guest {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .auth-forgot {
+    display: inline-block;
+    margin-top: 6px;
+  }
 }
