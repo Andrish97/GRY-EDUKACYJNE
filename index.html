@@ -2,35 +2,33 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Neon Arcade – logowanie</title>
 
+    <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="css/theme.css" />
 
-    <!-- Supabase klient (do auth.js) -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-      defer
-    ></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
-    <!-- Core auth (ArcadeAuth + ArcadeAuthUI) -->
+    <!-- Core auth -->
     <script src="js/core/auth.js" defer></script>
 
-    <!-- Logika strony index (redirect + panel logowania) -->
+    <!-- Logika strony -->
     <script src="js/pages/index.js" defer></script>
   </head>
+
   <body class="arcade-body">
     <div class="shell">
       <div class="card">
         <header class="header">
           <div>
             <div class="title">NEON ARCADE</div>
-            <div class="subtitle">Zaloguj się, aby grać.</div>
+            <div class="subtitle">Zaloguj się, aby grać</div>
           </div>
         </header>
 
-        <div class="auth-status" style="margin-bottom: 12px">
-          Ładuję status...
-        </div>
+        <div class="auth-status">Ładuję status…</div>
 
         <div class="auth-controls">
           <input
@@ -47,29 +45,21 @@
             type="password"
             class="auth-pass2 arcade-input"
             placeholder="Powtórz hasło"
-            style="display: none"
+            style="display:none"
           />
 
-          <div style="margin-top: 12px">
+          <div class="auth-actions">
             <button class="arcade-btn auth-login">Zaloguj</button>
             <button class="arcade-btn auth-register">Załóż konto</button>
             <button class="arcade-btn auth-guest">Gość</button>
-            <button class="arcade-btn auth-logout" style="display: none">
+            <button class="arcade-btn auth-logout" style="display:none">
               Wyloguj
             </button>
           </div>
 
-          <div style="margin-top: 8px">
-            <span
-              class="auth-forgot"
-              style="cursor:pointer;font-size:11px;opacity:0.8;"
-            >
-              Przypomnij hasło
-            </span>
-            <span
-              class="auth-error"
-              style="margin-left:8px;font-size:11px;color:#fca5a5;"
-            ></span>
+          <div>
+            <span class="auth-forgot">Przypomnij hasło</span>
+            <span class="auth-error"></span>
           </div>
         </div>
       </div>
