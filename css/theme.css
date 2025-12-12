@@ -278,3 +278,8 @@ body.arcade-body {
   /* inputy pełna szerokość */
   .arcade-input { flex: 1 1 220px; }
 }
+
+body:not(.auth-logged) .arcade-room-btn {
+  display: none;
+}
+
