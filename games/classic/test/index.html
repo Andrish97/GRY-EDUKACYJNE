@@ -5,15 +5,14 @@
     <title>Neon Arcade – Gra</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- favicon z root -->
     <link rel="icon" href="../../../favicon.ico" />
     <link rel="shortcut icon" href="../../../favicon.ico" />
 
     <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/game-layout.css" />
     <link rel="stylesheet" href="game.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-
     <script src="../../../js/core/auth.js" defer></script>
     <script src="../../../js/core/progress.js" defer></script>
     <script src="../../../js/core/coins.js" defer></script>
@@ -24,12 +23,11 @@
   </head>
 
   <body class="arcade-body arcade-game">
-    <!-- Pasek logowania (na bardzo wąskich ekranach chowa formularz automatycznie przez CSS) -->
-    <div data-arcade-auth-bar></div>
+    <!-- Auth bar: powrót do arcade w środku -->
+    <div data-arcade-auth-bar data-back-url="../../../arcade.html"></div>
 
     <div class="ga-shell">
       <section class="ga-card">
-        <!-- WĄSKI TOP: tytuł lewo, akcje prawo -->
         <div class="ga-topbar">
           <h1 class="ga-title" id="ga-title">Nazwa gry</h1>
 
@@ -53,7 +51,6 @@
           </div>
         </div>
 
-        <!-- PANEL STATYSTYK: otwierany przyciskiem -->
         <section class="ga-stats-panel" id="stats-panel">
           <div class="ga-stats">
             <div class="ga-stat c1">
@@ -81,23 +78,16 @@
           </div>
         </section>
 
-        <!-- MIEJSCE NA GRĘ -->
         <div class="ga-stage">
-          <div id="game-mount" class="game-area">
-            <!-- gra renderuje tu swoje UI (plansza/canvas/kafelki) -->
-          </div>
+          <div id="game-mount" class="game-area"></div>
         </div>
 
-        <!-- DÓŁ: sterowanie + hinty -->
         <footer class="ga-footer">
           <div class="ga-controls-slot" id="controls-slot" style="--controls-h:auto">
-            <!-- Jeśli gra ma dodatkowe przyciski sterowania, umieszcza je tutaj -->
-            <!-- Przykład: -->
-            <!-- <button class="ga-control-btn" data-action="left">◀</button> -->
+            <!-- gra może tu dodać swoje przyciski sterowania dotykowego -->
           </div>
 
           <div class="ga-hints" id="hints-slot">
-            <!-- opcjonalne hinty za 💎 -->
             <button class="ga-hint-btn" id="btn-hint" hidden>
               Podpowiedź <span class="cost">💎 3</span>
             </button>
@@ -106,15 +96,15 @@
       </section>
     </div>
 
-    <!-- Minimalny JS do toggle statystyk (możesz przenieść do game.js) -->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const panel = document.getElementById("stats-panel");
-        const btnOpen = document.getElementById("btn-stats");
-        const btnClose = document.getElementById("btn-stats-close");
-
-        btnOpen?.addEventListener("click", () => panel?.classList.toggle("open"));
-        btnClose?.addEventListener("click", () => panel?.classList.remove("open"));
+        document.getElementById("btn-stats")?.addEventListener("click", () => {
+          panel?.classList.toggle("open");
+        });
+        document.getElementById("btn-stats-close")?.addEventListener("click", () => {
+          panel?.classList.remove("open");
+        });
       });
     </script>
   </body>
