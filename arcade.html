@@ -2,19 +2,17 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Neon Arcade</title>
 
+    <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/arcade.css" />
 
     <!-- Supabase -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-      defer
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
     <!-- Core -->
-
     <script src="js/core/auth.js" defer></script>
     <script src="js/core/progress.js" defer></script>
     <script src="js/core/coins.js" defer></script>
@@ -24,48 +22,24 @@
     <!-- Logika arcade -->
     <script src="js/pages/arcade.js" defer></script>
   </head>
+
   <body class="arcade-body">
-    <div
-      data-arcade-auth-bar
-      data-after-login="arcade.html"
-      data-after-guest="arcade.html"
-    ></div>
+    <div data-arcade-auth-bar data-after-login="arcade.html"></div>
 
     <main class="arcade-main">
       <header class="arcade-header">
         <h1 class="arcade-title">Neon Arcade</h1>
-        <p class="arcade-subtitle">
-          Wybierz kategorię z zakładek i zagraj w jedną z gier.
-        </p>
-      </header>
 
-      <!-- NOWY PRZYCISK POKOJU NAGRÓD -->
-      <div class="arcade-top-actions">
-        <a href="room.html" class="arcade-room-btn">
+        <!-- ZAWSZE widoczny (także dla niezalogowanego) -->
+        <a href="room.html" class="arcade-room-btn" title="Pokój nagród">
           <span class="icon">🏠</span>
           <span class="label">Pokój nagród</span>
         </a>
-      </div>
-      
-      <!-- Zakładki kategorii -->
-      <section class="arcade-section">
-        <h2 class="arcade-section-title">Kategorie</h2>
-        <div id="categories" class="categories-tabs"></div>
-      </section>
+      </header>
 
-      <!-- Gry w wybranej kategorii -->
-      <section class="arcade-section games-section" id="games-section" hidden>
-        <div class="games-header">
-          <button
-            id="back-to-categories"
-            class="back-to-categories-btn"
-            type="button"
-          >
-            ← Wszystkie kategorie
-          </button>
-          <h2 id="games-section-title" class="arcade-section-title"></h2>
-        </div>
+      <div id="categories" class="categories-tabs" aria-label="Kategorie"></div>
 
+      <section class="games-section" aria-label="Gry">
         <div id="games"></div>
       </section>
 
@@ -76,6 +50,3 @@
     </main>
   </body>
 </html>
-
-
-
