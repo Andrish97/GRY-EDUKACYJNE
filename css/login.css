@@ -1,9 +1,10 @@
 /* css/login.css */
-/* Neon Arcade – strona logowania (stabilny układ, RWD, fix mobile inputów) */
+/* Neon Arcade – strona logowania (fix: inputy nie mogą być „kapsułami” na mobile) */
 
+/* login węższy niż arcade */
 .shell {
   width: 100%;
-  max-width: 520px; /* login węższy niż arcade */
+  max-width: 520px;
   margin: 0 auto;
   padding: 32px 16px;
   box-sizing: border-box;
@@ -20,29 +21,41 @@
   color: #9ca3af;
 }
 
-/* cały panel */
+/* panel */
 .auth-controls {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* ===============================
-   INPUTY LOGOWANIA – FIX ROZMIARU
-   =============================== */
+/* ======================================================
+   FIX INPUTÓW: mocny selektor + reset kluczowych cech
+   ====================================================== */
 
-.auth-controls .arcade-input {
+/* łapiemy zarówno .arcade-input jak i inputy bez tej klasy */
+body.arcade-body .auth-controls input.arcade-input,
+body.arcade-body .auth-controls input[type="email"],
+body.arcade-body .auth-controls input[type="password"] {
   width: 100%;
   box-sizing: border-box;
   display: block;
 
-  /* KLUCZOWE FIXY */
-  padding: 8px 12px;        /* jak było wcześniej */
-  border-radius: 12px;      /* normalny radius */
-  font-size: 14px;          /* nie 16px */
-  line-height: 1.2;
-  min-height: unset;
-  height: auto;
+  /* wygląd jak „normalne” pola (jak wcześniej) */
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+
+  /* nie pozwól im rosnąć w pionie */
+  height: 40px !important;
+  min-height: 0 !important;
+  max-height: 40px !important;
+
+  line-height: 20px !important;
+
+  /* font jak wcześniej */
+  font-size: 14px !important;
+
+  /* gdyby theme dawał jakieś „dziwne” rozciąganie */
+  flex: 0 0 auto !important;
 }
 
 /* rząd przycisków */
@@ -65,7 +78,7 @@
   box-shadow: 0 6px 14px rgba(107, 114, 128, 0.45);
 }
 
-/* forgot + error w jednej linii */
+/* forgot + error */
 .auth-meta {
   display: flex;
   align-items: center;
@@ -103,7 +116,7 @@
   }
 
   .card {
-    border-radius: 16px; /* zostawiamy, bo chcesz zawsze zaokrąglenia */
+    border-radius: 16px;
     padding: 16px;
   }
 
@@ -124,9 +137,15 @@
     gap: 6px;
   }
 
-  /* Minimalnie ciaśniej na małych ekranach */
-  .auth-controls .arcade-input {
-    padding: 10px 12px !important;
+  /* inputy na mobile nadal normalne */
+  body.arcade-body .auth-controls input.arcade-input,
+  body.arcade-body .auth-controls input[type="email"],
+  body.arcade-body .auth-controls input[type="password"] {
+    height: 40px !important;
+    max-height: 40px !important;
+    padding: 8px 12px !important;
     border-radius: 12px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
   }
 }
