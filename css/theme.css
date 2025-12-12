@@ -1,15 +1,49 @@
 /* css/theme.css */
-/* Ogólny motyw Neon Arcade – tło, karty, przyciski, topbar */
+/* Neon Arcade – globalny motyw + uniwersalny layout dla gier
+   Założenie: NIE psujemy istniejących stron Arcade – zachowujemy klasy,
+   a gry dostają dodatkowe komponenty o prefiksie .ga- (game app).
+*/
 
+/* =========================
+   0) Base / tło
+   ========================= */
+
+:root {
+  --bg0: #020617; /* głębokie tło */
+  --bg1: rgba(15, 23, 42, 0.95); /* karta */
+  --stroke: rgba(148, 163, 184, 0.18);
+  --stroke-strong: rgba(148, 163, 184, 0.35);
+
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+
+  --shadow-card: 0 18px 45px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(148, 163, 184, 0.12);
+
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* Akcenty (różne kolory) */
+  --g-green: linear-gradient(135deg, #22c55e, #16a34a);
+  --g-cyan: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  --g-pink: linear-gradient(135deg, #ff2cdf, #00f0ff);
+  --g-red: linear-gradient(135deg, #ef4444, #b91c1c);
+  --g-gray: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+/* U Ciebie strony używają body.arcade-body — zostawiamy to */
 body.arcade-body {
-  background: radial-gradient(circle at top, #1f2933, #020617);
-  color: #e5e7eb;
+  background: radial-gradient(circle at top, #1f2933, var(--bg0));
+  color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   margin: 0;
   min-height: 100vh;
 }
 
-/* Główne opakowanie strony */
+/* =========================
+   1) Layout ogólny (shell + card) – używane przez Arcade i gry
+   ========================= */
+
 .shell {
   width: 100%;
   max-width: 1100px;
@@ -18,20 +52,18 @@ body.arcade-body {
   box-sizing: border-box;
 }
 
-/* Główna karta */
 .card {
   width: 100%;
-  background: rgba(15, 23, 42, 0.95);
-  border-radius: 16px;
+  background: var(--bg1);
+  border-radius: var(--r-lg);
   padding: 20px 22px 22px;
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(148, 163, 184, 0.12);
+  box-shadow: var(--shadow-card);
   backdrop-filter: blur(8px);
   box-sizing: border-box;
+  border: 1px solid var(--stroke);
 }
 
-/* Nagłówek (tytuł + podtytuł) */
+/* Header (tytuł + podtytuł) – kompatybilne ze starym */
 .header {
   display: flex;
   justify-content: space-between;
@@ -50,60 +82,84 @@ body.arcade-body {
 
 .subtitle {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
-/* Przyciski – bazowe */
+/* =========================
+   2) Przyciski globalne (zostawiamy Twoje .btn* i .arcade-btn)
+   ========================= */
+
 .btn {
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: none;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  transition:
-    transform 0.08s ease,
-    box-shadow 0.08s ease,
-    filter 0.08s ease;
   white-space: nowrap;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease,
+    opacity 0.08s ease;
 }
 
 .btn-main {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background: var(--g-green);
   color: #052e16;
   box-shadow: 0 8px 18px rgba(22, 163, 74, 0.5);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  background: var(--g-cyan);
   color: #0b1120;
   box-shadow: 0 8px 18px rgba(56, 189, 248, 0.5);
 }
 
 .btn-ghost {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
-  color: #f9fafb;
-  box-shadow: 0 8px 18px rgba(107, 114, 128, 0.5);
+  background: transparent;
+  border: 1px dashed rgba(148, 163, 184, 0.8);
+  color: var(--text);
+  opacity: 0.9;
+  box-shadow: none;
 }
 
 .btn-link {
   background: transparent;
-  color: #9ca3af;
+  color: var(--muted);
   box-shadow: none;
   padding: 0;
   font-size: 12px;
   text-decoration: underline;
+  cursor: pointer;
 }
 
-/* Efekty hover dla przycisków głównych */
 .btn-main:hover,
-.btn-secondary:hover,
-.btn-ghost:hover {
+.btn-secondary:hover {
   transform: translateY(-1px);
   filter: brightness(1.05);
 }
 
-/* Pasek na górze (topbar) */
+.btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.75);
+  opacity: 1;
+}
+
+.btn:active {
+  transform: translateY(1px);
+  opacity: 0.92;
+}
+
+/* Ikonki w przyciskach */
+.btn .ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  transform: translateY(1px);
+}
+
+/* =========================
+   3) Topbar / auth bar (zostawiamy – tylko kosmetyka + porządek)
+   ========================= */
+
 .arcade-topbar {
   position: sticky;
   top: 0;
@@ -114,8 +170,7 @@ body.arcade-body {
   gap: 12px;
   padding: 10px 20px;
   background: rgba(15, 23, 42, 0.96);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.8),
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8),
     0 1px 0 rgba(148, 163, 184, 0.2);
   backdrop-filter: blur(10px);
   box-sizing: border-box;
@@ -123,7 +178,7 @@ body.arcade-body {
 
 .arcade-user {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .arcade-auth {
@@ -136,36 +191,34 @@ body.arcade-body {
 
 .arcade-input {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(148, 163, 184, 0.6);
-  background: #020617;
-  color: #e5e7eb;
+  background: var(--bg0);
+  color: var(--text);
   font-size: 12px;
 }
 
 .arcade-btn {
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: none;
   cursor: pointer;
   font-size: 11px;
   font-weight: 600;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background: var(--g-green);
   color: #052e16;
   box-shadow: 0 6px 14px rgba(22, 163, 74, 0.45);
-  transition:
-    transform 0.06s ease,
-    box-shadow 0.06s ease,
-    filter 0.08s ease;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.08s ease,
+    opacity 0.08s ease;
 }
 
 .arcade-btn.logout {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  background: var(--g-red);
   box-shadow: 0 6px 14px rgba(239, 68, 68, 0.45);
 }
 
 .arcade-btn.guest {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
+  background: var(--g-gray);
   box-shadow: 0 6px 14px rgba(107, 114, 128, 0.45);
 }
 
@@ -174,21 +227,335 @@ body.arcade-body {
   filter: brightness(1.05);
 }
 
-/* Przycisk "Powrót do Arcade" dla gier */
+.arcade-btn:active {
+  transform: translateY(1px);
+  opacity: 0.9;
+}
+
+/* Forgot hasła: zawsze tekst */
+.auth-forgot {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 11px;
+  opacity: 0.8;
+  padding: 0;
+  margin-left: 8px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* =========================
+   4) Uniwersalny layout dla gier (NOWE)
+   ========================= */
+
+/* body gry: <body class="arcade-body arcade-game"> */
+body.arcade-game {
+  min-height: 100vh;
+}
+
+/* Kontener gry: ogranicza wysokość do okna, bez „dzikiego” scrolla */
+.ga-shell {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 14px 18px;
+  box-sizing: border-box;
+
+  /* klucz: gra mieści się w oknie */
+  min-height: calc(100vh - 56px); /* topbar ok. 56px */
+  display: flex;
+  align-items: stretch;
+}
+
+.ga-card {
+  width: 100%;
+  background: var(--bg1);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+
+  /* bez przewijania całej strony */
+  overflow: hidden;
+}
+
+/* Nagłówek gry */
+.ga-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.ga-headline h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ga-headline p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Prawa strona nagłówka: przyciski główne */
+.ga-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.ga-btn {
+  border: none;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 8px 10px;
+  white-space: nowrap;
+
+  transition: transform 0.08s ease, filter 0.08s ease, opacity 0.08s ease,
+    box-shadow 0.08s ease;
+}
+
+.ga-btn-primary {
+  background: var(--g-pink);
+  color: #0b1120;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+}
+
+.ga-btn-secondary {
+  background: var(--g-cyan);
+  color: #0b1120;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+}
+
+.ga-btn-ghost {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--stroke-strong);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.ga-btn-danger {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: rgba(239, 68, 68, 0.95);
+}
+
+.ga-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ga-btn:active {
+  transform: translateY(1px);
+  opacity: 0.92;
+}
+
+/* Ikony w ga-btn */
+.ga-btn .ico {
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(1px);
+}
+
+/* Strefa statystyk (1–5 okienek) */
+.ga-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 14px 14px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.ga-stat {
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: rgba(2, 6, 23, 0.45);
+  padding: 8px 10px;
+  min-height: 46px;
+}
+
+.ga-stat .k {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.ga-stat .v {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Różne kolory statów (ładne, ale delikatne) */
+.ga-stat.c1 {
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25);
+}
+.ga-stat.c2 {
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.22);
+}
+.ga-stat.c3 {
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.22);
+}
+.ga-stat.c4 {
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.22);
+}
+.ga-stat.c5 {
+  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.22);
+}
+
+/* Główna strefa gry – tu gra wrzuca swój UI */
+.ga-content {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0; /* ważne dla flex overflow */
+}
+
+/* miejsce na grę (plansza itp.) */
+.ga-stage {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* miejsce na dotyk/klawiatura/hinty */
+.ga-footer {
+  border-top: 1px solid var(--stroke);
+  padding: 10px 14px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.ga-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* przyciski sterowania (dół) */
+.ga-control-btn {
+  border: 1px solid var(--stroke-strong);
+  background: rgba(15, 23, 42, 0.85);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 48px;
+  transition: transform 0.06s ease, filter 0.08s ease, opacity 0.08s ease;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.65);
+}
+
+.ga-control-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ga-control-btn:active {
+  transform: translateY(1px);
+  opacity: 0.92;
+}
+
+/* Slot na hinty za 💎 (po prawej) */
+.ga-hints {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.ga-hint-btn {
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: var(--text);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+  transition: transform 0.06s ease, filter 0.08s ease, opacity 0.08s ease;
+}
+
+.ga-hint-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ga-hint-btn:active {
+  transform: translateY(1px);
+  opacity: 0.92;
+}
+
+.ga-hint-btn .cost {
+  opacity: 0.8;
+  margin-left: 6px;
+}
+
+/* Przycisk reset rekordu – mało widoczny (osobny slot) */
+.ga-record-reset {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: rgba(148, 163, 184, 0.75);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 0;
+  opacity: 0.85;
+}
+
+.ga-record-reset:hover {
+  opacity: 1;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+/* =========================
+   5) Back button (zostawiamy, ale lekko bezpieczniej)
+   ========================= */
+
 .arcade-back-btn {
   position: fixed;
-  top: calc(1rem + 40px); /* pasek + margines */
-  left: 1.2rem;
+  top: calc(56px + 10px); /* topbar + odstęp */
+  left: 12px;
   z-index: 9999;
   padding: 0.45rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 
   background: rgba(15, 23, 42, 0.85);
-  color: #e5e7eb;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: var(--text);
+  border: 1px solid var(--stroke-strong);
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
 
@@ -207,70 +574,37 @@ body.arcade-body {
   opacity: 0.7;
 }
 
-/* Niech "Przypomnij hasło" zawsze wygląda jak tekstowy link, a nie przycisk */
-.auth-forgot {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 11px;
-  opacity: 0.8;
-  padding: 0;
-  margin-left: 8px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-/* ===========================
-   Uniwersalny layout dla gier
-   =========================== */
+/* =========================
+   6) RWD – telefon
+   ========================= */
 
-/* Każda strona gry powinna mieć:
-   <body class="arcade-body arcade-game-page">
-*/
+@media (max-width: 720px) {
+  .shell {
+    padding: 18px 12px;
+  }
 
+  .ga-shell {
+    padding: 10px 10px 14px;
+    min-height: calc(100vh - 56px);
+  }
 
-.arcade-game-page {
-  min-height: 100vh;
-  max-height: 100vh;
-  overflow: auto; /* brak scrolla */
-  display: flex;
-  flex-direction: column;
-}
+  .ga-header {
+    grid-template-columns: 1fr;
+  }
 
-/* główny kontener gry */
-.arcade-game-page .shell {
-  flex: 1 1 auto;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center; /* karta w pionie wycentrowana */
-  overflow: hidden;
-  padding: 0;
-}
-/* ======================================
-   Ghost / secondary button (globalne)
-   ====================================== */
+  .ga-actions {
+    justify-content: flex-start;
+  }
 
-/* wariant ghost dla przycisków arcade */
-.arcade-btn--ghost,
-.btn-ghost {
-  background: transparent;
-  border-style: dashed;
-  border-width: 1px;
-  border-color: rgba(148, 163, 184, 0.8);
-  color: inherit;
-  opacity: 0.9;
-}
+  .ga-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-/* hover / focus – leciutkie podświetlenie */
-.arcade-btn--ghost:hover,
-.btn-ghost:hover {
-  background: rgba(15, 23, 42, 0.75);
-  opacity: 1;
-}
+  .ga-footer {
+    grid-template-columns: 1fr;
+  }
 
-/* active – lekkie „wciśnięcie” */
-.arcade-btn--ghost:active,
-.btn-ghost:active {
-  transform: translateY(1px);
-  opacity: 0.85;
+  .ga-hints {
+    justify-content: flex-start;
+  }
 }
