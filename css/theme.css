@@ -1,550 +1,276 @@
-/* css/theme.css
-   Neon Arcade – globalny motyw + uniwersalny layout dla gier
-   - NIE psuje arcade.html
-   - dodaje spójny layout gier + responsywny auth-bar
-*/
+/* =========================================================
+   Neon Arcade — THEME v2
+   Globalny motyw + auth-bar + uniwersalny layout gier
+   ========================================================= */
 
 :root {
-  --bg0: #020617;
-  --bg1: rgba(15, 23, 42, 0.95);
+  --bg-main: #020617;
+  --bg-panel: rgba(15, 23, 42, 0.95);
 
   --text: #e5e7eb;
   --muted: #9ca3af;
+  --danger: #ef4444;
 
   --stroke: rgba(148, 163, 184, 0.18);
-  --stroke2: rgba(148, 163, 184, 0.35);
+  --stroke-strong: rgba(148, 163, 184, 0.35);
 
-  --r-lg: 16px;
-  --r-md: 12px;
-  --r-pill: 999px;
-
-  --shadow-card: 0 18px 45px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(148, 163, 184, 0.12);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
 
   --g-green: linear-gradient(135deg, #22c55e, #16a34a);
   --g-cyan: linear-gradient(135deg, #38bdf8, #0ea5e9);
   --g-pink: linear-gradient(135deg, #ff2cdf, #00f0ff);
   --g-red: linear-gradient(135deg, #ef4444, #b91c1c);
   --g-gray: linear-gradient(135deg, #6b7280, #4b5563);
-  --g-violet: linear-gradient(135deg, #a855f7, #6366f1);
 }
 
-* { box-sizing: border-box; }
+/* ============ BASE ============ */
+
+* {
+  box-sizing: border-box;
+}
 
 body.arcade-body {
-  background:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 55%),
-    radial-gradient(circle at bottom, rgba(244, 63, 94, 0.14), transparent 55%),
-    radial-gradient(circle at top, #1f2933, var(--bg0));
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   margin: 0;
   min-height: 100vh;
-}
-
-/* ========= Layout ogólny (Arcade + inne strony) ========= */
-
-.shell {
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 20px;
-}
-
-.card {
-  width: 100%;
-  background: var(--bg1);
-  border-radius: var(--r-lg);
-  padding: 20px 22px 22px;
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-card);
-  backdrop-filter: blur(8px);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.subtitle {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* ========= Buttons (global) ========= */
-
-.btn {
-  padding: 8px 12px;
-  border-radius: var(--r-pill);
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: transform 0.08s ease, filter 0.08s ease, opacity 0.08s ease,
-    box-shadow 0.08s ease;
-}
-
-.btn-main { background: var(--g-green); color: #052e16; box-shadow: 0 8px 18px rgba(22, 163, 74, 0.5); }
-.btn-secondary { background: var(--g-cyan); color: #0b1120; box-shadow: 0 8px 18px rgba(56, 189, 248, 0.5); }
-
-.btn-ghost {
-  background: transparent;
-  border: 1px dashed rgba(148, 163, 184, 0.8);
   color: var(--text);
-  opacity: 0.92;
-  box-shadow: none;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(56,189,248,0.14), transparent 55%),
+    radial-gradient(circle at bottom, rgba(244,63,94,0.14), transparent 55%),
+    var(--bg-main);
 }
 
-.btn-link {
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  padding: 0;
-  font-size: 12px;
-  text-decoration: underline;
-}
-
-.btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.btn:active { transform: translateY(1px); opacity: 0.92; }
-
-/* ========= AUTH BAR (topbar) ========= */
+/* ============ AUTH BAR (TOP) ============ */
 
 .arcade-topbar {
   position: sticky;
   top: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  z-index: 100;
   background: rgba(15, 23, 42, 0.96);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--stroke);
+  box-shadow: 0 10px 26px rgba(0,0,0,.75);
 }
 
+.arcade-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+}
+
+/* POWRÓT */
+.arcade-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--stroke-strong);
+  background: rgba(2,6,23,.6);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.arcade-back .label {
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 520px) {
+  .arcade-back .label {
+    display: none;
+  }
+}
+
+/* USER INFO */
 .arcade-user {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
   color: var(--muted);
-  min-width: 0;
 }
-
-.auth-status { color: var(--muted); }
 
 .auth-coins {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 2px 8px;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  background: rgba(2, 6, 23, 0.35);
-  color: var(--text);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(168,85,247,.35);
+  background: rgba(2,6,23,.35);
   font-size: 11px;
 }
 
 .auth-coins::before {
   content: "💎";
-  opacity: 0.9;
 }
 
-.auth-coins-hint {
-  font-size: 11px;
-  opacity: 0.8;
-}
-
+/* AUTH ACTIONS */
 .arcade-auth {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
 }
 
 .arcade-input {
   padding: 5px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  background: rgba(2, 6, 23, 0.8);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(148,163,184,.55);
+  background: rgba(2,6,23,.85);
   color: var(--text);
   font-size: 12px;
-  outline: none;
   min-width: 160px;
-}
-
-.arcade-input:focus {
-  border-color: rgba(56, 189, 248, 0.9);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
 .arcade-btn {
   padding: 5px 10px;
-  border-radius: var(--r-pill);
+  border-radius: var(--radius-pill);
   border: none;
   cursor: pointer;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   text-transform: uppercase;
   background: var(--g-green);
   color: #052e16;
-  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.45);
-  transition: transform 0.06s ease, filter 0.08s ease, opacity 0.08s ease;
 }
 
-.arcade-btn.logout { background: var(--g-red); box-shadow: 0 6px 14px rgba(239, 68, 68, 0.45); }
-.arcade-btn.guest { background: var(--g-gray); box-shadow: 0 6px 14px rgba(107, 114, 128, 0.45); }
+.arcade-btn.logout { background: var(--g-red); }
+.arcade-btn.guest { background: var(--g-gray); }
 
-.arcade-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
-.arcade-btn:active { transform: translateY(1px); opacity: 0.92; }
-
-/* Forgot hasła jako link */
 .auth-forgot {
   background: none;
   border: none;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--muted);
   font-size: 11px;
-  padding: 0 4px;
   cursor: pointer;
   text-decoration: underline;
-  opacity: 0.9;
-  user-select: none;
 }
-.auth-forgot:hover { opacity: 1; color: rgba(229, 231, 235, 0.95); }
 
 .auth-error {
   font-size: 11px;
-  color: rgba(244, 63, 94, 0.95);
-  max-width: 320px;
+  color: var(--danger);
 }
 
-/* ✅ MOBILE: auth-bar nie rozjeżdża się
-   - inputy i przyciski przechodzą w "drawer" (zwijane)
-   - domyślnie: pokazujemy tylko status + 💎 + mały przycisk "Konto"
-*/
-@media (max-width: 720px) {
-  .arcade-topbar {
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  /* status po lewej, reszta w kolumnie */
-  .arcade-auth {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .arcade-input {
-    min-width: 0;
-    flex: 1 1 160px;
-  }
+/* MOBILE: drawer */
+.auth-toggle {
+  display: none;
+  background: rgba(2,6,23,.6);
+  border: 1px solid var(--stroke-strong);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
 }
 
 @media (max-width: 520px) {
-  /* Na bardzo wąskim ekranie chowamy form i zostawiamy tylko status */
+  .arcade-topbar-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .auth-toggle {
+    display: inline-flex;
+  }
+
   .arcade-auth {
     display: none;
+    border-top: 1px solid var(--stroke);
+    padding-top: 8px;
   }
-  .arcade-topbar {
-    padding: 8px 12px;
+
+  .arcade-topbar.drawer-open .arcade-auth {
+    display: flex;
   }
 }
 
-/* ========= Back button ========= */
+/* ============ GAME LAYOUT ============ */
 
-.arcade-back-btn {
-  position: fixed;
-  top: calc(56px + 10px);
-  left: 12px;
-  z-index: 9999;
-  padding: 0.45rem 1rem;
-  border-radius: var(--r-pill);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-
-  background: rgba(15, 23, 42, 0.85);
-  color: var(--text);
-  border: 1px solid var(--stroke2);
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-
-  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
-}
-
-.arcade-back-btn:hover { background: rgba(15, 23, 42, 1); transform: translateY(-1px); }
-.arcade-back-btn:active { transform: translateY(1px); opacity: 0.75; }
-
-/* ========= Uniwersalny layout gier (v2) ========= */
-
-body.arcade-game {
-  min-height: 100vh;
-}
-
-.ga-shell {
-  width: 100%;
+body.arcade-game .game-shell {
   max-width: 980px;
   margin: 0 auto;
   padding: 14px;
-  min-height: calc(100vh - 56px);
-  display: flex;
-  align-items: stretch;
 }
 
-.ga-card {
-  width: 100%;
-  background: var(--bg1);
-  border-radius: var(--r-lg);
+.game-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-card);
-  backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Na wąskich ekranach: full-screen */
 @media (max-width: 720px) {
-  .ga-shell { padding: 0; }
-  .ga-card { border-radius: 0; border-left: none; border-right: none; }
+  .game-shell { padding: 0; }
+  .game-card { border-radius: 0; }
 }
 
-/* Wąski top gry: tytuł lewo, przyciski prawo */
-.ga-topbar {
+/* HEADER */
+.game-header {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  align-items: center;
   padding: 10px 12px;
   border-bottom: 1px solid var(--stroke);
 }
 
-.ga-title {
-  margin: 0;
+.game-title {
   font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.ga-actions {
+.game-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
 }
 
-/* Przyciski gry */
-.ga-btn {
-  border: none;
-  border-radius: var(--r-pill);
-  cursor: pointer;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 12px;
+/* BUTTONS */
+.game-btn {
+  border-radius: var(--radius-pill);
   padding: 8px 10px;
-  white-space: nowrap;
-  transition: transform 0.08s ease, filter 0.08s ease, opacity 0.08s ease,
-    box-shadow 0.08s ease;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
 }
 
-.ga-btn .ico { margin-right: 6px; display: inline-flex; transform: translateY(1px); }
-
-.ga-btn-primary { background: var(--g-pink); color: #0b1120; box-shadow: 0 0 16px rgba(0, 240, 255, 0.35); }
-.ga-btn-secondary { background: var(--g-cyan); color: #0b1120; box-shadow: 0 0 14px rgba(56, 189, 248, 0.35); }
-.ga-btn-ghost { background: rgba(2, 6, 23, 0.35); border: 1px solid var(--stroke2); color: var(--text); box-shadow: none; }
-
-.ga-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.ga-btn:active { transform: translateY(1px); opacity: 0.92; }
-
-/* Mini przycisk (Staty / Zamknij) */
-.ga-btn-mini {
-  border: 1px solid var(--stroke2);
-  background: rgba(2, 6, 23, 0.25);
+.game-btn.main { background: var(--g-pink); }
+.game-btn.secondary { background: var(--g-cyan); }
+.game-btn.ghost {
+  background: rgba(2,6,23,.35);
+  border: 1px solid var(--stroke-strong);
   color: var(--text);
-  border-radius: var(--r-pill);
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 0.08s ease, filter 0.08s ease, opacity 0.08s ease;
 }
 
-.ga-btn-mini:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.ga-btn-mini:active { transform: translateY(1px); opacity: 0.92; }
-
-/* Panel statystyk (toggle) */
-.ga-stats-panel {
-  display: none;
-  border-bottom: 1px solid var(--stroke);
-  padding: 10px 12px 12px;
-  background: rgba(2, 6, 23, 0.25);
-}
-
-.ga-stats-panel.open { display: block; }
-
-/* Staty 1–5 */
-.ga-stats {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-@media (max-width: 720px) {
-  .ga-topbar { grid-template-columns: 1fr; }
-  .ga-actions { justify-content: flex-start; }
-  .ga-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-.ga-stat {
-  border-radius: var(--r-md);
-  border: 1px solid var(--stroke);
-  background: rgba(2, 6, 23, 0.35);
-  padding: 8px 10px;
-  min-height: 46px;
-}
-
-.ga-stat .k {
-  display: block;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-}
-
-.ga-stat .v {
-  display: block;
-  margin-top: 2px;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-/* Kolorowe obwódki statów */
-.ga-stat.c1 { box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25); }
-.ga-stat.c2 { box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.22); }
-.ga-stat.c3 { box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.22); }
-.ga-stat.c4 { box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.22); }
-.ga-stat.c5 { box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.22); }
-
-.ga-stats-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.ga-record-reset {
-  background: transparent;
-  border: none;
-  color: rgba(148, 163, 184, 0.75);
-  font-size: 12px;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 6px 0;
-  opacity: 0.88;
-}
-.ga-record-reset:hover { opacity: 1; color: rgba(229, 231, 235, 0.95); }
-
-/* Stage i footer */
-.ga-stage {
-  flex: 1 1 auto;
+/* STAGE */
+.game-stage {
+  flex: 1;
   padding: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 
-.ga-footer {
+/* FOOTER */
+.game-footer {
   border-top: 1px solid var(--stroke);
-  padding: 10px 12px 12px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
-}
-
-@media (max-width: 720px) {
-  .ga-footer { grid-template-columns: 1fr; }
-}
-
-/* Slot sterowania – gra może ustawić wysokość */
-.ga-controls-slot {
-  --controls-h: auto;
-  min-height: var(--controls-h);
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.ga-control-btn {
-  border: 1px solid var(--stroke2);
-  background: rgba(15, 23, 42, 0.85);
-  color: var(--text);
-  border-radius: 14px;
   padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  min-width: 48px;
-  transition: transform 0.06s ease, filter 0.08s ease, opacity 0.08s ease;
-}
-.ga-control-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.ga-control-btn:active { transform: translateY(1px); opacity: 0.92; }
-
-/* Hinty */
-.ga-hints {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 10px;
 }
 
-@media (max-width: 720px) {
-  .ga-hints { justify-content: flex-start; }
-}
-
-.ga-hint-btn {
-  border: 1px solid rgba(168, 85, 247, 0.45);
-  background: rgba(2, 6, 23, 0.35);
-  color: var(--text);
-  border-radius: var(--r-pill);
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.2);
-  transition: transform 0.06s ease, filter 0.08s ease, opacity 0.08s ease;
-}
-.ga-hint-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.ga-hint-btn:active { transform: translateY(1px); opacity: 0.92; }
-
-.ga-hint-btn .cost { opacity: 0.85; margin-left: 6px; }
