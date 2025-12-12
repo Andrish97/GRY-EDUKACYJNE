@@ -7,7 +7,7 @@
 
     <!-- globalny motyw -->
     <link rel="stylesheet" href="css/theme.css" />
-    <!-- styl pokoju 2D -->
+    <!-- styl pokoju 2D (ma priorytet) -->
     <link rel="stylesheet" href="css/room.css" />
 
     <!-- supabase -->
@@ -24,38 +24,42 @@
     <!-- logika pokoju -->
     <script src="js/pages/room-scene.js" defer></script>
   </head>
-  <body>
-    <div data-arcade-auth-bar data-back-url="arcade.html"></div>
+
+  <!-- ✅ dodaj klasę, żeby room.css mógł bezpiecznie nadpisać theme -->
+  <body class="page-room">
+    <!-- ✅ usuń data-back-url, bo back button i tak dodaje ArcadeUI (albo odwrotnie) -->
+    <div data-arcade-auth-bar data-after-login="room.html"></div>
 
     <main class="room2d-page">
       <header class="room2d-header">
         <div class="room2d-header-left">
           <h1 class="room2d-title">Twój pokój</h1>
           <p class="room2d-subtitle">
-            Ustawiaj meble, trofea i lampy. Przytrzymaj i przeciągnij, żeby zmienić pozycję.
+            Ustawiaj meble, trofea i lampy. Włącz <b>Tryb edycji</b>, żeby przeciągać przedmioty.
           </p>
         </div>
 
         <div class="room2d-header-right">
-          <button id="room-btn-open-shop" class="room2d-btn room2d-btn-secondary">
+          <button id="room-btn-open-shop" class="room2d-btn room2d-btn-secondary" type="button">
             Sklep
           </button>
-          <button id="room-btn-edit" class="room2d-btn room2d-btn-secondary">
+          <button id="room-btn-edit" class="room2d-btn room2d-btn-secondary" type="button">
             Tryb edycji
           </button>
-          <button id="room-btn-save" class="room2d-btn">
+          <button id="room-btn-save" class="room2d-btn" type="button">
             Zapisz
           </button>
         </div>
       </header>
 
+      <!-- ✅ wrapper + bg + scena obiektów – to masz dobrze -->
       <section class="room2d-scene-wrapper">
         <div class="room2d-scene-bg"></div>
         <div class="room2d-scene" id="room-scene"></div>
       </section>
 
       <p class="room2d-hint">
-        W trybie edycji kliknięcie na przedmiot usuwa go z pokoju (pozostaje kupiony w sklepie).
+        W trybie edycji: przeciągaj, aby przesuwać. Kliknięcie usuwa przedmiot z pokoju (pozostaje kupiony w sklepie).
       </p>
     </main>
   </body>
