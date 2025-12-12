@@ -1,6 +1,6 @@
 // js/pages/room-shop.js
-// Neon Room – Sklep pokoju (kategorie + itemy + kupno + dodawanie instancji + style)
-// Wymaga: js/core/room-api.js, coins.js, progress.js, auth-bar.js (jak w HTML)
+// Neon Room – Sklep pokoju (STABILNY, z diagnostyką)
+// Wymaga: js/core/room-api.js (ArcadeRoom), coins.js, progress.jszynka DOM: #shop-categories, #shop-item-list, #shop-items-title, #shop-balance
 
 (function () {
   "use strict";
@@ -10,23 +10,47 @@
   const SHOP_GAME_ID = "neon_room_shop";
 
   // DOM
-  let categoriesEl = null;
-  let itemsEl = null;
-  let itemsTitleEl = null;
-  let balanceEl = null;
+  let categoriesEl, itemsEl, itemsTitleEl, balanceEl;
+  let diagEl;
 
   // Data
   let categories = [];
-  let itemsById = {}; // { [itemId]: itemDef }
+  let itemsById = {};            // itemId -> def
   let selectedCategoryId = null;
 
-  // cached balance
+  // State
+  let roomState = null;          // cache stanu pokoju
   let currentBalance = null;
 
   document.addEventListener("DOMContentLoaded", init);
 
+  function ensureDiag() {
+    diagEl = document.createElement("div");
+    diagEl.style.position = "sticky";
+    diagEl.style.top = "0";
+    diagEl.style.zIndex = "9999";
+    diagEl.style.padding = "0.55rem 0.75rem";
+    diagEl.style.background = "rgba(2,6,23,0.92)";
+    diagEl.style.border = "1px solid rgba(56,189,248,0.35)";
+    diagEl.style.backdropFilter = "blur(6px)";
+    diagEl.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    diagEl.style.fontSize = "0.85rem";
+    diagEl.innerHTML = `<div style="font-weight:700;opacity:.9;">RoomShop diagnostics</div>`;
+    document.body.prepend(diagEl);
+  }
+
+  function diag(msg, type = "info") {
+    const line = `[RoomShop] ${msg}`;
+    console[type === "error" ? "error" : "log"](line);
+    if (!diagEl) return;
+    const row = document.createElement("div");
+    row.textContent = line;
+    row.style.opacity = type === "error" ? "1" : "0.85";
+    row.style.color = type === "error" ? "#fecaca" : "#e5e7eb";
+    diagEl.appendChild(row);
+  }
+
   function url(path) {
-    // ważne na GitHub Pages i subfolderach
     return new URL(path, document.baseURI).toString();
   }
 
@@ -38,127 +62,49 @@
   }
 
   async function init() {
+    ensureDiag();
+    diag(`baseURI = ${document.baseURI}`);
+
     categoriesEl = document.getElementById("shop-categories");
     itemsEl = document.getElementById("shop-item-list");
     itemsTitleEl = document.getElementById("shop-items-title");
     balanceEl = document.getElementById("shop-balance");
 
+    if (!categoriesEl) diag("Brak #shop-categories (sprawdź room-shop.html)", "error");
+    if (!itemsEl) diag("Brak #shop-item-list (sprawdź room-shop.html)", "error");
+    if (!itemsTitleEl) diag("Brak #shop-items-title (sprawdź room-shop.html)", "error");
+    if (!balanceEl) diag("Brak #shop-balance (sprawdź room-shop.html)", "error");
+
     if (!categoriesEl || !itemsEl || !itemsTitleEl) {
-      console.error("[RoomShop] Brak wymaganych elementów DOM (#shop-categories, #shop-item-list, #shop-items-title).");
+      renderFatal("HTML sklepu nie ma wymaganych elementów (zobacz diagnostics).");
       return;
     }
 
-    // Back / UI
     const backRoomBtn = document.getElementById("shop-btn-back-room");
     if (backRoomBtn) backRoomBtn.addEventListener("click", () => (window.location.href = "room.html"));
 
-    if (window.ArcadeUI && typeof ArcadeUI.addBackToArcadeButton === "function") {
+    if (window.ArcadeUI?.addBackToArcadeButton) {
       ArcadeUI.addBackToArcadeButton({ backUrl: "arcade.html" });
     }
 
-    // Load
+    // 1) load categories + defs
     await loadCategoriesAndItems();
+
+    // 2) load room state cache
+    await loadRoomStateCache();
+
+    // 3) load balance
     await loadBalance();
 
+    // 4) render
     renderCategories();
 
-    if (categories.length > 0) {
+    if (categories.length) {
       selectCategory(categories[0].id);
     } else {
-      renderFatal("Brak kategorii. Sprawdź data/room-categories.json.");
+      renderFatal("Nie wczytało żadnych kategorii (data/room-categories.json).");
     }
   }
-
-  // ----------------------------
-  // Load categories + item defs
-  // ----------------------------
-
-  async function loadCategoriesAndItems() {
-    try {
-      const json = await fetchJson(CATEGORIES_URL);
-      categories = (json.categories || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      console.log("[RoomShop] Załadowano kategorie:", categories.length);
-    } catch (e) {
-      console.error("[RoomShop] Błąd ładowania kategorii:", e);
-      categories = [];
-      return;
-    }
-
-    // collect all itemIds from categories
-    const itemIds = new Set();
-    for (const cat of categories) {
-      for (const id of (cat.itemIds || [])) itemIds.add(id);
-    }
-
-    itemsById = {};
-
-    const results = await Promise.allSettled([...itemIds].map(loadItemDef));
-    const ok = results.filter((r) => r.status === "fulfilled").length;
-    const bad = results.filter((r) => r.status === "rejected").length;
-    console.log("[RoomShop] Item defs OK:", ok, "FAIL:", bad);
-  }
-
-  async function loadItemDef(itemId) {
-    const path = `${ITEMS_BASE_URL}${itemId}.json`;
-    const json = await fetchJson(path);
-
-    // sanity: id w środku powinno się zgadzać z nazwą pliku
-    if (json.id && json.id !== itemId) {
-      console.warn(`[RoomShop] UWAGA: ${itemId}.json ma id="${json.id}" (nie pasuje do nazwy pliku).`);
-    }
-
-    if (!json.art) json.art = {};
-
-    // domyślny svg tylko dla normalnych itemów (NIE dla stylów)
-    const isStyle = json.kind === "room_style" || json.categoryId === "walls";
-    if (!isStyle && !json.art.svg) {
-      json.art.svg = `assets/room/${itemId}.svg`;
-    }
-
-    itemsById[itemId] = json;
-    return json;
-  }
-
-  // ----------------------------
-  // Balance
-  // ----------------------------
-
-  async function loadBalance() {
-    if (!window.ArcadeCoins || typeof ArcadeCoins.load !== "function") {
-      setBalanceDisplay(null);
-      return;
-    }
-
-    try {
-      const bal = await ArcadeCoins.load();
-      currentBalance = bal;
-      setBalanceDisplay(bal);
-      console.log("[RoomShop] Balans:", bal);
-    } catch (e) {
-      console.error("[RoomShop] Błąd ładowania balansu:", e);
-      setBalanceDisplay(null);
-    }
-  }
-
-  function getCurrentBalance() {
-    if (!window.ArcadeCoins || typeof ArcadeCoins.getBalance !== "function") return currentBalance;
-    const b = ArcadeCoins.getBalance();
-    if (typeof b === "number" && !Number.isNaN(b)) {
-      currentBalance = b;
-      return b;
-    }
-    return currentBalance;
-  }
-
-  function setBalanceDisplay(value) {
-    if (!balanceEl) return;
-    balanceEl.textContent =
-      typeof value === "number" && !Number.isNaN(value) ? String(value) : "–";
-  }
-
-  // ----------------------------
-  // Render
-  // ----------------------------
 
   function renderFatal(text) {
     itemsEl.innerHTML = "";
@@ -171,32 +117,134 @@
     itemsEl.appendChild(box);
   }
 
+  // ---------------- Load ----------------
+
+  async function loadCategoriesAndItems() {
+    try {
+      diag(`Ładuję: ${url(CATEGORIES_URL)}`);
+      const json = await fetchJson(CATEGORIES_URL);
+      categories = (json.categories || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      diag(`Kategorie: ${categories.length}`);
+    } catch (e) {
+      diag(`Błąd kategorii: ${String(e)}`, "error");
+      categories = [];
+      return;
+    }
+
+    const itemIds = new Set();
+    for (const c of categories) for (const id of (c.itemIds || [])) itemIds.add(id);
+    diag(`ItemIDs w kategoriach: ${itemIds.size}`);
+
+    itemsById = {};
+    const results = await Promise.allSettled([...itemIds].map(loadItemDef));
+    const ok = results.filter(r => r.status === "fulfilled").length;
+    const bad = results.filter(r => r.status === "rejected").length;
+    diag(`Item defs OK=${ok}, FAIL=${bad}`);
+  }
+
+  async function loadItemDef(itemId) {
+    const path = `${ITEMS_BASE_URL}${itemId}.json`;
+    diag(`Item: ${url(path)}`);
+
+    const def = await fetchJson(path);
+
+    if (!def.art) def.art = {};
+    const isStyle = def.kind === "room_style" || def.categoryId === "walls";
+
+    // svg tylko dla nie-style
+    if (!isStyle && !def.art.svg) def.art.svg = `assets/room/${itemId}.svg`;
+
+    itemsById[itemId] = def;
+    return def;
+  }
+
+  async function loadRoomStateCache() {
+    if (!window.ArcadeRoom?.loadRoomState) {
+      diag("Brak ArcadeRoom.loadRoomState (czy room-api.js jest podpięty?)", "error");
+      roomState = { unlockedItemTypes: {}, instances: [], roomStyleId: null };
+      return;
+    }
+    roomState = await ArcadeRoom.loadRoomState();
+    roomState.unlockedItemTypes ||= {};
+    roomState.instances ||= [];
+    diag("Stan pokoju załadowany.");
+  }
+
+  async function refreshRoomStateCache() {
+    await loadRoomStateCache();
+  }
+
+  async function loadBalance() {
+    if (!window.ArcadeCoins?.load) {
+      setBalance(null);
+      diag("Brak ArcadeCoins.load()", "error");
+      return;
+    }
+    try {
+      const b = await ArcadeCoins.load();
+      currentBalance = b;
+      setBalance(b);
+      diag(`Balans: ${String(b)}`);
+    } catch (e) {
+      diag(`Błąd balansu: ${String(e)}`, "error");
+      setBalance(null);
+    }
+  }
+
+  function setBalance(v) {
+    if (!balanceEl) return;
+    balanceEl.textContent = (typeof v === "number" && !Number.isNaN(v)) ? String(v) : "–";
+  }
+
+  function getBalance() {
+    if (window.ArcadeCoins?.getBalance) {
+      const b = ArcadeCoins.getBalance();
+      if (typeof b === "number" && !Number.isNaN(b)) {
+        currentBalance = b;
+        return b;
+      }
+    }
+    return currentBalance;
+  }
+
+  // ---------------- Render ----------------
+
   function renderCategories() {
     categoriesEl.innerHTML = "";
+
+    if (!categories.length) {
+      diag("Brak kategorii do renderu.", "error");
+      return;
+    }
 
     for (const cat of categories) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "room-shop-category-btn";
       btn.textContent = cat.name || cat.id;
-
-      if (cat.id === selectedCategoryId) btn.classList.add("is-active");
+      btn.dataset.catId = cat.id;
 
       btn.addEventListener("click", () => selectCategory(cat.id));
       categoriesEl.appendChild(btn);
     }
+
+    highlightActiveCategory();
+    diag("Kategorie wyrenderowane.");
+  }
+
+  function highlightActiveCategory() {
+    categoriesEl.querySelectorAll(".room-shop-category-btn").forEach(btn => {
+      btn.classList.toggle("is-active", btn.dataset.catId === selectedCategoryId);
+    });
   }
 
   function selectCategory(catId) {
     selectedCategoryId = catId;
+    highlightActiveCategory();
 
-    // highlight active
-    categoriesEl.querySelectorAll(".room-shop-category-btn").forEach((b) => {
-      b.classList.toggle("is-active", b.textContent === (categories.find(c => c.id === catId)?.name || catId));
-    });
-
-    const cat = categories.find((c) => c.id === catId);
+    const cat = categories.find(c => c.id === catId);
     itemsTitleEl.textContent = cat ? (cat.name || "Przedmioty") : "Przedmioty";
+
     renderItemsForCategory(cat);
   }
 
@@ -209,6 +257,8 @@
     }
 
     const ids = cat.itemIds || [];
+    diag(`Render: ${cat.id} (${ids.length} itemów)`);
+
     if (!ids.length) {
       const p = document.createElement("p");
       p.textContent = "Ta kategoria nie ma itemów (itemIds jest puste).";
@@ -218,20 +268,18 @@
 
     for (const itemId of ids) {
       const def = itemsById[itemId];
-
       if (!def) {
-        itemsEl.appendChild(createMissingCard(itemId));
+        itemsEl.appendChild(missingCard(itemId));
         continue;
       }
-
-      itemsEl.appendChild(createItemCard(def, cat));
+      itemsEl.appendChild(itemCard(def, cat));
     }
   }
 
-  function createMissingCard(itemId) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "room-shop-item-card";
-    wrapper.innerHTML = `
+  function missingCard(itemId) {
+    const d = document.createElement("div");
+    d.className = "room-shop-item-card";
+    d.innerHTML = `
       <div class="room-shop-item-header">
         <div class="room-shop-item-name">Brak definicji</div>
         <div class="room-shop-item-sub">${itemId}</div>
@@ -239,314 +287,196 @@
       <div class="room-shop-item-body">
         <div class="room-shop-item-info">
           <div class="room-shop-item-status">
-            Nie mogę znaleźć pliku: <code>${ITEMS_BASE_URL}${itemId}.json</code>
+            Brak pliku: <code>${ITEMS_BASE_URL}${itemId}.json</code>
           </div>
         </div>
       </div>
     `;
-    return wrapper;
+    return d;
   }
 
-  function createItemCard(item, category) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "room-shop-item-card";
+  function itemCard(item, category) {
+    const isStyle =
+      item.kind === "room_style" ||
+      item.categoryId === "walls" ||
+      category.id === "walls";
+
+    const unlocked = !!roomState?.unlockedItemTypes?.[item.id]?.unlocked;
+    const placedCount = (roomState?.instances || []).filter(i => i.itemId === item.id).length;
+    const isCurrentStyle = roomState?.roomStyleId === item.id;
+
+    const price = item.price != null ? item.price : null;
+
+    const card = document.createElement("div");
+    card.className = "room-shop-item-card";
 
     const header = document.createElement("div");
     header.className = "room-shop-item-header";
 
-    const title = document.createElement("div");
-    title.className = "room-shop-item-name";
-    title.textContent = item.name || item.id;
+    const nameEl = document.createElement("div");
+    nameEl.className = "room-shop-item-name";
+    nameEl.textContent = item.name || item.id;
 
-    const subtitle = document.createElement("div");
-    subtitle.className = "room-shop-item-sub";
-    subtitle.textContent = category?.name || "";
+    const subEl = document.createElement("div");
+    subEl.className = "room-shop-item-sub";
+    subEl.textContent = category.name || category.id;
 
-    header.appendChild(title);
-    header.appendChild(subtitle);
+    header.appendChild(nameEl);
+    header.appendChild(subEl);
 
     const body = document.createElement("div");
     body.className = "room-shop-item-body";
 
-    const isStyle =
-      item.kind === "room_style" ||
-      item.categoryId === "walls" ||
-      (category && category.id === "walls");
-
-    // ✅ miniaturka tylko dla nie-style
-    if (!isStyle && item.art && item.art.svg) {
-      const previewWrap = document.createElement("div");
-      previewWrap.className = "room-shop-item-preview";
+    // ✅ miniatury tylko dla NIE-style
+    if (!isStyle && item.art?.svg) {
+      const prev = document.createElement("div");
+      prev.className = "room-shop-item-preview";
 
       const img = document.createElement("img");
+      img.className = "room-shop-item-preview-img";
       img.src = item.art.svg;
       img.alt = item.name || item.id;
-      img.className = "room-shop-item-preview-img";
 
-      previewWrap.appendChild(img);
-      body.appendChild(previewWrap);
+      prev.appendChild(img);
+      body.appendChild(prev);
     }
 
     const info = document.createElement("div");
     info.className = "room-shop-item-info";
 
-    // status
-    const statusLine = document.createElement("div");
-    statusLine.className = "room-shop-item-status";
-
-    const price = item.price != null ? item.price : null;
-
-    // stan odblokowania
-    let state = null;
-    let unlocked = false;
-    let placedCount = 0;
-    let currentStyle = null;
-
-    if (window.ArcadeRoom && typeof ArcadeRoom.loadRoomState === "function") {
-      // UWAGA: to jest sync w renderze? – nie, pobieramy stan wcześniej w akcjach.
-      // Tu bierzemy z cache: zrobimy "lazy read" z Progress (szybko) jako fallback.
-    }
-
-    // szybki odczyt z ArcadeProgress (sync nie ma), więc robimy prostą heurystykę:
-    // i tak przy klikach odświeżamy UI po save. Tu odczytamy przy każdym renderze async? nie.
-    // Lepsze: po prostu wczytaj stan raz teraz:
-    // (robimy to w createItemCard przez closure i immediate refresh async)
-    // -> uproszczenie: odczyt stanu robimy w funkcji async i potem refresh listy.
-    // Na teraz: wczytamy stan raz na klik przycisku (akcje), a w renderze pokażemy "—" jeśli nie mamy.
-
-    // Żeby było poprawnie, pobierzemy stan synchronicznie z cache w memory:
-    // trzymamy go w window.__ROOM_STATE_CACHE (ułatwia życie).
-    const cache = window.__ROOM_STATE_CACHE || null;
-    if (cache) {
-      state = cache;
-      unlocked = !!(state.unlockedItemTypes && state.unlockedItemTypes[item.id] && state.unlockedItemTypes[item.id].unlocked);
-      placedCount = (state.instances || []).filter((inst) => inst.itemId === item.id).length;
-      currentStyle = state.roomStyleId || null;
-    }
-
-    // jeśli nie ma cache – zainicjuj go raz (asynchronicznie) i odśwież listę
-    if (!cache && window.ArcadeRoom && typeof ArcadeRoom.loadRoomState === "function") {
-      ArcadeRoom.loadRoomState()
-        .then((s) => {
-          window.__ROOM_STATE_CACHE = s;
-          // odśwież tylko jeśli nadal ta sama kategoria
-          if (selectedCategoryId === category.id) renderItemsForCategory(category);
-        })
-        .catch(() => {});
-    }
-
-    // tekst statusu
-    const statusText = document.createElement("div");
+    const status = document.createElement("div");
+    status.className = "room-shop-item-status";
 
     if (isStyle) {
-      if (cache) {
-        if (!unlocked && price != null) statusText.textContent = `Cena stylu: 💎 ${price}`;
-        else if (!unlocked && price == null) statusText.textContent = `Styl z gry / zablokowany`;
-        else statusText.textContent = currentStyle === item.id ? "Aktywny styl pokoju" : "Odblokowany styl";
-      } else {
-        statusText.textContent = price != null ? `Cena stylu: 💎 ${price}` : "Styl pokoju";
-      }
+      if (!unlocked && price != null) status.textContent = `Cena stylu: 💎 ${price}`;
+      else if (!unlocked && price == null) status.textContent = `Styl z gry / zablokowany`;
+      else status.textContent = isCurrentStyle ? "Aktywny styl pokoju" : "Odblokowany styl";
     } else {
-      if (cache) {
-        if (!unlocked) {
-          if (price != null) statusText.textContent = `Cena: 💎 ${price}`;
-          else if (item.source === "game") statusText.textContent = `Zdobywasz w grze`;
-          else statusText.textContent = "Niedostępne";
-        } else {
-          statusText.textContent = `Kupione · w pokoju: ${placedCount}`;
-        }
+      if (!unlocked) {
+        if (price != null) status.textContent = `Cena: 💎 ${price}`;
+        else if (item.source === "game") status.textContent = "Zdobywasz w grze";
+        else status.textContent = "Niedostępne";
       } else {
-        statusText.textContent = price != null ? `Cena: 💎 ${price}` : (item.source === "game" ? "Zdobywasz w grze" : "Przedmiot");
+        status.textContent = `Kupione · w pokoju: ${placedCount}`;
       }
     }
 
-    statusLine.appendChild(statusText);
-    info.appendChild(statusLine);
+    info.appendChild(status);
 
-    // actions
     const actions = document.createElement("div");
     actions.className = "room-shop-item-actions";
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "room-shop-item-btn";
-
-    // domyślne: jeśli nie znamy jeszcze stanu (cache null), nie blokujemy kupna za cenę
-    const canAssumeUnlocked = cache ? unlocked : false;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "room-shop-item-btn";
 
     if (isStyle) {
-      if (cache && unlocked) {
-        const isCurrent = (currentStyle === item.id);
-        button.textContent = isCurrent ? "Ustawiony" : "Ustaw styl";
-        button.disabled = isCurrent;
-        if (!isCurrent) button.addEventListener("click", () => handleSetStyle(item, category));
+      if (unlocked) {
+        btn.textContent = isCurrentStyle ? "Ustawiony" : "Ustaw styl";
+        btn.disabled = isCurrentStyle;
+        if (!isCurrentStyle) btn.addEventListener("click", () => setStyle(item, category));
       } else if (price != null) {
-        button.textContent = "Kup i ustaw";
-        button.addEventListener("click", () => handleBuyStyle(item, category));
+        btn.textContent = "Kup i ustaw";
+        btn.addEventListener("click", () => buyStyle(item, category));
       } else {
-        button.textContent = "Odblokuj w grze";
-        button.disabled = true;
+        btn.textContent = "Odblokuj w grze";
+        btn.disabled = true;
       }
     } else {
-      if (cache && canAssumeUnlocked) {
-        button.textContent = "Dodaj do pokoju";
-        button.addEventListener("click", () => handleAddToRoom(item));
+      if (unlocked) {
+        btn.textContent = "Dodaj do pokoju";
+        btn.addEventListener("click", () => addToRoom(item));
       } else if (price != null) {
-        button.textContent = "Kup";
-        button.addEventListener("click", () => handleBuyItem(item, category));
+        btn.textContent = "Kup";
+        btn.addEventListener("click", () => buyItem(item, category));
       } else if (item.source === "game") {
-        button.textContent = "Odblokuj w grze";
-        button.disabled = true;
+        btn.textContent = "Odblokuj w grze";
+        btn.disabled = true;
       } else {
-        button.textContent = "Niedostępne";
-        button.disabled = true;
+        btn.textContent = "Niedostępne";
+        btn.disabled = true;
       }
     }
 
-    actions.appendChild(button);
+    actions.appendChild(btn);
     info.appendChild(actions);
 
     body.appendChild(info);
 
-    wrapper.appendChild(header);
-    wrapper.appendChild(body);
-
-    return wrapper;
+    card.appendChild(header);
+    card.appendChild(body);
+    return card;
   }
 
-  // ----------------------------
-  // Actions
-  // ----------------------------
+  // ---------------- Actions ----------------
 
-  async function refreshRoomCache() {
-    if (!window.ArcadeRoom || typeof ArcadeRoom.loadRoomState !== "function") return null;
-    const s = await ArcadeRoom.loadRoomState();
-    window.__ROOM_STATE_CACHE = s;
-    return s;
-  }
-
-  async function handleBuyItem(item, category) {
+  async function buyItem(item, category) {
     const price = item.price != null ? item.price : 0;
-    const balance = getCurrentBalance();
+    const bal = getBalance();
 
-    if (balance == null) return alert("Brak info o 💎 (zaloguj się).");
-    if (balance < price) return alert("Za mało 💎.");
+    if (bal == null) return alert("Brak info o 💎 (zaloguj się).");
+    if (bal < price) return alert("Za mało 💎.");
     if (!confirm(`Kupić "${item.name || item.id}" za 💎 ${price}?`)) return;
 
-    try {
-      if (!window.ArcadeCoins || typeof ArcadeCoins.addForGame !== "function") {
-        alert("Brak ArcadeCoins.addForGame");
-        return;
-      }
+    if (!window.ArcadeCoins?.addForGame) return alert("Brak ArcadeCoins.addForGame");
+    if (!window.ArcadeRoom?.unlockItemTypeFromShop) return alert("Brak ArcadeRoom.unlockItemTypeFromShop");
 
-      await ArcadeCoins.addForGame(SHOP_GAME_ID, -price, { itemId: item.id, source: "shop_buy" });
-
-      if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
-        ArcadeAuthUI.refreshCoins();
-      }
-
-      await loadBalance();
-    } catch (e) {
-      console.error("[RoomShop] Błąd odejmowania 💎:", e);
-      return;
-    }
-
-    // odblokuj w stanie pokoju
-    if (!window.ArcadeRoom || typeof ArcadeRoom.unlockItemTypeFromShop !== "function") {
-      alert("Brak ArcadeRoom.unlockItemTypeFromShop (sprawdź czy ładuje się js/core/room-api.js)");
-      return;
-    }
+    await ArcadeCoins.addForGame(SHOP_GAME_ID, -price, { itemId: item.id, source: "shop_buy" });
+    window.ArcadeAuthUI?.refreshCoins?.();
+    await loadBalance();
 
     await ArcadeRoom.unlockItemTypeFromShop(item.id, { meta: { source: "shop" } });
-    await refreshRoomCache();
-
-    // odśwież UI
+    await refreshRoomStateCache();
     renderItemsForCategory(category);
   }
 
-  async function handleAddToRoom(item) {
-    if (!window.ArcadeRoom || typeof ArcadeRoom.createInstance !== "function") {
-      alert('Brak ArcadeRoom.createInstance – sprawdź js/core/room-api.js.');
+  async function addToRoom(item) {
+    if (!window.ArcadeRoom?.createInstance) {
+      alert("Brak ArcadeRoom.createInstance (sprawdź czy masz nowy js/core/room-api.js).");
       return;
     }
-  
-    const attachment =
-      item?.art?.anchor?.attachment ||
-      item?.attachment ||
-      "floor";
-  
-    // ✅ tworzymy instancję i dostajemy instanceId
+
+    const attachment = item?.art?.anchor?.attachment || item?.attachment || "floor";
     const inst = await ArcadeRoom.createInstance(item.id, { attachment });
-  
-    // ✅ od razu przerzucamy do pokoju z parametrem focus
+
+    // ✅ od razu do pokoju + focus
     window.location.href = `room.html?focus=${encodeURIComponent(inst.instanceId)}`;
   }
 
-
-    const attachment =
-      item?.art?.anchor?.attachment ||
-      item?.attachment ||
-      "floor";
-
-    await ArcadeRoom.createInstance(item.id, { attachment });
-    await refreshRoomCache();
-
-    alert("Dodano do pokoju. Wejdź do pokoju i ustaw pozycję.");
-  }
-
-  async function handleBuyStyle(item, category) {
+  async function buyStyle(item, category) {
     const price = item.price != null ? item.price : 0;
-    const balance = getCurrentBalance();
+    const bal = getBalance();
 
-    if (balance == null) return alert("Brak info o 💎 (zaloguj się).");
-    if (balance < price) return alert("Za mało 💎.");
+    if (bal == null) return alert("Brak info o 💎 (zaloguj się).");
+    if (bal < price) return alert("Za mało 💎.");
     if (!confirm(`Kupić styl "${item.name || item.id}" za 💎 ${price}?`)) return;
 
-    try {
-      if (!window.ArcadeCoins || typeof ArcadeCoins.addForGame !== "function") {
-        alert("Brak ArcadeCoins.addForGame");
-        return;
-      }
+    if (!window.ArcadeCoins?.addForGame) return alert("Brak ArcadeCoins.addForGame");
+    if (!window.ArcadeRoom?.saveRoomState) return alert("Brak ArcadeRoom.saveRoomState");
 
-      await ArcadeCoins.addForGame(SHOP_GAME_ID, -price, { itemId: item.id, source: "shop_style" });
+    await ArcadeCoins.addForGame(SHOP_GAME_ID, -price, { itemId: item.id, source: "shop_style" });
+    window.ArcadeAuthUI?.refreshCoins?.();
+    await loadBalance();
 
-      if (window.ArcadeAuthUI && typeof ArcadeAuthUI.refreshCoins === "function") {
-        ArcadeAuthUI.refreshCoins();
-      }
+    const s = await ArcadeRoom.loadRoomState();
+    s.unlockedItemTypes ||= {};
+    s.unlockedItemTypes[item.id] = { unlocked: true, fromGameId: null, meta: { source: "shop_style" } };
+    s.roomStyleId = item.id;
+    await ArcadeRoom.saveRoomState(s);
 
-      await loadBalance();
-    } catch (e) {
-      console.error("[RoomShop] Błąd odejmowania 💎 (styl):", e);
-      return;
-    }
-
-    if (!window.ArcadeRoom || typeof ArcadeRoom.saveRoomState !== "function") {
-      alert("Brak ArcadeRoom.saveRoomState (sprawdź js/core/room-api.js)");
-      return;
-    }
-
-    const state = await ArcadeRoom.loadRoomState();
-    state.unlockedItemTypes = state.unlockedItemTypes || {};
-    state.unlockedItemTypes[item.id] = { unlocked: true, fromGameId: null, meta: { source: "shop_style" } };
-    state.roomStyleId = item.id;
-
-    await ArcadeRoom.saveRoomState(state);
-    await refreshRoomCache();
-
+    await refreshRoomStateCache();
     renderItemsForCategory(category);
   }
 
-  async function handleSetStyle(item, category) {
-    if (!window.ArcadeRoom || typeof ArcadeRoom.setRoomStyle !== "function") {
-      // fallback jeśli nie masz setRoomStyle w API
-      const state = await ArcadeRoom.loadRoomState();
-      state.roomStyleId = item.id;
-      await ArcadeRoom.saveRoomState(state);
-    } else {
+  async function setStyle(item, category) {
+    if (window.ArcadeRoom?.setRoomStyle) {
       await ArcadeRoom.setRoomStyle(item.id);
+    } else {
+      const s = await ArcadeRoom.loadRoomState();
+      s.roomStyleId = item.id;
+      await ArcadeRoom.saveRoomState(s);
     }
-
-    await refreshRoomCache();
+    await refreshRoomStateCache();
     renderItemsForCategory(category);
   }
 })();
