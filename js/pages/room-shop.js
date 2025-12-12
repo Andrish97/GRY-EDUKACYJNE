@@ -466,9 +466,22 @@
 
   async function handleAddToRoom(item) {
     if (!window.ArcadeRoom || typeof ArcadeRoom.createInstance !== "function") {
-      alert('Brak ArcadeRoom.createInstance – sprawdź czy masz nowy js/core/room-api.js na stronie sklepu.');
+      alert('Brak ArcadeRoom.createInstance – sprawdź js/core/room-api.js.');
       return;
     }
+  
+    const attachment =
+      item?.art?.anchor?.attachment ||
+      item?.attachment ||
+      "floor";
+  
+    // ✅ tworzymy instancję i dostajemy instanceId
+    const inst = await ArcadeRoom.createInstance(item.id, { attachment });
+  
+    // ✅ od razu przerzucamy do pokoju z parametrem focus
+    window.location.href = `room.html?focus=${encodeURIComponent(inst.instanceId)}`;
+  }
+
 
     const attachment =
       item?.art?.anchor?.attachment ||
