@@ -1,57 +1,41 @@
-/* ===============================
-   LOGIN / REGISTER PAGE
-   =============================== */
+/* css/login.css */
+/* Strona logowania – układ pól zawsze w kolumnie + szary Gość */
 
 .auth-controls {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* Pola ZAWSZE jedno pod drugim */
 .auth-controls .arcade-input {
   width: 100%;
+  box-sizing: border-box;
 }
 
-/* przyciski logowania */
-.auth-actions {
+/* Rząd przycisków pod polami */
+.auth-controls .auth-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
-/* główne przyciski */
-.auth-login,
-.auth-register {
-  min-width: 120px;
+/* Jeśli nie masz .auth-actions w HTML, zadziała też na "pierwszy div po polach" */
+.auth-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-/* GOŚĆ – szary, mniej ważny */
-.auth-guest {
+/* GOŚĆ – szary i drugorzędny */
+.arcade-btn.auth-guest {
   background: linear-gradient(135deg, #6b7280, #4b5563);
   color: #f9fafb;
   box-shadow: 0 6px 14px rgba(107, 114, 128, 0.45);
 }
 
-.auth-guest:hover {
-  filter: brightness(1.05);
-}
-
-/* status i błędy */
-.auth-status {
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-.auth-error {
-  font-size: 11px;
-  color: #fca5a5;
-}
-
-/* ===============================
-   MOBILE LOGIN
-   =============================== */
-
+/* Mobile: ładniej i prościej */
 @media (max-width: 520px) {
   .shell {
     padding: 16px 12px;
@@ -59,35 +43,17 @@
 
   .card {
     padding: 16px;
-    border-radius: 0;
+    border-radius: 16px; /* albo 0 jeśli chcesz full-screen bez radius */
   }
 
-  .header {
-    margin-bottom: 12px;
-  }
-
-  .title {
-    font-size: 20px;
-    letter-spacing: 0.12em;
-  }
-
-  .subtitle {
-    font-size: 12px;
-  }
-
-  .auth-actions {
+  /* Przyciski na całą szerokość */
+  .auth-controls > div,
+  .auth-controls .auth-actions {
     flex-direction: column;
   }
 
-  .auth-login,
-  .auth-register,
-  .auth-guest {
+  .auth-controls .arcade-btn {
     width: 100%;
     justify-content: center;
-  }
-
-  .auth-forgot {
-    display: inline-block;
-    margin-top: 6px;
   }
 }
