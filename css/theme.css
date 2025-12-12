@@ -1,11 +1,12 @@
 /* =========================================================
-   Neon Arcade — THEME v2
-   Globalny motyw + auth-bar + uniwersalny layout gier
+   Neon Arcade — THEME (GLOBAL)
+   - tło, typografia, bazowe przyciski
+   - auth-bar (z powrotem do arcade + drawer mobile)
    ========================================================= */
 
 :root {
   --bg-main: #020617;
-  --bg-panel: rgba(15, 23, 42, 0.95);
+  --bg-panel: rgba(15, 23, 42, 0.96);
 
   --text: #e5e7eb;
   --muted: #9ca3af;
@@ -23,13 +24,10 @@
   --g-pink: linear-gradient(135deg, #ff2cdf, #00f0ff);
   --g-red: linear-gradient(135deg, #ef4444, #b91c1c);
   --g-gray: linear-gradient(135deg, #6b7280, #4b5563);
+  --g-violet: linear-gradient(135deg, #a855f7, #6366f1);
 }
 
-/* ============ BASE ============ */
-
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body.arcade-body {
   margin: 0;
@@ -42,7 +40,55 @@ body.arcade-body {
     var(--bg-main);
 }
 
-/* ============ AUTH BAR (TOP) ============ */
+/* ====== Bazowe “karty” i layout stron ogólnych (Arcade itp.) ====== */
+
+.shell {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.card {
+  width: 100%;
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px 22px;
+  border: 1px solid var(--stroke);
+  box-shadow: 0 18px 45px rgba(0,0,0,.8),
+    0 0 0 1px rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+/* ====== Bazowe przyciski (używalne wszędzie) ====== */
+
+.btn {
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 0.08s ease, filter 0.08s ease, opacity 0.08s ease;
+}
+
+.btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); opacity: 0.92; }
+
+.btn-main { background: var(--g-green); color: #052e16; }
+.btn-secondary { background: var(--g-cyan); color: #0b1120; }
+.btn-ghost {
+  background: rgba(2,6,23,.35);
+  border: 1px solid var(--stroke-strong);
+  color: var(--text);
+}
+
+/* =========================================================
+   AUTH BAR (TOP)
+   ========================================================= */
 
 .arcade-topbar {
   position: sticky;
@@ -62,7 +108,7 @@ body.arcade-body {
   padding: 8px 14px;
 }
 
-/* POWRÓT */
+/* Powrót do Arcade */
 .arcade-back {
   display: inline-flex;
   align-items: center;
@@ -73,7 +119,7 @@ body.arcade-body {
   border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -83,19 +129,14 @@ body.arcade-body {
   text-transform: uppercase;
 }
 
-@media (max-width: 520px) {
-  .arcade-back .label {
-    display: none;
-  }
-}
-
-/* USER INFO */
+/* status + coins + toggle */
 .arcade-user {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
   color: var(--muted);
+  min-width: 0;
 }
 
 .auth-coins {
@@ -106,19 +147,19 @@ body.arcade-body {
   border-radius: var(--radius-pill);
   border: 1px solid rgba(168,85,247,.35);
   background: rgba(2,6,23,.35);
+  color: var(--text);
   font-size: 11px;
 }
 
-.auth-coins::before {
-  content: "💎";
-}
+.auth-coins::before { content: "💎"; opacity: .9; }
 
-/* AUTH ACTIONS */
+/* formularz */
 .arcade-auth {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .arcade-input {
@@ -129,6 +170,12 @@ body.arcade-body {
   color: var(--text);
   font-size: 12px;
   min-width: 160px;
+  outline: none;
+}
+
+.arcade-input:focus {
+  border-color: rgba(56,189,248,.9);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.2);
 }
 
 .arcade-btn {
@@ -137,15 +184,15 @@ body.arcade-body {
   border: none;
   cursor: pointer;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: .08em;
   text-transform: uppercase;
   background: var(--g-green);
   color: #052e16;
 }
 
-.arcade-btn.logout { background: var(--g-red); }
-.arcade-btn.guest { background: var(--g-gray); }
+.arcade-btn.logout { background: var(--g-red); color: #12050a; }
+.arcade-btn.guest { background: var(--g-gray); color: #0b1120; }
 
 .auth-forgot {
   background: none;
@@ -154,14 +201,12 @@ body.arcade-body {
   font-size: 11px;
   cursor: pointer;
   text-decoration: underline;
+  padding: 0 4px;
 }
 
-.auth-error {
-  font-size: 11px;
-  color: var(--danger);
-}
+.auth-error { font-size: 11px; color: var(--danger); }
 
-/* MOBILE: drawer */
+/* Drawer toggle (mobile) */
 .auth-toggle {
   display: none;
   background: rgba(2,6,23,.6);
@@ -170,7 +215,13 @@ body.arcade-body {
   border-radius: var(--radius-pill);
   padding: 4px 8px;
   font-size: 11px;
+  font-weight: 900;
   cursor: pointer;
+}
+
+/* Responsive auth bar */
+@media (max-width: 720px) {
+  .arcade-input { min-width: 0; flex: 1 1 160px; }
 }
 
 @media (max-width: 520px) {
@@ -179,9 +230,10 @@ body.arcade-body {
     align-items: stretch;
   }
 
-  .auth-toggle {
-    display: inline-flex;
-  }
+  /* back: tylko strzałka */
+  .arcade-back .label { display: none; }
+
+  .auth-toggle { display: inline-flex; align-items: center; }
 
   .arcade-auth {
     display: none;
@@ -189,88 +241,5 @@ body.arcade-body {
     padding-top: 8px;
   }
 
-  .arcade-topbar.drawer-open .arcade-auth {
-    display: flex;
-  }
+  .arcade-topbar.drawer-open .arcade-auth { display: flex; }
 }
-
-/* ============ GAME LAYOUT ============ */
-
-body.arcade-game .game-shell {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 14px;
-}
-
-.game-card {
-  background: var(--bg-panel);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--stroke);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-@media (max-width: 720px) {
-  .game-shell { padding: 0; }
-  .game-card { border-radius: 0; }
-}
-
-/* HEADER */
-.game-header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--stroke);
-}
-
-.game-title {
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-.game-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* BUTTONS */
-.game-btn {
-  border-radius: var(--radius-pill);
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: none;
-}
-
-.game-btn.main { background: var(--g-pink); }
-.game-btn.secondary { background: var(--g-cyan); }
-.game-btn.ghost {
-  background: rgba(2,6,23,.35);
-  border: 1px solid var(--stroke-strong);
-  color: var(--text);
-}
-
-/* STAGE */
-.game-stage {
-  flex: 1;
-  padding: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* FOOTER */
-.game-footer {
-  border-top: 1px solid var(--stroke);
-  padding: 10px 12px;
-  display: grid;
-  gap: 10px;
-}
-
