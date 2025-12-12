@@ -5,6 +5,7 @@
 
   let categories = [];
   const gameMetaCache = new Map();
+  let activeCategoryId = null;
 
   function $(sel) {
     return document.querySelector(sel);
@@ -35,6 +36,22 @@
   }
 
   // ------------------------------
+  // Pokój nagród: tylko dla zalogowanego
+  // ------------------------------
+
+  async function updateRoomButtonVisibility() {
+    const btn = $("#room-btn");
+    if (!btn) return;
+
+    try {
+      const user = await window.ArcadeAuth?.getUser?.();
+      btn.hidden = !user;
+    } catch {
+      btn.hidden = true;
+    }
+  }
+
+  // ------------------------------
   // Ładowanie games.json
   // ------------------------------
 
@@ -51,9 +68,12 @@
         categories = (data && data.categories) || [];
         renderCategoryTabs();
 
-        // domyślnie otwórz pierwszą kategorię
+        // Domyślnie otwieramy pierwszą kategorię
         if (categories.length) {
           selectCategory(categories[0].id);
+        } else {
+          const gamesContainer = $(GAMES_CONTAINER_SELECTOR);
+          if (gamesContainer) gamesContainer.innerHTML = "";
         }
       })
       .catch((err) => {
@@ -64,7 +84,7 @@
   }
 
   // ------------------------------
-  // Render zakładek kategorii (karty)
+  // Render zakładek kategorii
   // ------------------------------
 
   function renderCategoryTabs() {
@@ -82,10 +102,11 @@
       const icon = cat.icon || "📁";
       const name = cat.name || cat.id;
 
-      const tab = document.createElement("button");
-      tab.type = "button";
+      const tab = document.createElement("div");
       tab.className = "category-tab";
-      tab.setAttribute("data-cat", cat.id);
+      tab.setAttribute("role", "tab");
+      tab.setAttribute("tabindex", "0");
+      tab.dataset.catId = cat.id;
 
       tab.innerHTML = `
         <span class="icon">${icon}</span>
@@ -93,26 +114,37 @@
       `;
 
       tab.addEventListener("click", () => selectCategory(cat.id));
+      tab.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectCategory(cat.id);
+        }
+      });
+
       container.appendChild(tab);
     });
   }
 
-  function setActiveTab(catId) {
-    document.querySelectorAll(".category-tab").forEach((t) => {
-      t.classList.toggle("active", t.getAttribute("data-cat") === catId);
-    });
-  }
-
   // ------------------------------
-  // Wybór kategorii -> wczytaj i pokaż gry
+  // Wybór kategorii
   // ------------------------------
 
   function selectCategory(catId) {
-    const category = categories.find((c) => c.id === catId);
-    if (!category) return;
+    const cat = categories.find((c) => c.id === catId);
+    if (!cat) return;
 
-    setActiveTab(catId);
+    activeCategoryId = catId;
 
+    // active tab
+    document.querySelectorAll(".category-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.catId === catId);
+    });
+
+    // render gier
+    loadGamesForCategory(cat);
+  }
+
+  function loadGamesForCategory(category) {
     const gamesContainer = $(GAMES_CONTAINER_SELECTOR);
     if (!gamesContainer) return;
 
@@ -124,12 +156,14 @@
     const gameIds = category.games || [];
 
     if (!folder || !gameIds.length) {
-      gamesContainer.innerHTML = '<p class="arcade-empty">Ta kategoria nie ma jeszcze gier.</p>';
+      gamesContainer.innerHTML = '<p class="arcade-empty">Brak gier w tej kategorii.</p>';
       hideLoading();
       return;
     }
 
-    Promise.all(gameIds.map((id) => loadGameMeta(folder, id)))
+    const promises = gameIds.map((id) => loadGameMeta(folder, id));
+
+    Promise.all(promises)
       .then((allMeta) => {
         const valid = allMeta.filter(Boolean);
         renderGameCards(valid, gamesContainer, category);
@@ -143,7 +177,9 @@
 
   function loadGameMeta(folder, gameId) {
     const cacheKey = folder + "/" + gameId;
-    if (gameMetaCache.has(cacheKey)) return Promise.resolve(gameMetaCache.get(cacheKey));
+    if (gameMetaCache.has(cacheKey)) {
+      return Promise.resolve(gameMetaCache.get(cacheKey));
+    }
 
     const url = `${folder}/${gameId}/meta.json`;
 
@@ -168,12 +204,10 @@
   }
 
   // ------------------------------
-  // Render kafelków gier (odchudzone)
-  // - bez opisu
-  // - bez pilla kategorii
-  // - bez ikonki przy nazwie
-  // - bez przycisku "Graj"
-  // - klik w kafelek uruchamia
+  // Render kafelków gier (odchudzony)
+  // - miniatura (emoji)
+  // - nazwa
+  // - statystyki (rekord / rozegrane)
   // ------------------------------
 
   function renderGameCards(metas, container, category) {
@@ -187,10 +221,8 @@
     metas.forEach((meta) => {
       const entry = meta.entry || "index.html";
       const href = `${meta._folder}/${meta._id}/${entry}`;
-
       const icon = meta.icon || category.icon || "🎮";
       const gameId = meta.id || meta._id;
-      const title = meta.name || meta.id || meta._id;
 
       const card = document.createElement("a");
       card.href = href;
@@ -202,17 +234,17 @@
         </div>
 
         <div class="game-headline">
-          <span class="game-name">${title}</span>
+          <span class="game-name">${meta.name || meta.id}</span>
         </div>
 
         <div class="game-stats" data-game-stats="${gameId}">
-          Statystyki: ładowanie…
+          Rekord: – • Rozegrane: –
         </div>
       `;
 
       frag.appendChild(card);
 
-      // wczytaj statystyki asynchronicznie
+      // wczytanie statów async
       loadGameStats(gameId);
     });
 
@@ -228,39 +260,46 @@
     const statEls = document.querySelectorAll(`.game-stats[data-game-stats="${gameId}"]`);
     if (!statEls.length) return;
 
-    if (!window.ArcadeProgress || !window.ArcadeProgress.load) {
+    if (!window.ArcadeProgress || !ArcadeProgress.load) {
       statEls.forEach((el) => (el.textContent = "Statystyki niedostępne."));
       return;
     }
 
-    window.ArcadeProgress.load(gameId)
+    ArcadeProgress.load(gameId)
       .then((data) => {
         if (!data) {
-          statEls.forEach((el) => (el.textContent = "Brak zapisów."));
+          statEls.forEach((el) => (el.textContent = "Rekord: – • Rozegrane: –"));
           return;
         }
 
         const best = typeof data.bestScore === "number" ? data.bestScore : null;
         const total = typeof data.totalGames === "number" ? data.totalGames : null;
 
-        let text = "Brak zapisów.";
-        if (best != null && total != null) text = `Rekord: ${best} • Rozegrane: ${total}`;
-        else if (best != null) text = `Rekord: ${best}`;
-        else if (total != null) text = `Rozegrane: ${total}`;
+        const bestTxt = best != null ? String(best) : "–";
+        const totalTxt = total != null ? String(total) : "–";
 
-        statEls.forEach((el) => (el.textContent = text));
+        statEls.forEach((el) => {
+          el.textContent = `Rekord: ${bestTxt} • Rozegrane: ${totalTxt}`;
+        });
       })
       .catch((err) => {
-        console.error("[arcade] Błąd statystyk dla", gameId, err);
-        statEls.forEach((el) => (el.textContent = "Statystyki niedostępne."));
+        console.error("[arcade] Błąd ładowania statystyk dla", gameId, err);
+        statEls.forEach((el) => (el.textContent = "Rekord: – • Rozegrane: –"));
       });
   }
 
   // ------------------------------
-  // Init
+  // Inicjalizacja
   // ------------------------------
 
   document.addEventListener("DOMContentLoaded", function () {
+    updateRoomButtonVisibility();
+
+    // jeśli auth się zmieni (login/logout) -> odśwież widoczność room
+    if (window.ArcadeAuth?.onAuthStateChange) {
+      window.ArcadeAuth.onAuthStateChange(() => updateRoomButtonVisibility());
+    }
+
     loadCategories();
   });
 })();
