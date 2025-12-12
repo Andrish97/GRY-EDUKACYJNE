@@ -1,19 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Znajdź słowo – Neon Arcade</title>
 
-    <!-- Motyw globalny -->
+    <link rel="icon" href="../../../favicon.ico" />
+    <link rel="shortcut icon" href="../../../favicon.ico" />
+
+    <!-- Motyw globalny + layout gier -->
     <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/game-layout.css" />
+
     <!-- Styl gry -->
     <link rel="stylesheet" href="game.css" />
 
     <!-- Supabase – MUSI być przed auth.js -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-      defer
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
     <!-- Core -->
     <script src="../../../js/core/auth.js" defer></script>
@@ -25,61 +28,97 @@
     <!-- Logika gry -->
     <script src="game.js" defer></script>
   </head>
-  <body class="arcade-body arcade-game-page">
-    <!-- Pasek logowania + monety, itp. -->
-    <div
-      data-arcade-auth-bar
-      data-after-login="../../../arcade.html"
-      data-after-guest="../../../arcade.html"
-    ></div>
 
-    <div class="shell">
-      <div class="card game-root">
-        <div class="znajdz-slowo-screen">
-          <div class="znajdz-slowo-card">
-            <div class="title">Znajdź słowo</div>
+  <body class="arcade-body arcade-game">
+    <!-- Auth-bar (zawiera powrót + 💎 + logowanie) -->
+    <div data-arcade-auth-bar data-back-url="../../../arcade.html"></div>
 
-            <div class="worlds-row" id="worldsRow">
-              <!-- przyciski światów generuje JS -->
+    <div class="ga-shell">
+      <section class="ga-card">
+        <div class="ga-topbar">
+          <h1 class="ga-title" id="ga-title">Znajdź słowo</h1>
+
+          <div class="ga-actions">
+            <button class="ga-btn ga-btn-primary" id="btn-new">
+              <span class="ico">🔁</span>Nowa runda
+            </button>
+            <button class="ga-btn-mini" id="btn-stats">
+              <span class="ico">📊</span>Staty
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel statów (reset destrukcyjny TYLKO tutaj) -->
+        <section class="ga-stats-panel" id="stats-panel">
+          <div class="ga-stats">
+            <div class="ga-stat c1">
+              <span class="k">Punkty</span><span class="v" id="v-score">0</span>
             </div>
+            <div class="ga-stat c2">
+              <span class="k">Świat</span><span class="v" id="v-world">—</span>
+            </div>
+            <div class="ga-stat c3">
+              <span class="k">Seria</span><span class="v" id="v-streak">0</span>
+            </div>
+          </div>
 
-            <div class="top-row">
-              <div class="world-name" id="worldNameLabel">
-                Świat: Zwierzęta
+          <div class="ga-stats-actions">
+            <button class="ga-record-reset" id="btn-reset-best">
+              Wyczyść postęp gry
+            </button>
+            <button class="ga-btn-mini" id="btn-stats-close">Zamknij</button>
+          </div>
+        </section>
+
+        <div class="ga-stage">
+          <!-- Mount gry -->
+          <div id="game-mount">
+            <div class="znajdz-slowo-screen">
+              <div class="znajdz-slowo-card">
+                <div class="title">Znajdź słowo</div>
+
+                <div class="worlds-row" id="worldsRow"></div>
+
+                <div class="top-row">
+                  <div class="world-name" id="worldNameLabel">Świat: —</div>
+                  <div class="streak-info">
+                    Seria: <span id="streak">0</span>
+                  </div>
+                </div>
+
+                <div class="progress-wrapper">
+                  <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <div class="emoji-box" id="emoji">🐱</div>
+                <div class="hint" id="hint">Kliknij wyraz, który pasuje do obrazka.</div>
+
+                <div class="choices" id="choices"></div>
+
+                <div id="message"></div>
+
+                <div class="bottom-row">
+                  <div id="score">Punkty: 0</div>
+                  <button id="hintBtn" class="btn-hint">Podpowiedź (5💎)</button>
+                  <button id="next">Następne</button>
+                </div>
               </div>
-              <div class="streak-info">
-                Seria: <span id="streak">0</span>
-              </div>
-            </div>
-
-            <div class="progress-wrapper">
-              <div class="progress-bar" id="progressBar"></div>
-            </div>
-
-            <div class="emoji-box" id="emoji">🐱</div>
-            <div class="hint" id="hint">
-              Kliknij wyraz, który pasuje do obrazka.
-            </div>
-
-            <div class="choices" id="choices"></div>
-
-            <div id="message"></div>
-
-            <div class="bottom-row">
-              <div id="score">Punkty: 0</div>
-              <button id="hintBtn" class="btn-hint">Podpowiedź (5💎)</button>
-              <button id="next">Następne</button>
-            </div>
-
-            <!-- reset postępu odsunięty, mniejszy, mniej „pod ręką” -->
-            <div class="reset-row">
-              <button id="resetProgress" class="reset-progress-btn">
-                Wyczyść postęp
-              </button>
             </div>
           </div>
         </div>
-      </div>
+
+        <footer class="ga-footer">
+          <div class="ga-hints" id="hints-slot"></div>
+        </footer>
+      </section>
     </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const panel = document.getElementById("stats-panel");
+        document.getElementById("btn-stats")?.addEventListener("click", () => panel?.classList.toggle("open"));
+        document.getElementById("btn-stats-close")?.addEventListener("click", () => panel?.classList.remove("open"));
+      });
+    </script>
   </body>
 </html>
